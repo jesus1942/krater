@@ -137,3 +137,52 @@ In production, Mix appends a content hash to filenames and writes a `mix-manifes
 ### Storage
 
 File uploads (expense receipts, company logos) go through Spatie Media Library. The active file disk (local, S3, or Dropbox) is configured at runtime via `Settings > File Disk` and stored in the `file_disks` table.
+
+## Deployment
+
+### PWA — GitHub Pages
+
+El workflow `.github/workflows/deploy-pwa.yml` se dispara en cada push a la rama de trabajo que toque archivos de `mobile/`. Pasos:
+
+1. `npm install && npm run build` en `mobile/` con `VITE_BASE_URL=/krater/`
+2. Copia `index.html` a `404.html` (SPA routing en Pages)
+3. Publica `mobile/dist/` en la rama `gh-pages` via `peaceiris/actions-gh-pages`
+
+**URL resultante:** `https://jesus1942.github.io/krater/`
+
+**Secrets de GitHub que hay que configurar en el repo:**
+- `VITE_API_URL` — URL completa del backend Railway (ej: `https://krater-production.up.railway.app/api/v1`)
+- `PAGES_CNAME` — (opcional) dominio propio si se configura uno
+
+**Para activar GitHub Pages:** Settings > Pages > Source: `gh-pages` branch, folder `/`.
+
+El router usa `createWebHashHistory` (URLs con `#`) para compatibilidad con Pages sin servidor.
+
+### Backend — Railway
+
+Archivos relevantes: `railway.toml`, `nixpacks.toml`.
+
+Railway detecta PHP automaticamente con Nixpacks. El comando de start:
+1. Corre `php artisan migrate --force`
+2. Cachea config, rutas y vistas
+3. Levanta el servidor en `$PORT`
+
+**Variables de entorno que configurar en Railway:**
+```
+APP_KEY=           (generar con: php artisan key:generate --show)
+APP_URL=           (URL que asigne Railway)
+DB_HOST=           (de la variable $MYSQLHOST que Railway inyecta)
+DB_PORT=           ($MYSQLPORT)
+DB_DATABASE=       ($MYSQLDATABASE)
+DB_USERNAME=       ($MYSQLUSER)
+DB_PASSWORD=       ($MYSQLPASSWORD)
+CORS_ALLOWED_ORIGINS=https://jesus1942.github.io
+FILESYSTEM_DISK=public
+CACHE_DRIVER=database
+SESSION_DRIVER=database
+QUEUE_CONNECTION=database
+```
+
+**Base de datos:** agregar el plugin MySQL desde el dashboard de Railway. Las variables `$MYSQL*` se inyectan automaticamente en el servicio.
+
+**CORS:** la variable `CORS_ALLOWED_ORIGINS` acepta origenes separados por coma. Siempre incluir el dominio de Pages. `config/cors.php` lee esta variable.

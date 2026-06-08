@@ -1,0 +1,50 @@
+name: Deploy PWA a GitHub Pages
+
+on:
+  push:
+    branches: [claude/web-app-migration-laf9yy, main]
+    paths:
+      - 'mobile/**'
+      - '.github/workflows/deploy-pwa.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: mobile/package.json
+
+      - name: Instalar dependencias
+        run: npm install
+        working-directory: mobile
+
+      - name: Build PWA
+        run: npm run build
+        working-directory: mobile
+        env:
+          VITE_API_URL: ${{ secrets.VITE_API_URL }}
+          VITE_BASE_URL: /krater/
+
+      - name: Crear 404.html para SPA routing
+        run: cp mobile/dist/index.html mobile/dist/404.html
+
+      - name: Crear .nojekyll
+        run: touch mobile/dist/.nojekyll
+
+      - name: Deploy a gh-pages
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: mobile/dist
+          cname: ${{ secrets.PAGES_CNAME }}

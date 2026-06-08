@@ -1,0 +1,31 @@
+[phases.setup]
+nixPkgs = [
+  "php81",
+  "php81Packages.composer",
+  "php81Extensions.gd",
+  "php81Extensions.pdo",
+  "php81Extensions.pdo_mysql",
+  "php81Extensions.mbstring",
+  "php81Extensions.xml",
+  "php81Extensions.bcmath",
+  "php81Extensions.tokenizer",
+  "php81Extensions.fileinfo",
+  "php81Extensions.openssl",
+  "php81Extensions.curl",
+  "php81Extensions.zip",
+  "php81Extensions.imagick",
+  "php81Extensions.intl",
+]
+
+[phases.install]
+cmds = [
+  "composer install --no-dev --optimize-autoloader --no-interaction",
+]
+
+[phases.build]
+cmds = [
+  "php artisan storage:link --force",
+]
+
+[start]
+cmd = "php artisan migrate --force && php artisan config:cache && php artisan route:cache && php artisan view:cache && php artisan serve --host=0.0.0.0 --port=$PORT"
