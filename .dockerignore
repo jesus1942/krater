@@ -6,7 +6,6 @@
 .DS_Store/
 docker-compose.*
 LICENSE
-nginx.conf
 yarn.lock
 vendor/
 .env
