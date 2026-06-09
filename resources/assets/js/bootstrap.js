@@ -127,7 +127,8 @@ global.axios.interceptors.response.use(undefined, function (err) {
     if (
       err.response.data &&
       err.config.url !== '/api/v1/auth/check' &&
-      (err.response.statusText === 'Unauthorized' ||
+      (err.response.status === 401 ||
+        err.response.statusText === 'Unauthorized' ||
         err.response.data === ' Unauthorized.')
     ) {
       console.log(err.response)
