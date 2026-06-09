@@ -14,8 +14,10 @@ try {
         getenv('DB_PASSWORD'),
         [PDO::ATTR_TIMEOUT => 5, PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]
     );
-    $row = $pdo->query("SELECT value FROM settings WHERE key='profile_complete' LIMIT 1")->fetch();
+    $row = $pdo->query("SELECT `value` FROM `settings` WHERE `key`='profile_complete' LIMIT 1")->fetch();
     echo "DB=OK profile_complete=" . ($row ? $row['value'] : 'NOT SET') . "\n";
+    $users = $pdo->query("SELECT COUNT(*) AS c FROM `users`")->fetch();
+    echo "users=" . $users['c'] . "\n";
 } catch (Exception $e) {
     echo "DB_ERROR=" . $e->getMessage() . "\n";
 }
