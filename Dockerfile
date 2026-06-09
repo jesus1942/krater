@@ -4,7 +4,7 @@ FROM php:7.4-fpm
 ARG user=www
 ARG uid=1000
 
-# Dependencias del sistema
+# Dependencias del sistema + Node.js 18
 RUN apt-get update && apt-get install -y --no-install-recommends \
     git \
     curl \
@@ -15,6 +15,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     unzip \
     libzip-dev \
     mariadb-client \
+    && curl -fsSL https://deb.nodesource.com/setup_18.x | bash - \
+    && apt-get install -y --no-install-recommends nodejs \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # Extensiones PHP
@@ -30,8 +32,13 @@ RUN useradd -G www-data,root -u $uid -d /home/$user $user \
 
 WORKDIR /var/www
 
-# Copiar codigo fuente e instalar dependencias de PHP
+# Copiar codigo fuente
 COPY --chown=$user:$user . .
+
+# Compilar assets del panel web (Vue 2 + Laravel Mix)
+RUN npm install && npm run production
+
+# Instalar dependencias PHP
 ENV COMPOSER_ALLOW_SUPERUSER=1
 RUN composer install --no-dev --optimize-autoloader --no-interaction
 
