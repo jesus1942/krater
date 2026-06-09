@@ -23,11 +23,14 @@ try {
 }
 
 // Ultimas lineas del log de Laravel para ver el error 500
-$log = __DIR__ . '/../storage/logs/laravel.log';
-if (file_exists($log)) {
-    $lines = file($log);
-    echo "\n--- ULTIMAS 60 LINEAS DEL LOG ---\n";
-    echo implode('', array_slice($lines, -60));
+$dir = __DIR__ . '/../storage/logs';
+$logs = glob($dir . '/*.log');
+echo "\nLOGS_ENCONTRADOS=" . implode(', ', array_map('basename', $logs ?: [])) . "\n";
+if ($logs) {
+    usort($logs, fn ($a, $b) => filemtime($b) - filemtime($a));
+    $lines = file($logs[0]);
+    echo "\n--- ULTIMAS 80 LINEAS DE " . basename($logs[0]) . " ---\n";
+    echo implode('', array_slice($lines, -80));
 } else {
-    echo "\nLOG=NO EXISTE\n";
+    echo "DIR_LOGS_ESCRIBIBLE=" . (is_writable($dir) ? 'SI' : 'NO') . "\n";
 }
