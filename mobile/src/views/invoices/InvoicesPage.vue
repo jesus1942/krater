@@ -13,7 +13,7 @@
         <ion-searchbar
           v-model="search"
           placeholder="Buscar factura..."
-          debounce="400"
+          :debounce="400"
           @ionInput="onSearch"
         />
       </ion-toolbar>

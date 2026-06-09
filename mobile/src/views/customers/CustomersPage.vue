@@ -11,7 +11,7 @@
         </ion-buttons>
       </ion-toolbar>
       <ion-toolbar>
-        <ion-searchbar v-model="search" placeholder="Buscar cliente..." debounce="400" @ionInput="load" />
+        <ion-searchbar v-model="search" placeholder="Buscar cliente..." :debounce="400" @ionInput="load" />
       </ion-toolbar>
     </ion-header>
 

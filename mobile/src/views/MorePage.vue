@@ -56,7 +56,10 @@ import { useAuthStore } from '@/stores/auth'
 const router = useRouter()
 const authStore = useAuthStore()
 
-const menu = [
+interface MenuItem { label: string; path: string; icon: string; color?: string }
+interface MenuGroup { title: string; items: MenuItem[] }
+
+const menu: MenuGroup[] = [
   {
     title: 'Gestion',
     items: [

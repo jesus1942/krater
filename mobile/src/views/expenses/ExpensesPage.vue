@@ -10,7 +10,7 @@
         </ion-buttons>
       </ion-toolbar>
       <ion-toolbar>
-        <ion-searchbar v-model="search" placeholder="Buscar gasto..." debounce="400" @ionInput="load" />
+        <ion-searchbar v-model="search" placeholder="Buscar gasto..." :debounce="400" @ionInput="load" />
       </ion-toolbar>
     </ion-header>
 
@@ -89,7 +89,7 @@ async function openExpense(expense: any) {
   const sheet = await actionSheetController.create({
     header: expense.notes ?? 'Gasto',
     buttons: [
-      { text: 'Editar', handler: () => router.push(`/expenses/${expense.id}/edit`) },
+      { text: 'Editar', handler: () => { router.push(`/expenses/${expense.id}/edit`) } },
       { text: 'Eliminar', role: 'destructive', handler: () => confirmDelete(expense.id) },
       { text: 'Cancelar', role: 'cancel' },
     ],

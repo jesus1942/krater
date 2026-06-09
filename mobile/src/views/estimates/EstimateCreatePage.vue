@@ -69,7 +69,7 @@
           <ion-title>Seleccionar cliente</ion-title>
           <ion-buttons slot="end"><ion-button @click="showCustomerModal = false">Cerrar</ion-button></ion-buttons>
         </ion-toolbar>
-        <ion-toolbar><ion-searchbar v-model="customerSearch" placeholder="Buscar..." debounce="300" /></ion-toolbar>
+        <ion-toolbar><ion-searchbar v-model="customerSearch" placeholder="Buscar..." :debounce="300" /></ion-toolbar>
       </ion-header>
       <ion-content>
         <ion-list>

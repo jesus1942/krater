@@ -61,11 +61,11 @@ function openCreateMenu() {
 }
 
 const createButtons = [
-  { text: 'Nueva Factura', icon: documentOutline, handler: () => router.push('/invoices/create') },
-  { text: 'Nuevo Presupuesto', icon: receiptOutline, handler: () => router.push('/estimates/create') },
-  { text: 'Nuevo Gasto', icon: walletOutline, handler: () => router.push('/expenses/create') },
-  { text: 'Nuevo Pago', icon: cashOutline, handler: () => router.push('/payments/create') },
-  { text: 'Nuevo Cliente', icon: peopleOutline, handler: () => router.push('/customers/create') },
+  { text: 'Nueva Factura', icon: documentOutline, handler: () => { router.push('/invoices/create') } },
+  { text: 'Nuevo Presupuesto', icon: receiptOutline, handler: () => { router.push('/estimates/create') } },
+  { text: 'Nuevo Gasto', icon: walletOutline, handler: () => { router.push('/expenses/create') } },
+  { text: 'Nuevo Pago', icon: cashOutline, handler: () => { router.push('/payments/create') } },
+  { text: 'Nuevo Cliente', icon: peopleOutline, handler: () => { router.push('/customers/create') } },
   { text: 'Cancelar', role: 'cancel' },
 ]
 </script>

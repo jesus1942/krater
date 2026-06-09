@@ -9,7 +9,7 @@
         </ion-buttons>
       </ion-toolbar>
       <ion-toolbar>
-        <ion-searchbar v-model="search" placeholder="Buscar item..." debounce="400" @ionInput="load" />
+        <ion-searchbar v-model="search" placeholder="Buscar item..." :debounce="400" @ionInput="load" />
       </ion-toolbar>
     </ion-header>
 
@@ -58,7 +58,7 @@ async function openItem(item: any) {
   const sheet = await actionSheetController.create({
     header: item.name,
     buttons: [
-      { text: 'Editar', handler: () => router.push(`/items/${item.id}/edit`) },
+      { text: 'Editar', handler: () => { router.push(`/items/${item.id}/edit`) } },
       { text: 'Eliminar', role: 'destructive', handler: () => confirmDelete(item.id) },
       { text: 'Cancelar', role: 'cancel' },
     ],
