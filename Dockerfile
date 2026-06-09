@@ -1,10 +1,9 @@
 FROM php:7.4-fpm
 
-# Argumentos definidos en docker-compose.yml (valores por defecto para Railway)
 ARG user=www
 ARG uid=1000
 
-# Dependencias del sistema + Caddy
+# Dependencias del sistema + nginx
 RUN apt-get update && apt-get install -y --no-install-recommends \
     git \
     curl \
@@ -15,12 +14,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     unzip \
     libzip-dev \
     mariadb-client \
-    debian-keyring \
-    debian-archive-keyring \
-    apt-transport-https \
-    && curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/gpg.key' | gpg --dearmor -o /usr/share/keyrings/caddy-stable-archive-keyring.gpg \
-    && curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/debian.deb.txt' | tee /etc/apt/sources.list.d/caddy-stable.list \
-    && apt-get update && apt-get install -y --no-install-recommends caddy \
+    nginx \
+    gettext-base \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # Extensiones PHP
@@ -37,18 +32,23 @@ RUN useradd -G www-data,root -u $uid -d /home/$user $user \
 WORKDIR /var/www
 
 # Copiar codigo fuente
-COPY --chown=$user:$user . .
+COPY . .
 
 # Instalar dependencias PHP
 ENV COMPOSER_ALLOW_SUPERUSER=1
 RUN composer install --no-dev --optimize-autoloader --no-interaction
 
+# Directorios de Laravel + permisos
 RUN mkdir -p storage/framework/cache/data \
         storage/framework/sessions \
         storage/framework/views \
         storage/logs \
         bootstrap/cache \
-    && chmod -R 775 storage bootstrap/cache \
-    && chmod +x /var/www/start.sh
+    && chown -R www-data:www-data storage bootstrap/cache public \
+    && chmod -R 775 storage bootstrap/cache
 
-USER $user
+# Configuracion de nginx
+RUN cp /var/www/nginx.conf /etc/nginx/sites-available/default.template \
+    && rm -f /etc/nginx/sites-enabled/default \
+    && ln -s /etc/nginx/sites-available/default /etc/nginx/sites-enabled/default \
+    && chmod +x /var/www/start.sh

@@ -2,8 +2,8 @@
 builder = "dockerfile"
 
 [deploy]
-preDeployCommand = "php artisan migrate --force"
-startCommand = 'bash -c "/var/www/start.sh"'
+preDeployCommand = "php artisan migrate --force && php artisan crater:mark-installed"
+startCommand = '/var/www/start.sh'
 healthcheckPath = "/ping"
 healthcheckTimeout = 300
 restartPolicyType = "on_failure"

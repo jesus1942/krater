@@ -1,3 +1,4 @@
 #!/bin/sh
+envsubst '$PORT' < /etc/nginx/sites-available/default.template > /etc/nginx/sites-available/default
 php-fpm -D
-caddy run --config /var/www/Caddyfile --adapter caddyfile
+nginx -g 'daemon off;'
