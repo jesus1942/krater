@@ -47,14 +47,18 @@ RUN mkdir -p storage/framework/cache/data \
     && chown -R www-data:www-data storage bootstrap/cache public \
     && chmod -R 775 storage bootstrap/cache
 
-# Configuracion de nginx
 # Descargar fuentes Poppins localmente (evita requests externos en runtime)
 RUN mkdir -p /var/www/public/assets/fonts/poppins \
-    && for w in 300 400 500 600; do \
-        curl -sL "https://cdn.jsdelivr.net/npm/@fontsource/poppins@5/files/poppins-latin-${w}-normal.woff2" \
-             -o "/var/www/public/assets/fonts/poppins/poppins-${w}.woff2"; \
-       done
+    && curl -fsSL "https://cdn.jsdelivr.net/npm/@fontsource/poppins@5/files/poppins-latin-300-normal.woff2" \
+            -o /var/www/public/assets/fonts/poppins/poppins-300.woff2 \
+    && curl -fsSL "https://cdn.jsdelivr.net/npm/@fontsource/poppins@5/files/poppins-latin-400-normal.woff2" \
+            -o /var/www/public/assets/fonts/poppins/poppins-400.woff2 \
+    && curl -fsSL "https://cdn.jsdelivr.net/npm/@fontsource/poppins@5/files/poppins-latin-500-normal.woff2" \
+            -o /var/www/public/assets/fonts/poppins/poppins-500.woff2 \
+    && curl -fsSL "https://cdn.jsdelivr.net/npm/@fontsource/poppins@5/files/poppins-latin-600-normal.woff2" \
+            -o /var/www/public/assets/fonts/poppins/poppins-600.woff2
 
+# Configuracion de nginx
 RUN cp /var/www/nginx.conf /etc/nginx/sites-available/default.template \
     && rm -f /etc/nginx/sites-enabled/default \
     && ln -s /etc/nginx/sites-available/default /etc/nginx/sites-enabled/default \
