@@ -48,6 +48,13 @@ RUN mkdir -p storage/framework/cache/data \
     && chmod -R 775 storage bootstrap/cache
 
 # Configuracion de nginx
+# Descargar fuentes Poppins localmente (evita requests externos en runtime)
+RUN mkdir -p /var/www/public/assets/fonts/poppins \
+    && for w in 300 400 500 600; do \
+        curl -sL "https://cdn.jsdelivr.net/npm/@fontsource/poppins@5/files/poppins-latin-${w}-normal.woff2" \
+             -o "/var/www/public/assets/fonts/poppins/poppins-${w}.woff2"; \
+       done
+
 RUN cp /var/www/nginx.conf /etc/nginx/sites-available/default.template \
     && rm -f /etc/nginx/sites-enabled/default \
     && ln -s /etc/nginx/sites-available/default /etc/nginx/sites-enabled/default \
