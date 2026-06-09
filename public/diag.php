@@ -21,3 +21,13 @@ try {
 } catch (Exception $e) {
     echo "DB_ERROR=" . $e->getMessage() . "\n";
 }
+
+// Ultimas lineas del log de Laravel para ver el error 500
+$log = __DIR__ . '/../storage/logs/laravel.log';
+if (file_exists($log)) {
+    $lines = file($log);
+    echo "\n--- ULTIMAS 60 LINEAS DEL LOG ---\n";
+    echo implode('', array_slice($lines, -60));
+} else {
+    echo "\nLOG=NO EXISTE\n";
+}
