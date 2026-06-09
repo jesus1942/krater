@@ -8,3 +8,8 @@ docker-compose.*
 LICENSE
 nginx.conf
 yarn.lock
+vendor/
+.env
+node_modules/
+mobile/
+public/assets/

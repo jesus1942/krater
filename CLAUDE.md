@@ -13,6 +13,8 @@ El proyecto tiene dos partes:
 ### Preferencias de trabajo
 - Sin emojis ni emoticones en ningun archivo
 - Mockups a mano cuando se necesiten wireframes
+- Todos los commits deben escribirse en español rioplatense
+- El README.md es el principal — debe estar siempre actualizado y en español
 - Push siempre a la rama `claude/web-app-migration-laf9yy` en el repo `jesus1942/krater`
 - El logo de la app es un placeholder; el definitivo lo pasa Jesus Olguin
 
