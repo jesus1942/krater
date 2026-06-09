@@ -33,7 +33,7 @@
           </ion-item>
           <ion-item lines="none">
             <ion-label position="stacked">Notas</ion-label>
-            <ion-textarea v-model="form.notes" rows="3" placeholder="Descripcion del gasto..." />
+            <ion-textarea v-model="form.notes" :rows="3" placeholder="Descripcion del gasto..." />
           </ion-item>
         </ion-card-content>
       </ion-card>

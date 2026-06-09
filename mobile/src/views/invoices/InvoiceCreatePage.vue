@@ -101,7 +101,7 @@
         <ion-card-content class="ion-no-padding">
           <ion-item lines="none">
             <ion-label position="stacked">Notas</ion-label>
-            <ion-textarea v-model="form.notes" rows="3" placeholder="Notas adicionales..." />
+            <ion-textarea v-model="form.notes" :rows="3" placeholder="Notas adicionales..." />
           </ion-item>
         </ion-card-content>
       </ion-card>

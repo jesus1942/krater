@@ -22,7 +22,7 @@
             <ion-input :value="form.unit?.name ?? ''" readonly placeholder="Seleccionar..." />
             <ion-icon slot="end" :icon="chevronForwardOutline" color="medium" />
           </ion-item>
-          <ion-item lines="none"><ion-label position="stacked">Descripcion</ion-label><ion-textarea v-model="form.description" rows="3" /></ion-item>
+          <ion-item lines="none"><ion-label position="stacked">Descripcion</ion-label><ion-textarea v-model="form.description" :rows="3" /></ion-item>
         </ion-card-content>
       </ion-card>
     </ion-content>

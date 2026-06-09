@@ -31,7 +31,7 @@
       </ion-header>
       <ion-content class="ion-padding">
         <ion-item lines="full"><ion-label position="stacked">Nombre *</ion-label><ion-input v-model="form.name" /></ion-item>
-        <ion-item lines="none"><ion-label position="stacked">Descripcion</ion-label><ion-textarea v-model="form.description" rows="2" /></ion-item>
+        <ion-item lines="none"><ion-label position="stacked">Descripcion</ion-label><ion-textarea v-model="form.description" :rows="2" /></ion-item>
         <ion-button expand="block" class="ion-margin-top" color="primary" @click="save">Guardar</ion-button>
         <ion-button v-if="editing" expand="block" fill="outline" color="danger" class="ion-margin-top" @click="remove">Eliminar</ion-button>
       </ion-content>

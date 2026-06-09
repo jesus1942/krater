@@ -28,7 +28,7 @@
             <ion-input :value="form.method?.name ?? ''" readonly placeholder="Seleccionar..." />
             <ion-icon slot="end" :icon="chevronForwardOutline" color="medium" />
           </ion-item>
-          <ion-item lines="none"><ion-label position="stacked">Notas</ion-label><ion-textarea v-model="form.notes" rows="2" /></ion-item>
+          <ion-item lines="none"><ion-label position="stacked">Notas</ion-label><ion-textarea v-model="form.notes" :rows="2" /></ion-item>
         </ion-card-content>
       </ion-card>
     </ion-content>
