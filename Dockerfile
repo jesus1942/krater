@@ -38,12 +38,14 @@ COPY . .
 ENV COMPOSER_ALLOW_SUPERUSER=1
 RUN composer install --no-dev --optimize-autoloader --no-interaction
 
-# Directorios de Laravel + permisos
+# Directorios de Laravel + permisos + marcar como instalado en la imagen
 RUN mkdir -p storage/framework/cache/data \
         storage/framework/sessions \
         storage/framework/views \
         storage/logs \
         bootstrap/cache \
+        storage/app \
+    && echo "1" > storage/app/database_created \
     && chown -R www-data:www-data storage bootstrap/cache public \
     && chmod -R 775 storage bootstrap/cache
 
