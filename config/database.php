@@ -53,6 +53,9 @@ return [
             'prefix_indexes' => true,
             'strict' => false,
             'engine' => null,
+            'options' => [
+                \PDO::ATTR_TIMEOUT => 5,
+            ],
         ],
 
         'pgsql' => [
