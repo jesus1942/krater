@@ -12,4 +12,3 @@ vendor/
 .env
 node_modules/
 mobile/
-public/assets/
