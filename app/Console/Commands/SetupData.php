@@ -18,35 +18,45 @@ class SetupData extends Command
 {
     protected $signature = 'crater:setup-data';
 
-    protected $description = 'Carga monedas, paises, settings y datos base si faltan (idempotente)';
+    protected $description = 'Carga monedas, paises y settings base si faltan (idempotente)';
 
     public function handle()
     {
         if (Currency::count() === 0) {
-            $this->call('db:seed', ['--class' => CurrenciesTableSeeder::class, '--force' => true]);
+            (new CurrenciesTableSeeder())->run();
             $this->info('Monedas cargadas.');
+        } else {
+            $this->info('Monedas: ya existen, omitiendo.');
         }
 
         if (Country::count() === 0) {
-            $this->call('db:seed', ['--class' => CountriesTableSeeder::class, '--force' => true]);
+            (new CountriesTableSeeder())->run();
             $this->info('Paises cargados.');
+        } else {
+            $this->info('Paises: ya existen, omitiendo.');
         }
 
         if (PaymentMethod::count() === 0) {
-            $this->call('db:seed', ['--class' => PaymentMethodSeeder::class, '--force' => true]);
+            (new PaymentMethodSeeder())->run();
             $this->info('Metodos de pago cargados.');
+        } else {
+            $this->info('Metodos de pago: ya existen, omitiendo.');
         }
 
         if (Unit::count() === 0) {
-            $this->call('db:seed', ['--class' => UnitSeeder::class, '--force' => true]);
+            (new UnitSeeder())->run();
             $this->info('Unidades cargadas.');
+        } else {
+            $this->info('Unidades: ya existen, omitiendo.');
         }
 
         if (CompanySetting::count() === 0) {
-            $this->call('db:seed', ['--class' => DefaultSettingsSeeder::class, '--force' => true]);
+            (new DefaultSettingsSeeder())->run();
             $this->info('Configuracion de empresa cargada.');
+        } else {
+            $this->info('Company settings: ya existen, omitiendo.');
         }
 
-        $this->info('Datos base verificados.');
+        $this->info('Datos base OK.');
     }
 }
