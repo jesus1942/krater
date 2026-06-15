@@ -14,23 +14,34 @@ try {
         getenv('DB_PASSWORD'),
         [PDO::ATTR_TIMEOUT => 5, PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]
     );
-    $row = $pdo->query("SELECT `value` FROM `settings` WHERE `option`='profile_complete' LIMIT 1")->fetch();
-    echo "DB=OK profile_complete=" . ($row ? $row['value'] : 'NOT SET') . "\n";
-    $users = $pdo->query("SELECT COUNT(*) AS c FROM `users`")->fetch();
-    echo "users=" . $users['c'] . "\n";
+    $profile = $pdo->query("SELECT `value` FROM `settings` WHERE `option`='profile_complete' LIMIT 1")->fetch();
+    echo "DB=OK profile_complete=" . ($profile ? $profile['value'] : 'NOT SET') . "\n";
+
+    $users = $pdo->query("SELECT id, email, company_id FROM `users` LIMIT 5")->fetchAll();
+    echo "users=" . count($users) . "\n";
+    foreach ($users as $u) echo "  id={$u['id']} email={$u['email']} company_id={$u['company_id']}\n";
+
+    $companies = $pdo->query("SELECT id, name FROM `companies` LIMIT 5")->fetchAll();
+    echo "companies=" . count($companies) . "\n";
+    foreach ($companies as $c) echo "  id={$c['id']} name={$c['name']}\n";
+
+    $csettings = $pdo->query("SELECT `option`, `value` FROM `company_settings` LIMIT 20")->fetchAll();
+    echo "company_settings=" . count($csettings) . "\n";
+    foreach ($csettings as $s) echo "  {$s['option']}={$s['value']}\n";
+
+    $currencies = $pdo->query("SELECT COUNT(*) AS c FROM `currencies`")->fetch();
+    echo "currencies=" . $currencies['c'] . "\n";
 } catch (Exception $e) {
     echo "DB_ERROR=" . $e->getMessage() . "\n";
 }
 
-// Ultimas lineas del log de Laravel para ver el error 500
 $dir = __DIR__ . '/../storage/logs';
-$logs = glob($dir . '/*.log');
-echo "\nLOGS_ENCONTRADOS=" . implode(', ', array_map('basename', $logs ?: [])) . "\n";
+echo "\nstorage_logs_writable=" . (is_writable($dir) ? 'SI' : 'NO') . "\n";
+$logs = glob($dir . '/*.log') ?: [];
+echo "logs=" . implode(', ', array_map('basename', $logs)) . "\n";
 if ($logs) {
-    usort($logs, fn ($a, $b) => filemtime($b) - filemtime($a));
+    usort($logs, fn($a, $b) => filemtime($b) - filemtime($a));
     $lines = file($logs[0]);
-    echo "\n--- ULTIMAS 80 LINEAS DE " . basename($logs[0]) . " ---\n";
+    echo "\n--- LOG " . basename($logs[0]) . " ---\n";
     echo implode('', array_slice($lines, -80));
-} else {
-    echo "DIR_LOGS_ESCRIBIBLE=" . (is_writable($dir) ? 'SI' : 'NO') . "\n";
 }
