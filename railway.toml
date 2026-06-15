@@ -2,7 +2,7 @@
 builder = "dockerfile"
 
 [deploy]
-preDeployCommand = "php artisan migrate --force && php artisan crater:mark-installed"
+preDeployCommand = "php artisan migrate --force && php artisan crater:setup-data && php artisan crater:mark-installed"
 startCommand = 'bash -c "php artisan serve --host=0.0.0.0 --port=$PORT"'
 healthcheckPath = "/ping"
 healthcheckTimeout = 300
