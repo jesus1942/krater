@@ -6,11 +6,11 @@
     >
       <div class="w-full">
         <a href="/admin">
-          <img
-            src="/assets/img/crater-logo.png"
-            class="block w-48 h-auto max-w-full mb-32 text-primary-400"
-            alt="Crater Logo"
-          />
+          <h1
+            class="block mb-32 text-4xl font-black tracking-wider text-primary-500"
+          >
+            ENA srl
+          </h1>
         </a>
         <router-view></router-view>
         <div

@@ -44,8 +44,9 @@ RUN mkdir -p storage/framework/cache/data \
         storage/framework/views \
         storage/logs \
         bootstrap/cache \
-        storage/app \
+        storage/app/public \
     && echo "1" > storage/app/database_created \
+    && ln -sfn /var/www/storage/app/public /var/www/public/storage \
     && chown -R www-data:www-data storage bootstrap/cache public \
     && chmod -R 775 storage bootstrap/cache
 

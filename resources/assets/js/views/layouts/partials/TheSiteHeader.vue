@@ -7,17 +7,21 @@
       class="float-none text-lg not-italic font-black tracking-wider text-white brand-main md:float-left font-base"
     >
       <img
+        v-if="companyLogo"
         id="logo-white"
-        src="/assets/img/logo-white.png"
-        alt="Crater Logo"
+        :src="companyLogo"
+        alt="ENA srl"
         class="hidden h-6 md:block"
       />
+      <span v-else class="hidden md:block">ENA srl</span>
       <img
+        v-if="companyLogo"
         id="logo-mobile"
-        src="/assets/img/crater-white-small.png"
-        alt="Crater Logo"
+        :src="companyLogo"
+        alt="ENA srl"
         class="block h-8 md:hidden"
       />
+      <span v-else class="block md:hidden">ENA</span>
     </a>
 
     <ul class="float-right h-8 m-0 list-none md:h-9">
@@ -118,6 +122,12 @@ export default {
   computed: {
     ...mapGetters('user', ['currentUser']),
     ...mapGetters(['isSidebarOpen']),
+    ...mapGetters('company', {
+      selectedCompany: 'getSelectedCompany',
+    }),
+    companyLogo() {
+      return this.selectedCompany ? this.selectedCompany.logo : null
+    },
     profilePicture() {
       if (
         this.currentUser &&
