@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project
 
-**Escuela Nueva Austral** — app PWA de gestion de facturas y gastos, construida sobre Crater (open-source). Autores: Jesus Olguin y Escuela Nueva Austral.
+**ENA srl** (Escuela Nueva Austral) — app PWA de gestion de facturas y gastos, construida sobre Crater (open-source). Autores: Jesus Olguin y Escuela Nueva Austral. El nombre visible de la app es "ENA srl" (config/app.php, titulo del blade, nombre de la empresa en la DB).
 
 El proyecto tiene dos partes:
 1. **Backend** — Laravel 8 + Vue 2 SPA (el app web original, en `resources/assets/js/`). PHP namespace: `Crater\`.
@@ -17,6 +17,25 @@ El proyecto tiene dos partes:
 - El README.md es el principal — debe estar siempre actualizado y en español
 - Push siempre a la rama `claude/web-app-migration-laf9yy` en el repo `jesus1942/krater`
 - El logo de la app es un placeholder; el definitivo lo pasa Jesus Olguin
+- A Jesus le gusta como funciona el modulo de configuraciones del panel web; usarlo como patron de referencia al construir pantallas de ajustes (ver seccion "Modulo de configuraciones" abajo)
+
+## Modulo de configuraciones (patron de referencia)
+
+A Jesus le gusta esta parte de la app comparada con otras que usa. Es un buen patron y conviene replicarlo (en la PWA y en features nuevas):
+
+**Frontend** (`resources/assets/js/views/settings/`):
+- `SettingsIndex.vue` es un layout con sidebar propio: lista de ~14 categorias (perfil, empresa, preferencias, personalizacion, notificaciones, impuestos, metodos de pago, campos custom, notas, categorias de gasto, mail, discos, backups, actualizaciones)
+- Cada categoria es un componente Vue independiente montado en `<router-view>` anidado bajo `/admin/settings/*` — una pantalla, una responsabilidad
+- En mobile el sidebar colapsa a un `sw-select`; entrar a `/admin/settings` redirige a la primera categoria
+- Cada pantalla guarda por separado (boton Guardar propio, no un submit global)
+
+**Backend** (patron key-value en tres niveles):
+- `settings` — configuracion global de la instalacion (`Setting::setSetting/getSetting`)
+- `company_settings` — configuracion por empresa (`CompanySetting::setSettings($array, $companyId)`)
+- `user_settings` — preferencias por usuario (idioma, etc.)
+- Endpoints REST granulares por dominio (`/api/v1/company/settings`, `/api/v1/me/settings`, etc.) que reciben `{settings: {clave: valor}}` — upsert por clave, sin migraciones al agregar opciones nuevas
+
+**Por que es recomendable:** agregar una opcion nueva no requiere migracion (key-value), cada pantalla es chica y autonoma, y el guardado granular evita perder cambios. Al portar configuraciones a la PWA de `mobile/`, seguir este mismo esquema: una vista por categoria + store Pinia que pegue a los endpoints de settings existentes.
 
 ## PWA (mobile/)
 
