@@ -1,4 +1,4 @@
-FROM node:20-bookworm-slim AS frontend
+FROM node:24-bookworm-slim AS frontend
 RUN apt-get update && apt-get install -y --no-install-recommends git ca-certificates \
     && git config --global url."https://github.com/".insteadOf ssh://git@github.com/ \
     && rm -rf /var/lib/apt/lists/*
