@@ -1,7 +1,10 @@
 FROM node:16-bullseye-slim AS frontend
+RUN apt-get update && apt-get install -y --no-install-recommends git ca-certificates \
+    && git config --global url."https://github.com/".insteadOf ssh://git@github.com/ \
+    && rm -rf /var/lib/apt/lists/*
 WORKDIR /app
 COPY package.json package-lock.json ./
-RUN npm ci --legacy-peer-deps
+RUN npm ci --legacy-peer-deps --no-audit --no-fund
 COPY resources ./resources
 COPY webpack.mix.js tailwind.config.js ./
 RUN mkdir -p public/assets/js public/assets/css \
