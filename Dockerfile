@@ -1,15 +1,3 @@
-FROM node:24-bookworm-slim AS frontend
-RUN apt-get update && apt-get install -y --no-install-recommends git ca-certificates \
-    && git config --global url."https://github.com/".insteadOf ssh://git@github.com/ \
-    && rm -rf /var/lib/apt/lists/*
-WORKDIR /app
-COPY package.json package-lock.json ./
-RUN npm ci --legacy-peer-deps --no-audit --no-fund
-COPY resources ./resources
-COPY webpack.mix.js tailwind.config.js ./
-RUN mkdir -p public/assets/js public/assets/css \
-    && NODE_OPTIONS=--openssl-legacy-provider npm run production
-
 FROM php:7.4-fpm
 
 ARG user=www
@@ -45,10 +33,6 @@ WORKDIR /var/www
 
 # Copiar codigo fuente
 COPY . .
-
-# Incorporar el frontend Vue compilado para que los cambios lleguen a produccion
-COPY --from=frontend /app/public/assets /var/www/public/assets
-COPY --from=frontend /app/public/mix-manifest.json /var/www/public/mix-manifest.json
 
 # Instalar dependencias PHP
 ENV COMPOSER_ALLOW_SUPERUSER=1
