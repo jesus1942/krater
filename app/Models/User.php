@@ -109,6 +109,11 @@ class User extends Authenticatable implements HasMedia
         return $this->hasMany(Estimate::class);
     }
 
+    public function students()
+    {
+        return $this->hasMany(Student::class, 'guardian_id');
+    }
+
     public function currency()
     {
         return $this->belongsTo(Currency::class);

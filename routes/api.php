@@ -54,6 +54,7 @@ use Crater\Http\Controllers\V1\Settings\MailConfigurationController;
 use Crater\Http\Controllers\V1\Settings\TaxTypesController;
 use Crater\Http\Controllers\V1\Settings\UpdateCompanySettingsController;
 use Crater\Http\Controllers\V1\Settings\UpdateUserSettingsController;
+use Crater\Http\Controllers\V1\Student\StudentsController;
 use Crater\Http\Controllers\V1\Update\CheckVersionController;
 use Crater\Http\Controllers\V1\Update\CopyFilesController;
 use Crater\Http\Controllers\V1\Update\DeleteFilesController;
@@ -212,6 +213,12 @@ Route::prefix('/v1')->group(function () {
         Route::get('customers/{customer}/stats', CustomerStatsController::class);
 
         Route::resource('customers', CustomersController::class);
+
+
+        // Students / school records
+        //----------------------------------
+
+        Route::apiResource('students', StudentsController::class);
 
 
         // Items

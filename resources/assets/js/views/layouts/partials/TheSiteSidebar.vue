@@ -79,6 +79,7 @@ import {
   ChartBarIcon,
   CogIcon,
   UsersIcon,
+  AcademicCapIcon,
 } from '@vue-hero-icons/outline'
 import { mapGetters, mapActions } from 'vuex'
 
@@ -94,6 +95,7 @@ export default {
     ChartBarIcon,
     CogIcon,
     UsersIcon,
+    AcademicCapIcon,
   },
 
   computed: {
@@ -111,6 +113,11 @@ export default {
             title: 'navigation.customers',
             icon: 'user-icon',
             route: '/admin/customers',
+          },
+          {
+            title: 'navigation.students',
+            icon: 'academic-cap-icon',
+            route: '/admin/students',
           },
           {
             title: 'navigation.items',

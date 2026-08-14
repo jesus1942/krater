@@ -2,6 +2,7 @@
   "navigation": {
     "dashboard": "Inicio",
     "customers": "Familias y responsables",
+    "students": "Alumnos",
     "items": "Conceptos y aranceles",
     "invoices": "Cuotas y comprobantes",
     "expenses": "Gastos",

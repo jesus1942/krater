@@ -28,6 +28,9 @@ import CustomerIndex from './views/customers/Index.vue'
 import CustomerCreate from './views/customers/Create.vue'
 import CustomerView from './views/customers/View.vue'
 
+// Students
+import StudentIndex from './views/students/Index.vue'
+
 // Items
 import ItemsIndex from './views/items/Index.vue'
 import ItemCreate from './views/items/Create.vue'
@@ -178,6 +181,13 @@ const routes = [
         path: 'customers/:id/view',
         name: 'customers.view',
         component: CustomerView,
+      },
+
+      // Students
+      {
+        path: 'students',
+        name: 'students.index',
+        component: StudentIndex,
       },
 
       // Items
