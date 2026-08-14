@@ -6,11 +6,11 @@
     >
       <div class="w-full">
         <a href="/admin">
-          <h1
-            class="block mb-32 text-4xl font-black tracking-wider text-primary-500"
-          >
-            ENA srl
-          </h1>
+          <img
+            src="/images/ena-logo.svg"
+            alt="Escuela Nueva Austral"
+            class="block w-full max-w-xs mb-20"
+          />
         </a>
         <router-view></router-view>
         <div
@@ -28,15 +28,15 @@
         <h1
           class="hidden mb-3 text-3xl font-bold leading-normal text-white xl:text-5xl xl:leading-tight md:none lg:block"
         >
-          {{ $t('layout_login.super_simple_invoicing') }} <br />
-          {{ $t('layout_login.for_freelancer') }} <br />
-          {{ $t('layout_login.small_businesses') }} <br />
+          Una gestión clara para <br />
+          toda la comunidad <br />
+          educativa <br />
         </h1>
         <p
           class="hidden text-sm not-italic font-normal leading-normal text-gray-100 xl:text-base xl:leading-6 md:none lg:block"
         >
-          {{ $t('layout_login.crater_help') }}<br />
-          {{ $t('layout_login.invoices_and_estimates') }}<br />
+          Administración, cobranzas y seguimiento institucional<br />
+          de Escuela Nueva Austral en un solo lugar.<br />
         </p>
       </div>
 
