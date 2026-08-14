@@ -318,9 +318,13 @@ class User extends Authenticatable implements HasMedia
     public function getAvatarAttribute()
     {
         $avatar = $this->getMedia('admin_avatar')->first();
+        $disk = FileDisk::whereSetAsDefault(true)->first();
+        $isSystem = $disk ? $disk->isSystem() : true;
 
         if ($avatar) {
-            return  asset($avatar->getUrl());
+            if (! $isSystem || file_exists($avatar->getPath())) {
+                return $avatar->getFullUrl();
+            }
         }
 
         return 0;
