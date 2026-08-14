@@ -20,29 +20,35 @@ class Company extends Model implements HasMedia
     public function getLogoPathAttribute()
     {
         $logo = $this->getMedia('logo')->first();
-
-        $isSystem = FileDisk::whereSetAsDefault(true)->first()->isSystem();
+        $disk = FileDisk::whereSetAsDefault(true)->first();
+        $isSystem = $disk ? $disk->isSystem() : true;
 
         if ($logo) {
-            if ($isSystem) {
-                return $logo->getPath();
-            } else {
+            if (! $isSystem) {
                 return $logo->getFullUrl();
+            }
+
+            if (file_exists($logo->getPath())) {
+                return $logo->getPath();
             }
         }
 
-        return null;
+        return public_path('images/ena-logo.svg');
     }
 
     public function getLogoAttribute()
     {
         $logo = $this->getMedia('logo')->first();
+        $disk = FileDisk::whereSetAsDefault(true)->first();
+        $isSystem = $disk ? $disk->isSystem() : true;
 
         if ($logo) {
-            return $logo->getFullUrl();
+            if (! $isSystem || file_exists($logo->getPath())) {
+                return $logo->getFullUrl();
+            }
         }
 
-        return null;
+        return asset('/images/ena-logo.svg');
     }
 
     public function user()
