@@ -1,16 +1,16 @@
 {
   "navigation": {
-    "dashboard": "Tablero",
-    "customers": "Clientes",
-    "items": "Artículos",
-    "invoices": "Facturas",
+    "dashboard": "Inicio",
+    "customers": "Familias y responsables",
+    "items": "Conceptos y aranceles",
+    "invoices": "Cuotas y comprobantes",
     "expenses": "Gastos",
-    "estimates": "Presupuesto",
-    "payments": "Pagos",
+    "estimates": "Planes y convenios",
+    "payments": "Cobros",
     "reports": "Informes",
-    "settings": "Configuraciones",
+    "settings": "Configuración",
     "logout": "Cerrar sesión",
-    "users": "Usuarios"
+    "users": "Equipo y accesos"
   },
   "general": {
     "add_company": "Añadir empresa",
@@ -1109,11 +1109,11 @@
   },
   "layout_login": {
     "copyright_crater": "ENA srl - Escuela Nueva Austral",
-    "super_simple_invoicing": "Facturación super simple",
-    "for_freelancer": "para autónomos y",
-    "small_businesses": "pequeñas empresas",
-    "crater_help": "Crater te ayuda a rastrear gastos, registrar pagos y generar hermosas",
-    "invoices_and_estimates": "facturas y presupuestos con capacidad para elegir múltiples plantillas."
+    "super_simple_invoicing": "Gestión educativa simple",
+    "for_freelancer": "para toda la comunidad",
+    "small_businesses": "de Escuela Nueva Austral",
+    "crater_help": "La Suite ENA centraliza familias, aranceles, cobros, gastos e",
+    "invoices_and_estimates": "informes para una administración institucional más clara."
   },
   "validation": {
     "invalid_phone": "Numero de telefono invalido",
