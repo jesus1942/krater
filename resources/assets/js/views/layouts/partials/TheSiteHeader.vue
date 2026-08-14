@@ -10,7 +10,8 @@
         v-if="companyLogo"
         id="logo-white"
         :src="companyLogo"
-        alt="ENA srl"
+        alt="Escuela Nueva Austral"
+        @error="useFallback($event, '/images/ena-logo.svg')"
         class="hidden h-6 md:block"
       />
       <span v-else class="hidden md:block">ENA srl</span>
@@ -18,7 +19,8 @@
         v-if="companyLogo"
         id="logo-mobile"
         :src="companyLogo"
-        alt="ENA srl"
+        alt="Escuela Nueva Austral"
+        @error="useFallback($event, '/images/ena-logo.svg')"
         class="block h-8 md:hidden"
       />
       <span v-else class="block md:hidden">ENA</span>
@@ -79,6 +81,7 @@
             <img
               :src="profilePicture"
               alt="Avatar"
+              @error="useFallback($event, '/images/default-avatar.jpg')"
               class="w-8 h-8 rounded-sm md:h-9 md:w-9"
             />
           </a>
@@ -126,7 +129,9 @@ export default {
       selectedCompany: 'getSelectedCompany',
     }),
     companyLogo() {
-      return this.selectedCompany ? this.selectedCompany.logo : null
+      return this.selectedCompany && this.selectedCompany.logo
+        ? this.selectedCompany.logo
+        : '/images/ena-logo.svg'
     },
     profilePicture() {
       if (
@@ -144,6 +149,10 @@ export default {
     this.fetchCurrentUser()
   },
   methods: {
+    useFallback(event, path) {
+      event.target.onerror = null
+      event.target.src = path
+    },
     ...mapActions('user', ['fetchCurrentUser']),
     ...mapActions('auth', ['logout']),
     ...mapActions('modal', ['openModal']),
