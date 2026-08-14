@@ -1,4 +1,4 @@
-FROM node:16-bullseye-slim AS frontend
+FROM node:20-bookworm-slim AS frontend
 RUN apt-get update && apt-get install -y --no-install-recommends git ca-certificates \
     && git config --global url."https://github.com/".insteadOf ssh://git@github.com/ \
     && rm -rf /var/lib/apt/lists/*
@@ -8,7 +8,7 @@ RUN npm ci --legacy-peer-deps --no-audit --no-fund
 COPY resources ./resources
 COPY webpack.mix.js tailwind.config.js ./
 RUN mkdir -p public/assets/js public/assets/css \
-    && npm run production
+    && NODE_OPTIONS=--openssl-legacy-provider npm run production
 
 FROM php:7.4-fpm
 
