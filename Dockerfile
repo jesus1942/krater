@@ -16,6 +16,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     mariadb-client \
     nginx \
     gettext-base \
+    gzip \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # Extensiones PHP
@@ -33,6 +34,11 @@ WORKDIR /var/www
 
 # Copiar codigo fuente
 COPY . .
+
+# Restaurar el frontend Vue precompilado y verificado
+RUN cat build/frontend/app.js.gz.part.* | gzip -dc > public/assets/js/app.js \
+    && cp build/frontend/crater.css public/assets/css/crater.css \
+    && cp build/frontend/mix-manifest.json public/mix-manifest.json
 
 # Instalar dependencias PHP
 ENV COMPOSER_ALLOW_SUPERUSER=1
