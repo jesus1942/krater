@@ -4,33 +4,31 @@
   >
     <a
       href="/admin/dashboard"
-      class="ena-header-brand float-none text-lg not-italic font-black tracking-wider text-white brand-main md:float-left font-base"
+      class="ena-header-brand float-none not-italic brand-main md:float-left font-base"
+      :class="{ 'ena-header-brand--institution': !selectedLevel }"
     >
       <img
-        v-if="companyLogo"
-        id="logo-white"
-        :src="companyLogo"
-        alt="Escuela Nueva Austral"
-        @error="useFallback($event, '/images/ena-logo.svg')"
-        class="ena-header-lockup hidden md:block"
-      />
-      <span v-else class="hidden md:block">ENA srl</span>
-      <img
-        v-if="companyLogo"
-        id="logo-mobile"
+        id="ena-header-owl"
         src="/images/ena-owl.svg"
         alt="Escuela Nueva Austral"
-        @error="useFallback($event, '/images/ena-logo.svg')"
-        class="ena-header-owl block md:hidden"
+        class="ena-header-owl"
       />
-      <span v-else class="block md:hidden">ENA</span>
+      <span v-if="selectedLevel" class="ena-header-brand__copy">
+        <strong class="ena-header-brand__institution">Escuela Nueva Austral</strong>
+        <span class="ena-header-brand__level">
+          {{ selectedLevel.name }}
+          <b v-if="selectedLevel.registration_number">
+            · N.º {{ selectedLevel.registration_number }}
+          </b>
+        </span>
+      </span>
     </a>
 
     <div class="flex items-center ml-auto mr-2 md:mr-4">
       <select
         v-model="selectedLevelId"
         aria-label="Nivel institucional activo"
-        class="ena-level-select w-32 h-9 px-2 text-xs font-semibold md:w-56 md:text-sm"
+        class="ena-level-select w-24 h-9 px-2 text-xs font-semibold md:w-56 md:text-sm"
         @change="changeLevel"
       >
         <option value="">Toda la institución</option>
@@ -145,13 +143,10 @@ export default {
   computed: {
     ...mapGetters('user', ['currentUser']),
     ...mapGetters(['isSidebarOpen']),
-    ...mapGetters('company', {
-      selectedCompany: 'getSelectedCompany',
-    }),
-    companyLogo() {
-      return this.selectedCompany && this.selectedCompany.logo
-        ? this.selectedCompany.logo
-        : '/images/ena-logo.svg'
+    selectedLevel() {
+      return this.schoolLevels.find(
+        (level) => String(level.id) === String(this.selectedLevelId)
+      ) || null
     },
     profilePicture() {
       if (
@@ -210,24 +205,69 @@ export default {
 .ena-header-brand {
   display: flex;
   align-items: center;
+  gap: 8px;
   min-width: 54px;
-  padding: 4px 14px 4px 9px;
+  max-width: 180px;
+  height: 48px;
+  padding: 3px 12px 3px 8px;
   background: #f4f0e7;
   border-left: 4px solid #a5121c;
-  border-radius: 0 999px 999px 0;
+  border-radius: 0 12px 12px 0;
 }
 
-.ena-header-lockup {
-  width: 215px;
-  height: 42px;
-  object-fit: contain;
-  object-position: left center;
+.ena-header-brand--institution {
+  width: 46px;
+  min-width: 46px;
+  padding-right: 7px;
 }
 
 .ena-header-owl {
-  width: 25px;
+  width: 23px;
   height: 42px;
+  flex: 0 0 auto;
   object-fit: contain;
+}
+
+.ena-header-brand__copy {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  color: #102340;
+  line-height: 1.05;
+}
+
+.ena-header-brand__institution {
+  overflow: hidden;
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: 0.045em;
+  text-overflow: ellipsis;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.ena-header-brand__level {
+  display: block;
+  margin-top: 3px;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.015em;
+}
+
+@media (min-width: 768px) {
+  .ena-header-brand {
+    max-width: 310px;
+    gap: 11px;
+    padding-right: 18px;
+  }
+
+  .ena-header-brand__institution {
+    font-size: 12px;
+  }
+
+  .ena-header-brand__level {
+    font-size: 11px;
+  }
 }
 
 .ena-level-select {

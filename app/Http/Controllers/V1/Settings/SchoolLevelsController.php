@@ -26,6 +26,7 @@ class SchoolLevelsController extends Controller
             'legal_name' => ['nullable', 'string', 'max:200'],
             'cue' => ['nullable', 'string', 'max:50'],
             'jurisdiction_code' => ['nullable', 'string', 'max:100'],
+            'registration_number' => ['nullable', 'string', 'max:100'],
             'resolution_number' => ['nullable', 'string', 'max:100'],
             'tax_id' => ['nullable', 'string', 'max:30'],
             'billing_name' => ['nullable', 'string', 'max:200'],

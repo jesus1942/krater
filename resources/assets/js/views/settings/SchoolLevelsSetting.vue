@@ -20,7 +20,8 @@
               <field label="Nombre visible"><sw-input v-model="level.name" required /></field>
               <field label="Nombre legal"><sw-input v-model="level.legal_name" /></field>
               <field label="CUE"><sw-input v-model="level.cue" /></field>
-              <field label="Código jurisdiccional / registro"><sw-input v-model="level.jurisdiction_code" /></field>
+              <field label="Código jurisdiccional"><sw-input v-model="level.jurisdiction_code" /></field>
+              <field label="Número oficial del nivel"><sw-input v-model="level.registration_number" placeholder="Ej.: 1831" /></field>
               <field label="Resolución de autorización"><sw-input v-model="level.resolution_number" /></field>
               <field label="CUIT"><sw-input v-model="level.tax_id" /></field>
               <field label="Razón social para facturación"><sw-input v-model="level.billing_name" /></field>
