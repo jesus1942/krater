@@ -101,6 +101,11 @@ window.axios.interceptors.request.use(
       config.headers.common['company'] = companyId
     }
 
+    const schoolLevelId = Ls.get('selectedSchoolLevel')
+    if (schoolLevelId) {
+      config.headers.common['school-level'] = schoolLevelId
+    }
+
     return config
   },
   function (error) {

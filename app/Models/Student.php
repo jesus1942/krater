@@ -2,15 +2,18 @@
 
 namespace Crater\Models;
 
+use Crater\Traits\BelongsToSchoolLevel;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class Student extends Model
 {
     use HasFactory;
+    use BelongsToSchoolLevel;
 
     protected $fillable = [
         'company_id',
+        'school_level_id',
         'guardian_id',
         'first_name',
         'last_name',

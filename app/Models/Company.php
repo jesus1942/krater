@@ -61,6 +61,11 @@ class Company extends Model implements HasMedia
         return $this->hasMany(CompanySetting::class);
     }
 
+    public function schoolLevels()
+    {
+        return $this->hasMany(SchoolLevel::class);
+    }
+
     public function address()
     {
         return $this->hasOne(Address::class);

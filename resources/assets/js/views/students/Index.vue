@@ -85,9 +85,9 @@
           <label class="text-sm">Apellido *<sw-input v-model="form.last_name" class="mt-1" required /></label>
           <label class="text-sm">DNI<sw-input v-model="form.dni" class="mt-1" /></label>
           <label class="text-sm">Fecha de nacimiento<sw-input v-model="form.birth_date" type="date" class="mt-1" /></label>
-          <label class="text-sm">Nivel
-            <select v-model="form.level" class="w-full h-10 px-3 mt-1 bg-white border border-gray-300 rounded">
-              <option value="">Seleccionar</option><option v-for="level in levels" :key="level" :value="level">{{ level }}</option>
+          <label class="text-sm">Nivel institucional *
+            <select v-model="form.school_level_id" required class="w-full h-10 px-3 mt-1 bg-white border border-gray-300 rounded" @change="syncLevelName">
+              <option value="">Seleccionar</option><option v-for="level in schoolLevels" :key="level.id" :value="level.id">{{ level.name }}</option>
             </select>
           </label>
           <label class="text-sm">Curso/Año<sw-input v-model="form.grade" class="mt-1" placeholder="Ej.: 4.º" /></label>
@@ -118,15 +118,16 @@
 <script>
 import { PlusSmIcon } from '@vue-hero-icons/solid'
 
-const emptyForm = () => ({ id: null, first_name: '', last_name: '', dni: '', birth_date: '', level: '', grade: '', division: '', school_year: new Date().getFullYear(), status: 'active', guardian_id: null, notes: '' })
+const emptyForm = () => ({ id: null, school_level_id: window.Ls.get('selectedSchoolLevel') || '', first_name: '', last_name: '', dni: '', birth_date: '', level: '', grade: '', division: '', school_year: new Date().getFullYear(), status: 'active', guardian_id: null, notes: '' })
 
 export default {
   components: { PlusSmIcon },
   data() {
-    return { students: [], guardians: [], summary: { total: 0, active: 0, pending: 0 }, filters: { search: '', level: '', status: '', school_year: new Date().getFullYear() }, levels: ['Inicial', 'Primario', 'Secundario', 'Superior'], form: emptyForm(), showForm: false, loading: false, saving: false, error: '', timer: null }
+    return { students: [], guardians: [], schoolLevels: [], summary: { total: 0, active: 0, pending: 0 }, filters: { search: '', level: '', status: '', school_year: new Date().getFullYear() }, levels: ['Primario', 'Secundario', 'Terciario'], form: emptyForm(), showForm: false, loading: false, saving: false, error: '', timer: null }
   },
-  created() { this.fetchStudents(); this.fetchGuardians() },
+  created() { this.fetchSchoolLevels(); this.fetchStudents(); this.fetchGuardians() },
   methods: {
+    async fetchSchoolLevels() { const response = await window.axios.get('/api/v1/school-levels'); this.schoolLevels = response.data.levels.filter((level) => level.enabled) },
     async fetchStudents() { this.loading = true; try { const response = await window.axios.get('/api/v1/students', { params: this.filters }); this.students = response.data.students.data || response.data.students; this.summary = response.data.summary } finally { this.loading = false } },
     async fetchGuardians() { const response = await window.axios.get('/api/v1/customers', { params: { limit: 'all' } }); this.guardians = response.data.customers.data || response.data.customers },
     debouncedFetch() { clearTimeout(this.timer); this.timer = setTimeout(this.fetchStudents, 350) },
@@ -134,6 +135,7 @@ export default {
     openEdit(student) { this.form = { ...emptyForm(), ...student, guardian_id: student.guardian_id || null }; this.error = ''; this.showForm = true },
     closeForm() { this.showForm = false },
     async save() { this.saving = true; this.error = ''; try { if (this.form.id) await window.axios.put(`/api/v1/students/${this.form.id}`, this.form); else await window.axios.post('/api/v1/students', this.form); this.closeForm(); await this.fetchStudents() } catch (error) { this.error = (error.response && error.response.data && error.response.data.message) || 'No se pudo guardar el alumno.' } finally { this.saving = false } },
+    syncLevelName() { const level = this.schoolLevels.find((item) => String(item.id) === String(this.form.school_level_id)); this.form.level = level ? { primary: 'Primario', secondary: 'Secundario', tertiary: 'Terciario' }[level.code] : '' },
     async remove(student) { if (!window.confirm(`¿Eliminar el legajo de ${student.full_name}?`)) return; await window.axios.delete(`/api/v1/students/${student.id}`); await this.fetchStudents() },
     courseLabel(student) { return [student.level, student.grade, student.division].filter(Boolean).join(' · ') || 'Sin asignar' },
     statusLabel(status) { return { active: 'Activo', pending: 'Pendiente', withdrawn: 'Retirado', graduated: 'Egresado' }[status] || status },

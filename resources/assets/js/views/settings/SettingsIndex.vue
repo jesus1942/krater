@@ -58,6 +58,7 @@
 import {
   UserIcon,
   OfficeBuildingIcon,
+  AcademicCapIcon,
   BellIcon,
   CheckCircleIcon,
   ClipboardListIcon,
@@ -80,6 +81,7 @@ export default {
   components: {
     UserIcon,
     OfficeBuildingIcon,
+    AcademicCapIcon,
     PencilAltIcon,
     CogIcon,
     CheckCircleIcon,
@@ -112,6 +114,11 @@ export default {
           link: '/admin/settings/company-info',
           title: 'settings.menu_title.company_information',
           icon: 'office-building-icon',
+        },
+        {
+          link: '/admin/settings/school-levels',
+          title: 'settings.menu_title.school_levels',
+          icon: 'academic-cap-icon',
         },
         {
           link: '/admin/settings/preferences',

@@ -114,6 +114,11 @@ class User extends Authenticatable implements HasMedia
         return $this->hasMany(Student::class, 'guardian_id');
     }
 
+    public function schoolLevels()
+    {
+        return $this->belongsToMany(SchoolLevel::class)->withPivot('role')->withTimestamps();
+    }
+
     public function currency()
     {
         return $this->belongsTo(Currency::class);

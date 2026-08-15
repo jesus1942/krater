@@ -49,7 +49,12 @@ class StudentsController extends Controller
 
     public function store(StudentRequest $request)
     {
-        $student = Student::create(array_merge($request->validated(), [
+        $data = $request->validated();
+        if ($request->header('school-level')) {
+            $data['school_level_id'] = $request->header('school-level');
+        }
+
+        $student = Student::create(array_merge($data, [
             'company_id' => $request->header('company'),
         ]));
 
@@ -66,7 +71,11 @@ class StudentsController extends Controller
     public function update(StudentRequest $request, Student $student)
     {
         $this->ensureCompany($request, $student);
-        $student->update($request->validated());
+        $data = $request->validated();
+        if ($request->header('school-level')) {
+            $data['school_level_id'] = $request->header('school-level');
+        }
+        $student->update($data);
 
         return response()->json(['student' => $student->load('guardian'), 'success' => true]);
     }

@@ -51,6 +51,7 @@ use Crater\Http\Controllers\V1\Settings\DiskController;
 use Crater\Http\Controllers\V1\Settings\GetCompanySettingsController;
 use Crater\Http\Controllers\V1\Settings\GetUserSettingsController;
 use Crater\Http\Controllers\V1\Settings\MailConfigurationController;
+use Crater\Http\Controllers\V1\Settings\SchoolLevelsController;
 use Crater\Http\Controllers\V1\Settings\TaxTypesController;
 use Crater\Http\Controllers\V1\Settings\UpdateCompanySettingsController;
 use Crater\Http\Controllers\V1\Settings\UpdateUserSettingsController;
@@ -328,6 +329,10 @@ Route::prefix('/v1')->group(function () {
         Route::get('/company/settings', GetCompanySettingsController::class);
 
         Route::post('/company/settings', UpdateCompanySettingsController::class);
+
+        Route::get('/school-levels', [SchoolLevelsController::class, 'index']);
+
+        Route::put('/school-levels/{schoolLevel}', [SchoolLevelsController::class, 'update']);
 
 
         // Mails

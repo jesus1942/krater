@@ -18,9 +18,13 @@ class CustomersController extends Controller
     public function index(Request $request)
     {
         $limit = $request->has('limit') ? $request->limit : 10;
+        $levelId = $request->header('school-level');
 
         $customers = User::with('creator')
             ->customer()
+            ->when($levelId, function ($query) {
+                $query->whereHas('students');
+            })
             ->applyFilters($request->only([
                 'search',
                 'contact_name',
@@ -36,12 +40,24 @@ class CustomersController extends Controller
                 DB::raw('sum(invoices.due_amount) as due_amount')
             )
             ->groupBy('users.id')
-            ->leftJoin('invoices', 'users.id', '=', 'invoices.user_id')
+            ->leftJoin('invoices', function ($join) use ($levelId) {
+                $join->on('users.id', '=', 'invoices.user_id');
+                if ($levelId) {
+                    $join->where('invoices.school_level_id', '=', $levelId);
+                }
+            })
             ->paginateData($limit);
+
+        $customerCount = User::customer()
+            ->whereCompany($request->header('company'))
+            ->when($levelId, function ($query) {
+                $query->whereHas('students');
+            })
+            ->count();
 
         return response()->json([
             'customers' => $customers,
-            'customerTotalCount' => User::whereRole('customer')->count(),
+            'customerTotalCount' => $customerCount,
         ]);
     }
 

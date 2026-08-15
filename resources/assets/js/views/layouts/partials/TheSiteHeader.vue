@@ -26,6 +26,20 @@
       <span v-else class="block md:hidden">ENA</span>
     </a>
 
+    <div class="flex items-center ml-auto mr-2 md:mr-4">
+      <select
+        v-model="selectedLevelId"
+        aria-label="Nivel institucional activo"
+        class="w-32 h-9 px-2 text-xs font-semibold text-gray-800 bg-white border-0 rounded md:w-56 md:text-sm"
+        @change="changeLevel"
+      >
+        <option value="">Toda la institución</option>
+        <option v-for="level in schoolLevels" :key="level.id" :value="String(level.id)">
+          {{ level.name }}
+        </option>
+      </select>
+    </div>
+
     <ul class="float-right h-8 m-0 list-none md:h-9">
       <global-search class="hidden float-left mr-2 md:block" />
 
@@ -122,6 +136,12 @@ export default {
     CogIcon,
     LogoutIcon,
   },
+  data() {
+    return {
+      schoolLevels: [],
+      selectedLevelId: window.Ls.get('selectedSchoolLevel') || '',
+    }
+  },
   computed: {
     ...mapGetters('user', ['currentUser']),
     ...mapGetters(['isSidebarOpen']),
@@ -147,8 +167,28 @@ export default {
   },
   created() {
     this.fetchCurrentUser()
+    this.fetchSchoolLevels()
   },
   methods: {
+    async fetchSchoolLevels() {
+      const response = await window.axios.get('/api/v1/school-levels')
+      this.schoolLevels = response.data.levels.filter((level) => level.enabled)
+      if (
+        this.selectedLevelId &&
+        !this.schoolLevels.some((level) => String(level.id) === String(this.selectedLevelId))
+      ) {
+        window.Ls.remove('selectedSchoolLevel')
+        this.selectedLevelId = ''
+      }
+    },
+    changeLevel() {
+      if (this.selectedLevelId) {
+        window.Ls.set('selectedSchoolLevel', this.selectedLevelId)
+      } else {
+        window.Ls.remove('selectedSchoolLevel')
+      }
+      window.location.reload()
+    },
     useFallback(event, path) {
       event.target.onerror = null
       event.target.src = path

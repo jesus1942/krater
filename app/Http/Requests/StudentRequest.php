@@ -35,7 +35,13 @@ class StudentRequest extends FormRequest
                     return $query->where('company_id', $companyId)->where('role', 'customer');
                 }),
             ],
-            'level' => ['nullable', Rule::in(['Inicial', 'Primario', 'Secundario', 'Superior'])],
+            'school_level_id' => [
+                'required',
+                Rule::exists('school_levels', 'id')->where(function ($query) use ($companyId) {
+                    return $query->where('company_id', $companyId)->where('enabled', true);
+                }),
+            ],
+            'level' => ['nullable', Rule::in(['Primario', 'Secundario', 'Terciario'])],
             'grade' => ['nullable', 'string', 'max:50'],
             'division' => ['nullable', 'string', 'max:20'],
             'school_year' => ['required', 'integer', 'min:2022', 'max:2100'],

@@ -68,6 +68,7 @@ import ReportLayout from './views/reports/layout/Index.vue'
 // Settings
 import SettingsLayout from './views/settings/SettingsIndex.vue'
 import CompanyInfo from './views/settings/CompanyInfoSetting.vue'
+import SchoolLevelsSetting from './views/settings/SchoolLevelsSetting.vue'
 import Customization from './views/settings/CustomizationSetting.vue'
 import Notifications from './views/settings/NotificationsSetting.vue'
 import Preferences from './views/settings/PreferencesSetting.vue'
@@ -342,6 +343,11 @@ const routes = [
             path: 'company-info',
             name: 'company.info',
             component: CompanyInfo,
+          },
+          {
+            path: 'school-levels',
+            name: 'school.levels',
+            component: SchoolLevelsSetting,
           },
           {
             path: 'customization',
