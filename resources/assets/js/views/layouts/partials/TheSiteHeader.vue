@@ -95,7 +95,7 @@
             <img
               :src="profilePicture"
               alt="Avatar"
-        @error="useFallback($event, '/images/ena-owl-avatar.png')"
+              @error="useFallback($event, '/images/ena-owl-avatar.png')"
               class="w-8 h-8 rounded-sm md:h-9 md:w-9"
             />
           </a>
@@ -202,27 +202,19 @@ export default {
 </script>
 <style lang="scss">
 .ena-site-header {
-  background:
-    radial-gradient(circle at 82% -40%, rgba(165, 18, 28, 0.68), transparent 34%),
-    linear-gradient(105deg, #07101d 0%, #102340 64%, #263c57 100%);
+  background: #102340;
   border-bottom: 3px solid #a5121c;
-  box-shadow: 0 12px 32px rgba(7, 16, 29, 0.2);
+  box-shadow: 0 8px 24px rgba(7, 16, 29, 0.18);
 }
 
 .ena-header-brand {
-  position: relative;
   display: flex;
   align-items: center;
   min-width: 54px;
-}
-
-.ena-header-brand::before {
-  content: '';
-  position: absolute;
-  inset: -7px -28px -7px -10px;
-  z-index: -1;
-  background: linear-gradient(90deg, #f4f0e7 0%, rgba(244, 240, 231, 0.96) 76%, transparent 100%);
-  clip-path: polygon(0 0, 88% 0, 100% 50%, 88% 100%, 0 100%);
+  padding: 4px 14px 4px 9px;
+  background: #f4f0e7;
+  border-left: 4px solid #a5121c;
+  border-radius: 0 999px 999px 0;
 }
 
 .ena-header-lockup {
@@ -230,7 +222,6 @@ export default {
   height: 42px;
   object-fit: contain;
   object-position: left center;
-  filter: drop-shadow(0 5px 10px rgba(16, 35, 64, 0.12));
 }
 
 .ena-header-owl {
