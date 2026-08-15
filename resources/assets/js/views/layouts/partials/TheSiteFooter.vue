@@ -16,7 +16,10 @@
 
 <style lang="scss" scoped>
 .ena-footer {
-  background: #f4f0e7;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 88% 0%, rgba(165, 18, 28, 0.13), transparent 28%),
+    linear-gradient(90deg, #fff 0%, #f4f0e7 62%, #e7ded0 100%);
   border-top: 4px solid #102340;
   box-shadow: inset 0 -6px 0 #a5121c;
   color: #102340;
@@ -29,10 +32,12 @@
   text-transform: uppercase;
   letter-spacing: 0.055em;
   line-height: 1;
+  transition: transform 0.25s ease, color 0.25s ease;
 }
 
 .ena-footer__brand:hover {
   color: #a5121c;
+  transform: translateX(-4px);
 }
 
 .ena-footer__owl {

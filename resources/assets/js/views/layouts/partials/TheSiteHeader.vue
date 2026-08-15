@@ -1,10 +1,10 @@
 <template>
   <header
-    class="fixed top-0 left-0 z-40 flex items-center justify-between w-full px-4 py-3 md:h-16 md:px-8 bg-gradient-to-r from-primary-500 to-primary-400"
+    class="ena-site-header fixed top-0 left-0 z-40 flex items-center justify-between w-full px-4 py-3 md:h-16 md:px-8"
   >
     <a
       href="/admin/dashboard"
-      class="float-none text-lg not-italic font-black tracking-wider text-white brand-main md:float-left font-base"
+      class="ena-header-brand float-none text-lg not-italic font-black tracking-wider text-white brand-main md:float-left font-base"
     >
       <img
         v-if="companyLogo"
@@ -12,16 +12,16 @@
         :src="companyLogo"
         alt="Escuela Nueva Austral"
         @error="useFallback($event, '/images/ena-logo.svg')"
-        class="hidden h-10 px-2 py-1 bg-ena-paper border-2 border-white md:block"
+        class="ena-header-lockup hidden md:block"
       />
       <span v-else class="hidden md:block">ENA srl</span>
       <img
         v-if="companyLogo"
         id="logo-mobile"
-        :src="companyLogo"
+        src="/images/ena-owl.svg"
         alt="Escuela Nueva Austral"
         @error="useFallback($event, '/images/ena-logo.svg')"
-        class="block h-9 px-1 py-1 bg-ena-paper border-2 border-white md:hidden"
+        class="ena-header-owl block md:hidden"
       />
       <span v-else class="block md:hidden">ENA</span>
     </a>
@@ -30,7 +30,7 @@
       <select
         v-model="selectedLevelId"
         aria-label="Nivel institucional activo"
-        class="w-32 h-9 px-2 text-xs font-semibold text-gray-800 bg-white border-0 rounded md:w-56 md:text-sm"
+        class="ena-level-select w-32 h-9 px-2 text-xs font-semibold md:w-56 md:text-sm"
         @change="changeLevel"
       >
         <option value="">Toda la institución</option>
@@ -201,6 +201,60 @@ export default {
 }
 </script>
 <style lang="scss">
+.ena-site-header {
+  background:
+    radial-gradient(circle at 82% -40%, rgba(165, 18, 28, 0.68), transparent 34%),
+    linear-gradient(105deg, #07101d 0%, #102340 64%, #263c57 100%);
+  border-bottom: 3px solid #a5121c;
+  box-shadow: 0 12px 32px rgba(7, 16, 29, 0.2);
+}
+
+.ena-header-brand {
+  position: relative;
+  display: flex;
+  align-items: center;
+  min-width: 54px;
+}
+
+.ena-header-brand::before {
+  content: '';
+  position: absolute;
+  inset: -7px -28px -7px -10px;
+  z-index: -1;
+  background: linear-gradient(90deg, #f4f0e7 0%, rgba(244, 240, 231, 0.96) 76%, transparent 100%);
+  clip-path: polygon(0 0, 88% 0, 100% 50%, 88% 100%, 0 100%);
+}
+
+.ena-header-lockup {
+  width: 215px;
+  height: 42px;
+  object-fit: contain;
+  object-position: left center;
+  filter: drop-shadow(0 5px 10px rgba(16, 35, 64, 0.12));
+}
+
+.ena-header-owl {
+  width: 25px;
+  height: 42px;
+  object-fit: contain;
+}
+
+.ena-level-select {
+  color: #102340;
+  background: rgba(244, 240, 231, 0.96);
+  border: 1px solid rgba(255, 255, 255, 0.65);
+  border-radius: 999px;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.14);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.ena-level-select:hover,
+.ena-level-select:focus {
+  transform: translateY(-1px);
+  box-shadow: 0 9px 22px rgba(0, 0, 0, 0.2);
+  outline: none;
+}
+
 .hamburger {
   transition-property: opacity, filter;
   transition-duration: 0.15s;
