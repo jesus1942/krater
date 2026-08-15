@@ -93,6 +93,17 @@ Route::get('/on-boarding', function () {
 })->name('install')->middleware('redirect-if-installed');
 
 
+// Landing page publica de Escuela Nueva Austral
+// -------------------------------------------------
+// Se declara antes del catch-all del SPA para quedarse con la raiz del sitio.
+// Es publica: se ve con la sesion iniciada o sin ella, y el boton de la
+// cabecera lleva a /login, que sigue montando la aplicacion Vue.
+
+Route::get('/', function () {
+    return view('landing');
+})->name('landing');
+
+
 // Move other http requests to the Vue App
 // -------------------------------------------------
 

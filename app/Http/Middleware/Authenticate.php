@@ -15,7 +15,10 @@ class Authenticate extends Middleware
     protected function redirectTo($request)
     {
         if (! $request->expectsJson()) {
-            return route('login');
+            // Se apunta a /login de forma explicita: la ruta con nombre "login"
+            // es el catch-all del SPA y su parametro opcional resuelve a "/",
+            // que ahora sirve la landing publica.
+            return url('/login');
         }
     }
 }
