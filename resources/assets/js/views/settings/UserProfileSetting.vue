@@ -294,7 +294,7 @@ export default {
       if (response.data.user.avatar) {
         this.previewAvatar = response.data.user.avatar
       } else {
-        this.previewAvatar = '/images/default-avatar.jpg'
+        this.previewAvatar = '/images/ena-owl-avatar.png'
       }
 
       let res = await this.fetchUserSettings(['language'])

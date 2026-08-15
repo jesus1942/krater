@@ -12,7 +12,7 @@
         :src="companyLogo"
         alt="Escuela Nueva Austral"
         @error="useFallback($event, '/images/ena-logo.svg')"
-        class="hidden h-6 md:block"
+        class="hidden h-10 px-2 py-1 bg-ena-paper border-2 border-white md:block"
       />
       <span v-else class="hidden md:block">ENA srl</span>
       <img
@@ -21,7 +21,7 @@
         :src="companyLogo"
         alt="Escuela Nueva Austral"
         @error="useFallback($event, '/images/ena-logo.svg')"
-        class="block h-8 md:hidden"
+        class="block h-9 px-1 py-1 bg-ena-paper border-2 border-white md:hidden"
       />
       <span v-else class="block md:hidden">ENA</span>
     </a>
@@ -95,7 +95,7 @@
             <img
               :src="profilePicture"
               alt="Avatar"
-              @error="useFallback($event, '/images/default-avatar.jpg')"
+        @error="useFallback($event, '/images/ena-owl-avatar.png')"
               class="w-8 h-8 rounded-sm md:h-9 md:w-9"
             />
           </a>
@@ -161,7 +161,7 @@ export default {
       ) {
         return this.currentUser.avatar
       } else {
-        return '/images/default-avatar.jpg'
+        return '/images/ena-owl-avatar.png'
       }
     },
   },

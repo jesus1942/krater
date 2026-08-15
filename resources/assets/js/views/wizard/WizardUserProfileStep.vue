@@ -118,7 +118,7 @@ export default {
         confirm_password: null,
       },
       isLoading: false,
-      previewAvatar: '/images/default-avatar.jpg',
+      previewAvatar: '/images/ena-owl-avatar.png',
       fileObject: null,
       cropperOutputMime: '',
     }
