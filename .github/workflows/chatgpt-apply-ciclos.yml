@@ -2,8 +2,7 @@ name: Aplicar y validar parche academico
 
 on:
   push:
-    branches:
-      - chatgpt/ciclos-estructura-20260816
+    branches: [chatgpt/ciclos-estructura-20260816]
     paths:
       - '.github/workflows/chatgpt-apply-ciclos.yml'
       - '.chatgpt/claude_ciclos.patch.gz.b64'
@@ -55,31 +54,28 @@ jobs:
           cat > CORRECCIONES_CHATGPT_CICLOS.md <<'EOF'
           # Correcciones sobre `pantallaciclosyestructura.patch`
 
-          ## Contexto
-          Se aplicaron los dos commits entregados por Claude sobre la rama de produccion `claude/web-app-migration-laf9yy`, primero en una rama aislada.
+          Se aplicaron los dos commits de Claude y se endurecieron las validaciones multi-tenant antes de produccion.
 
-          ## Correcciones de seguridad
-          El parche original usaba reglas `exists:*` sin filtro de tenant. Esas reglas consultan la tabla directamente y no heredan los global scopes de Eloquent.
+          ## Correcciones
+          - `academic_year_id` solo acepta ciclos de la empresa y nivel actuales.
+          - `grade_level_id` solo acepta cursos de la empresa y nivel actuales.
+          - `head_teacher_id` solo acepta usuarios de la empresa actual.
+          - La unicidad de `Division.name` incluye empresa y nivel, ademas de ciclo y curso.
+          - `promotes_to_id` solo acepta cursos de la misma empresa y nivel.
+          - La unicidad de `GradeLevel.position` usa `TenantContext`, no el header crudo.
+          - Se conserva el filtro por empresa agregado por Claude en `scopedDivisionIds()`.
 
-          Se endurecieron:
-          - `DivisionRequest.academic_year_id`: debe pertenecer a la empresa y nivel actuales.
-          - `DivisionRequest.grade_level_id`: debe pertenecer a la empresa y nivel actuales.
-          - `DivisionRequest.head_teacher_id`: debe pertenecer a la empresa actual.
-          - Unicidad de `Division.name`: ahora incluye empresa y nivel, ademas de ciclo y curso.
-          - `GradeLevelsController.promotes_to_id`: solo admite cursos de la misma empresa y nivel.
-          - Unicidad de `GradeLevel.position`: usa `TenantContext` como fuente canonica, no el header crudo.
+          ## Validacion
+          - `php -l` en los tres archivos PHP nuevos.
+          - `php verificar-acceso.php` con dependencias instaladas.
+          - Chequeo de que no queden reglas `exists:` crudas en estas validaciones.
 
-          ## Aislamiento de alcances
-          Se conserva el segundo commit de Claude que filtra `scopedDivisionIds()` por `company_id` tanto en `user_scopes` como en `course_sections`.
-
-          ## Validaciones ejecutadas
-          - `php -l` sobre los controladores y request nuevos.
-          - `php verificar-acceso.php` para el banco de permisos y aislamiento.
-          - Verificacion estatica de que no quedaron `exists:` crudos en las nuevas validaciones academicas.
-
-          ## Regla para cambios futuros
-          En tablas academicas multi-tenant no usar `exists:tabla,id` ni `unique:tabla` sin condiciones de `company_id` y, cuando corresponda, `school_level_id`. Preferir `Rule::exists/unique(...)->where(...)` con `TenantContext`.
+          ## Regla futura
+          En estructura academica multi-tenant, usar `Rule::exists/unique(...)->where(...)` con `company_id` y, cuando corresponda, `school_level_id` desde `TenantContext`.
           EOF
+
+      - name: Instalar dependencias PHP
+        run: composer install --no-interaction --prefer-dist --no-progress
 
       - name: Validar sintaxis y aislamiento
         run: |
