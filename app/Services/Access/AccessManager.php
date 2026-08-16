@@ -237,18 +237,31 @@ class AccessManager
 
     /**
      * Puede otorgar este rol concreto.
+     *
+     * `$schoolLevelId` es el nivel en el que se otorga, y hay que pasarlo: los
+     * roles de alcance de nivel (direccion, secretaria) tienen sus permisos
+     * asignados a un nivel concreto, asi que consultar ROLE_ASSIGN sin nivel
+     * solo mira los roles globales y da falso para todos ellos.
      */
-    public function canGrantRole(User $actor, string $roleName, int $roleHierarchy): bool
-    {
+    public function canGrantRole(
+        User $actor,
+        string $roleName,
+        int $roleHierarchy,
+        ?int $schoolLevelId = null
+    ): bool {
+        // Los roles protegidos solo los otorga la administracion total, tenga
+        // quien tenga el permiso de asignar.
         if (in_array($roleName, RoleName::protectedRoles(), true)) {
             return $this->isTotalAdmin($actor);
         }
 
-        if (! $this->allows($actor, Permission::ROLE_ASSIGN)) {
+        if (! $this->allows($actor, Permission::ROLE_ASSIGN, $schoolLevelId)) {
             return false;
         }
 
         // No se puede otorgar un rol de jerarquia igual o superior a la propia.
+        // El "igual" tambien importa: si no, dos personas del mismo nivel
+        // podrian ampliarse los permisos mutuamente.
         return $this->hierarchyLevel($actor) < $roleHierarchy;
     }
 

@@ -64,6 +64,7 @@ use Crater\Http\Controllers\V1\Update\FinishUpdateController;
 use Crater\Http\Controllers\V1\Update\MigrateUpdateController;
 use Crater\Http\Controllers\V1\Update\UnzipUpdateController;
 use Crater\Http\Controllers\V1\Users\UsersController;
+use Crater\Http\Controllers\V1\Academic\AcademicYearsController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -144,6 +145,35 @@ Route::prefix('/v1')->group(function () {
         Route::post('/onboarding/finish', FinishController::class);
     });
 
+
+        /*
+    |--------------------------------------------------------------------------
+    | Suite institucional — estructura academica
+    |--------------------------------------------------------------------------
+    |
+    | Rutas del esquema NUEVO de autorizacion. A diferencia del bloque `admin`
+    | de mas abajo, aca cada ruta declara el permiso que exige y el tenant se
+    | valida contra el usuario autenticado, no contra el header que mande el
+    | cliente.
+    |
+    | Mientras convivan los dos esquemas, todo lo academico va aca y lo
+    | economico sigue en el bloque viejo.
+    |
+    */
+
+    Route::middleware(['auth:sanctum', 'tenant'])->group(function () {
+        Route::get('/academic-years', [AcademicYearsController::class, 'index'])
+            ->middleware('permission:academic.year.view');
+
+        Route::get('/academic-years/{academicYear}', [AcademicYearsController::class, 'show'])
+            ->middleware('permission:academic.year.view');
+
+        Route::post('/academic-years', [AcademicYearsController::class, 'store'])
+            ->middleware('permission:academic.year.manage');
+
+        Route::put('/academic-years/{academicYear}', [AcademicYearsController::class, 'update'])
+            ->middleware('permission:academic.year.manage');
+    });
 
     Route::middleware(['auth:sanctum', 'admin'])->group(function () {
 

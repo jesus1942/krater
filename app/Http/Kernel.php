@@ -62,7 +62,14 @@ class Kernel extends HttpKernel
         'can' => \Illuminate\Auth\Middleware\Authorize::class,
         'guest' => \Crater\Http\Middleware\RedirectIfAuthenticated::class,
         'throttle' => \Illuminate\Routing\Middleware\ThrottleRequests::class,
+        // `admin` es el esquema viejo: compara users.role contra dos strings y
+        // da acceso a toda la API o a ninguna. Se mantiene mientras convivan
+        // los dos sistemas; las rutas nuevas usan `permission`.
         'admin' => AdminMiddleware::class,
+
+        'permission' => \Crater\Http\Middleware\CheckPermission::class,
+        'tenant' => \Crater\Http\Middleware\ValidateTenant::class,
+
         'verified' => \Illuminate\Auth\Middleware\EnsureEmailIsVerified::class,
         'install' => \Crater\Http\Middleware\InstallationMiddleware::class,
         'redirect-if-installed' => \Crater\Http\Middleware\RedirectIfInstalled::class,
