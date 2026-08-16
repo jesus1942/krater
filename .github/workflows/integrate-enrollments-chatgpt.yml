@@ -1,0 +1,136 @@
+name: Integrar matriculas y reconstruir frontend
+
+on:
+  push:
+    branches: [chatgpt/matriculas-20260816]
+    paths:
+      - '.github/workflows/integrate-enrollments-chatgpt.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  integrate:
+    runs-on: ubuntu-latest
+    env:
+      NODE_OPTIONS: --openssl-legacy-provider
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: chatgpt/matriculas-20260816
+          fetch-depth: 0
+
+      - name: Integrar rutas, menu y traduccion con reemplazos exactos
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          def replace_once(path, old, new):
+              p = Path(path)
+              text = p.read_text()
+              count = text.count(old)
+              if count != 1:
+                  raise SystemExit(f'{path}: se esperaban 1 coincidencia y hubo {count}')
+              p.write_text(text.replace(old, new, 1))
+
+          # API
+          replace_once(
+              'routes/api.php',
+              "use Crater\\Http\\Controllers\\V1\\Academic\\DivisionsController;\nuse Crater\\Http\\Controllers\\V1\\Academic\\GradeLevelsController;",
+              "use Crater\\Http\\Controllers\\V1\\Academic\\DivisionsController;\nuse Crater\\Http\\Controllers\\V1\\Academic\\EnrollmentsController;\nuse Crater\\Http\\Controllers\\V1\\Academic\\GradeLevelsController;"
+          )
+          replace_once(
+              'routes/api.php',
+              "        Route::delete('/subjects/{subject}', [SubjectsController::class, 'destroy'])\n            ->middleware('permission:academic.study_plan.manage');\n\n    });",
+              "        Route::delete('/subjects/{subject}', [SubjectsController::class, 'destroy'])\n            ->middleware('permission:academic.study_plan.manage');\n\n        // --- matriculas ---\n        Route::get('/enrollments', [EnrollmentsController::class, 'index'])\n            ->middleware('permission:academic.enrollment.view');\n\n        Route::get('/enrollments/disponibles', [EnrollmentsController::class, 'disponibles'])\n            ->middleware('permission:academic.enrollment.view');\n\n        Route::post('/enrollments', [EnrollmentsController::class, 'store'])\n            ->middleware('permission:academic.enrollment.manage');\n\n        Route::put('/enrollments/{enrollment}', [EnrollmentsController::class, 'update'])\n            ->middleware('permission:academic.enrollment.manage,academic.enrollment.transfer');\n\n    });"
+          )
+
+          # Router Vue
+          replace_once(
+              'resources/assets/js/router.js',
+              "import AcademicStructureIndex from './views/academic/AcademicStructureIndex.vue'",
+              "import AcademicStructureIndex from './views/academic/AcademicStructureIndex.vue'\nimport EnrollmentsIndex from './views/academic/EnrollmentsIndex.vue'"
+          )
+          replace_once(
+              'resources/assets/js/router.js',
+              "          {\n            path: 'academic-structure',\n            name: 'academic.structure',\n            component: AcademicStructureIndex,\n          },",
+              "          {\n            path: 'academic-structure',\n            name: 'academic.structure',\n            component: AcademicStructureIndex,\n          },\n          {\n            path: 'enrollments',\n            name: 'academic.enrollments',\n            component: EnrollmentsIndex,\n          },"
+          )
+
+          # Menu de configuracion
+          replace_once(
+              'resources/assets/js/views/settings/SettingsIndex.vue',
+              "  TemplateIcon,\n  BellIcon,",
+              "  TemplateIcon,\n  UserAddIcon,\n  BellIcon,"
+          )
+          replace_once(
+              'resources/assets/js/views/settings/SettingsIndex.vue',
+              "    TemplateIcon,\n    PencilAltIcon,",
+              "    TemplateIcon,\n    UserAddIcon,\n    PencilAltIcon,"
+          )
+          replace_once(
+              'resources/assets/js/views/settings/SettingsIndex.vue',
+              "        {\n          link: '/admin/settings/academic-structure',\n          title: 'Estructura académica',\n          icon: 'template-icon',\n        },",
+              "        {\n          link: '/admin/settings/academic-structure',\n          title: 'Estructura académica',\n          icon: 'template-icon',\n        },\n        {\n          link: '/admin/settings/enrollments',\n          title: 'settings.menu_title.enrollments',\n          icon: 'user-add-icon',\n        },"
+          )
+
+          # Traduccion
+          replace_once(
+              'resources/assets/js/plugins/es.json',
+              '      "academic_years": "Ciclos lectivos",',
+              '      "academic_years": "Ciclos lectivos",\n      "enrollments": "Matrículas",'
+          )
+
+          # No prometer auditoria hasta que exista un escritor real de eventos.
+          replace_once(
+              'resources/assets/js/views/academic/EnrollmentsIndex.vue',
+              'El pase requiere permiso específico y queda registrado en la auditoría.',
+              'El pase requiere un permiso específico.'
+          )
+          PY
+
+      - name: Validar PHP
+        run: |
+          php -l app/Models/Enrollment.php
+          php -l app/Models/SectionEnrollment.php
+          php -l app/Http/Requests/Academic/EnrollmentRequest.php
+          php -l app/Http/Controllers/V1/Academic/EnrollmentsController.php
+          php -l app/Policies/AcademicPolicy.php
+          php -l routes/api.php
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Instalar dependencias legacy
+        run: npm ci --legacy-peer-deps
+
+      - name: Compilar frontend de produccion
+        run: npm run production
+
+      - name: Verificar matriculas en el bundle y rutas
+        run: |
+          grep -q "academic.enrollments" public/assets/js/app.js
+          grep -q "Matrículas" public/assets/js/app.js
+          grep -q "/api/v1/enrollments" public/assets/js/app.js
+          grep -q "EnrollmentsController" routes/api.php
+          ! grep -q "queda registrado en la auditoría" public/assets/js/app.js
+
+      - name: Actualizar frontend precompilado usado por Docker
+        run: |
+          rm -f build/frontend/app.js.gz.part.*
+          gzip -c -9 public/assets/js/app.js > /tmp/app.js.gz
+          split -b 450k -d -a 2 /tmp/app.js.gz build/frontend/app.js.gz.part.
+          cp public/assets/css/crater.css build/frontend/crater.css
+          cp public/mix-manifest.json build/frontend/mix-manifest.json
+
+      - name: Guardar integracion y retirar archivos temporales
+        run: |
+          git config user.name "ChatGPT"
+          git config user.email "noreply@openai.com"
+          git add app routes resources build/frontend
+          git rm .github/workflows/integrate-enrollments-chatgpt.yml
+          if [ -f .chatgpt/matriculas.patch ]; then git rm .chatgpt/matriculas.patch; fi
+          git commit -m "integrar matriculas con aislamiento, cupo y frontend"
+          git push origin HEAD:chatgpt/matriculas-20260816
