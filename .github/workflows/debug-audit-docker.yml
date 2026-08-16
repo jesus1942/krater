@@ -1,0 +1,31 @@
+name: Diagnosticar build auditoria
+
+on:
+  push:
+    branches:
+      - chatgpt/audit-deploy-debug-20260816
+
+permissions:
+  contents: write
+
+jobs:
+  docker-build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: chatgpt/audit-deploy-debug-20260816
+      - name: Construir Dockerfile exacto
+        run: docker build --progress=plain -t krater-audit-debug .
+      - name: Verificar frontend reconstruido dentro de imagen
+        run: |
+          docker run --rm --entrypoint sh krater-audit-debug -c 'test -s public/assets/js/app.js && grep -q "audit-logs" public/assets/js/app.js'
+      - name: Retirar workflow temporal
+        if: always()
+        run: |
+          rm -f .github/workflows/debug-audit-docker.yml
+          git config user.name "ChatGPT"
+          git config user.email "actions@users.noreply.github.com"
+          git add .github/workflows/debug-audit-docker.yml
+          git commit -m "retirar diagnostico temporal" || true
+          git push origin HEAD:chatgpt/audit-deploy-debug-20260816 || true
