@@ -1,0 +1,49 @@
+name: Audit tenant HTTP ChatGPT
+
+on:
+  push:
+    branches:
+      - chatgpt/auditoria-tenant-http-20260816
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Inventory school-level scoped models and HTTP references
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+
+          models = []
+          for p in sorted(Path('app/Models').glob('*.php')):
+              text = p.read_text(errors='ignore')
+              if 'BelongsToSchoolLevel' in text and 'use BelongsToSchoolLevel' in text:
+                  models.append(p.stem)
+
+          print('=== SCHOOL_LEVEL_MODELS ===')
+          for model in models:
+              print(model)
+
+          print('=== CONTROLLER_REFERENCES ===')
+          controllers = sorted(Path('app/Http/Controllers').rglob('*.php'))
+          for model in models:
+              refs = []
+              patterns = [f'Crater\\Models\\{model}', f'{model}::', f'{model} $']
+              for p in controllers:
+                  text = p.read_text(errors='ignore')
+                  if any(pattern in text for pattern in patterns):
+                      tenant = "$this->middleware('tenant')" in text or "middleware('tenant')" in text
+                      report = 'ReportTenant' in text or "report-tenant" in text
+                      refs.append((str(p), tenant, report))
+              for path, tenant, report in refs:
+                  print(f'{model}|{path}|tenant={tenant}|report={report}')
+
+          print('=== ROUTE_FILES_WITH_TENANT ===')
+          for p in [Path('routes/api.php'), Path('routes/web.php')]:
+              text = p.read_text(errors='ignore')
+              print(f'{p}: tenant={text.count("tenant")} report-tenant={text.count("report-tenant")}')
+          PY
