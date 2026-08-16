@@ -152,6 +152,10 @@ function crearUsuario(string $rol, ?int $nivelId, int $empresaId, array $rolId, 
 
     $u = new Crater\Models\User();
     $u->id = $id;
+    // company_id es obligatorio: el resolutor filtra todas las consultas de
+    // roles y alcances por empresa, asi que un usuario sin empresa no alcanza
+    // nada. Olvidarlo aca hacia fallar todas las comprobaciones.
+    $u->company_id = $empresaId;
     $u->exists = true;
 
     return $u;
@@ -248,6 +252,118 @@ Capsule::table('role_user')->where('user_id', $suplente->id)->update([
 ]);
 $contenedor->instance('cache', new Repository(new ArrayStore()));
 comprobar('un rol vencido ya no otorga permisos', $acceso->allows($suplente, P::GRADE_RECORD, $niveles['secondary']), false);
+
+
+echo "\n== filtrado de listados por alcance ==\n";
+
+// La direccion ve todo el nivel; el preceptor y el docente, solo lo suyo.
+comprobar('la direccion de nivel tiene alcance de nivel completo', $acceso->hasLevelWideScope($directorNivel, $niveles['secondary']), true);
+comprobar('el preceptor NO tiene alcance de nivel completo', $acceso->hasLevelWideScope($preceptor, $niveles['secondary']), false);
+comprobar('el docente NO tiene alcance de nivel completo', $acceso->hasLevelWideScope($docente, $niveles['secondary']), false);
+comprobar('la administracion total tiene alcance completo', $acceso->hasLevelWideScope($admin, $niveles['secondary']), true);
+
+// Se arma estructura real para probar el filtrado de divisiones.
+$cicloId = Capsule::table('academic_years')->insertGetId([
+    'company_id' => $empresaId, 'school_level_id' => $niveles['secondary'],
+    'year' => 2027, 'name' => 'Ciclo 2027', 'starts_on' => '2027-03-01', 'ends_on' => '2027-12-15',
+    'status' => 'active', 'created_at' => $ahora, 'updated_at' => $ahora,
+]);
+$cursoId = Capsule::table('grade_levels')->insertGetId([
+    'company_id' => $empresaId, 'school_level_id' => $niveles['secondary'],
+    'name' => '3.er anio', 'position' => 3, 'enabled' => 1,
+    'created_at' => $ahora, 'updated_at' => $ahora,
+]);
+$divA = Capsule::table('divisions')->insertGetId([
+    'company_id' => $empresaId, 'school_level_id' => $niveles['secondary'],
+    'academic_year_id' => $cicloId, 'grade_level_id' => $cursoId, 'name' => 'A',
+    'enabled' => 1, 'created_at' => $ahora, 'updated_at' => $ahora,
+]);
+$divB = Capsule::table('divisions')->insertGetId([
+    'company_id' => $empresaId, 'school_level_id' => $niveles['secondary'],
+    'academic_year_id' => $cicloId, 'grade_level_id' => $cursoId, 'name' => 'B',
+    'enabled' => 1, 'created_at' => $ahora, 'updated_at' => $ahora,
+]);
+$materiaId = Capsule::table('subjects')->insertGetId([
+    'company_id' => $empresaId, 'school_level_id' => $niveles['secondary'],
+    'name' => 'Matematica', 'duration' => 'annual', 'counts_for_promotion' => 1, 'enabled' => 1,
+    'created_at' => $ahora, 'updated_at' => $ahora,
+]);
+$seccionEnA = Capsule::table('course_sections')->insertGetId([
+    'company_id' => $empresaId, 'school_level_id' => $niveles['secondary'],
+    'academic_year_id' => $cicloId, 'division_id' => $divA, 'subject_id' => $materiaId,
+    'status' => 'active', 'created_at' => $ahora, 'updated_at' => $ahora,
+]);
+
+// El preceptor tiene asignada solo la division B.
+Capsule::table('user_scopes')->insert([
+    'user_id' => $preceptor->id, 'company_id' => $empresaId,
+    'scope_type' => 'division', 'scope_id' => $divB,
+    'created_at' => $ahora, 'updated_at' => $ahora,
+]);
+
+$alcancePreceptor = $acceso->scopedDivisionIds($preceptor);
+comprobar('el preceptor alcanza solo su division', $alcancePreceptor === [$divB], true);
+
+// El docente no tiene division asignada, pero dicta una seccion en la A: la
+// alcanza por relacion, sin necesidad de duplicar el alcance.
+Capsule::table('user_scopes')->insert([
+    'user_id' => $docente->id, 'company_id' => $empresaId,
+    'scope_type' => 'course_section', 'scope_id' => $seccionEnA,
+    'created_at' => $ahora, 'updated_at' => $ahora,
+]);
+
+$alcanceDocente = $acceso->scopedDivisionIds($docente);
+comprobar('el docente alcanza la division por su seccion', in_array($divA, $alcanceDocente, true), true);
+comprobar('el docente NO alcanza la division ajena', in_array($divB, $alcanceDocente, true), false);
+
+// Alguien sin ningun alcance no alcanza nada. Que devuelva lista vacia importa:
+// el controlador la usa en un whereIn, y una lista vacia devuelve cero filas.
+$sinAlcance = crearUsuario(R::STAFF, $niveles['secondary'], $empresaId, $rolId, $ahora);
+comprobar('sin alcance asignado no se alcanza ninguna division', $acceso->scopedDivisionIds($sinAlcance) === [], true);
+
+
+echo "\n== aislamiento entre instituciones ==\n";
+
+// Segunda empresa con su propio juego de roles, para probar que nada cruza.
+$otraEmpresaId = Capsule::table('companies')->insertGetId([
+    'name' => 'Otra escuela', 'unique_hash' => 'otra', 'created_at' => $ahora, 'updated_at' => $ahora,
+]);
+$otroNivelId = Capsule::table('school_levels')->insertGetId([
+    'company_id' => $otraEmpresaId, 'code' => 'secondary', 'name' => 'Secundario ajeno',
+    'enabled' => 1, 'created_at' => $ahora, 'updated_at' => $ahora,
+]);
+$rolAjenoId = Capsule::table('roles')->insertGetId([
+    'company_id' => $otraEmpresaId, 'name' => R::TOTAL_ADMIN, 'label' => 'Administracion total',
+    'hierarchy_level' => 0, 'scope_type' => 'global', 'is_system' => 1,
+    'created_at' => $ahora, 'updated_at' => $ahora,
+]);
+foreach (R::definitions()[R::TOTAL_ADMIN]['permissions'] as $permiso) {
+    Capsule::table('permission_role')->insert([
+        'role_id' => $rolAjenoId, 'permission_id' => $permisoId[$permiso],
+    ]);
+}
+
+// Un usuario de NUESTRA empresa al que se le cuelga el rol de administracion
+// total de la OTRA empresa. Es el escenario de una fila mal insertada o de un
+// intento de escalada cruzando instituciones.
+$intruso = crearUsuario(R::TEACHER, $niveles['secondary'], $empresaId, $rolId, $ahora);
+Capsule::table('role_user')->insert([
+    'user_id' => $intruso->id, 'role_id' => $rolAjenoId, 'company_id' => $otraEmpresaId,
+    'school_level_id' => null, 'created_at' => $ahora, 'updated_at' => $ahora,
+]);
+$contenedor->instance('cache', new Repository(new ArrayStore()));
+
+comprobar('un rol de otra empresa NO convierte en administracion total', $acceso->isTotalAdmin($intruso), false);
+comprobar('un rol de otra empresa NO aporta permisos', $acceso->allows($intruso, P::USER_MANAGE, $niveles['secondary']), false);
+comprobar('un rol de otra empresa NO mejora la jerarquia', $acceso->hierarchyLevel($intruso) === 50, true);
+
+// Un alcance cargado bajo otra empresa tampoco alcanza.
+Capsule::table('user_scopes')->insert([
+    'user_id' => $docente->id, 'company_id' => $otraEmpresaId,
+    'scope_type' => 'division', 'scope_id' => 9999,
+    'created_at' => $ahora, 'updated_at' => $ahora,
+]);
+comprobar('un alcance de otra empresa no suma divisiones', in_array(9999, $acceso->scopedDivisionIds($docente), true), false);
 
 // --- informe -------------------------------------------------------------------
 

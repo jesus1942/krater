@@ -188,6 +188,61 @@ class AccessManager
     }
 
     /**
+     * El usuario tiene algun rol vigente de alcance global o de nivel.
+     *
+     * Es la pregunta "ve todo el nivel o solo lo suyo", y la usan los listados
+     * para decidir si filtran por alcance. Vive aca y no en los controladores
+     * para que la decision se tome en un solo lugar.
+     */
+    public function hasLevelWideScope(User $user, ?int $schoolLevelId = null): bool
+    {
+        if ($this->isTotalAdmin($user)) {
+            return true;
+        }
+
+        foreach ($this->rolesFor($user, $schoolLevelId) as $role) {
+            if (in_array($role->scope_type, ['global', 'level'], true)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Ids de division que alcanza el usuario, para filtrar listados.
+     *
+     * Incluye las asignadas directamente y las que alcanza por tener alguna
+     * seccion de materia en ellas. Devuelve array vacio si no alcanza ninguna,
+     * y el llamador debe interpretarlo como "ninguna", no como "todas".
+     */
+    public function scopedDivisionIds(User $user): array
+    {
+        // El filtro por empresa va en las dos consultas: un alcance de otra
+        // institucion no debe alcanzar nada aca, aunque la fila exista.
+        $directas = DB::table('user_scopes')
+            ->where('user_id', $user->id)
+            ->where('company_id', $user->company_id)
+            ->where('scope_type', 'division')
+            ->pluck('scope_id');
+
+        $porSeccion = DB::table('user_scopes')
+            ->join('course_sections', 'course_sections.id', '=', 'user_scopes.scope_id')
+            ->where('user_scopes.user_id', $user->id)
+            ->where('user_scopes.company_id', $user->company_id)
+            ->where('course_sections.company_id', $user->company_id)
+            ->where('user_scopes.scope_type', 'course_section')
+            ->pluck('course_sections.division_id');
+
+        return $directas
+            ->merge($porSeccion)
+            ->map(fn ($id) => (int) $id)
+            ->unique()
+            ->values()
+            ->all();
+    }
+
+    /**
      * La persona es administracion total.
      *
      * Se consulta contra la tabla de roles, no contra `users.role`. La columna

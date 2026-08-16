@@ -65,6 +65,8 @@ use Crater\Http\Controllers\V1\Update\MigrateUpdateController;
 use Crater\Http\Controllers\V1\Update\UnzipUpdateController;
 use Crater\Http\Controllers\V1\Users\UsersController;
 use Crater\Http\Controllers\V1\Academic\AcademicYearsController;
+use Crater\Http\Controllers\V1\Academic\DivisionsController;
+use Crater\Http\Controllers\V1\Academic\GradeLevelsController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -173,6 +175,29 @@ Route::prefix('/v1')->group(function () {
 
         Route::put('/academic-years/{academicYear}', [AcademicYearsController::class, 'update'])
             ->middleware('permission:academic.year.manage');
+
+        // --- cursos ---
+        Route::get('/grade-levels', [GradeLevelsController::class, 'index'])
+            ->middleware('permission:academic.division.view');
+
+        Route::post('/grade-levels', [GradeLevelsController::class, 'store'])
+            ->middleware('permission:academic.division.manage');
+
+        Route::put('/grade-levels/{gradeLevel}', [GradeLevelsController::class, 'update'])
+            ->middleware('permission:academic.division.manage');
+
+        // --- divisiones ---
+        Route::get('/divisions', [DivisionsController::class, 'index'])
+            ->middleware('permission:academic.division.view');
+
+        Route::get('/divisions/{division}', [DivisionsController::class, 'show'])
+            ->middleware('permission:academic.division.view');
+
+        Route::post('/divisions', [DivisionsController::class, 'store'])
+            ->middleware('permission:academic.division.manage');
+
+        Route::put('/divisions/{division}', [DivisionsController::class, 'update'])
+            ->middleware('permission:academic.division.manage');
     });
 
     Route::middleware(['auth:sanctum', 'admin'])->group(function () {
