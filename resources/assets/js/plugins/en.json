@@ -621,7 +621,8 @@
       "file_disk": "File Disk",
       "custom_fields": "Custom Fields",
       "payment_modes": "Payment Modes",
-      "notes": "Notes"
+      "notes": "Notes",
+      "audit_logs": "Audit log"
     },
     "title": "Settings",
     "setting": "Settings | Settings",

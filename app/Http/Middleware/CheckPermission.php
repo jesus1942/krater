@@ -3,7 +3,9 @@
 namespace Crater\Http\Middleware;
 
 use Closure;
+use Crater\Enums\Permission;
 use Crater\Services\Access\AccessManager;
+use Crater\Services\Audit\Auditor;
 use Illuminate\Http\Request;
 
 /**
@@ -25,9 +27,12 @@ class CheckPermission
 {
     protected $access;
 
-    public function __construct(AccessManager $access)
+    protected $auditor;
+
+    public function __construct(AccessManager $access, Auditor $auditor)
     {
         $this->access = $access;
+        $this->auditor = $auditor;
     }
 
     public function handle(Request $request, Closure $next, ...$permissions)
@@ -45,6 +50,10 @@ class CheckPermission
         // tener uno. Para exigir todos, encadenar dos middleware.
         foreach ($permissions as $permission) {
             if ($this->access->allows($user, $permission, $schoolLevelId)) {
+                if (Permission::isAudited($permission)) {
+                    $this->auditor->recordPermissionUse($permission, $user, $request->path(), $request->method());
+                }
+
                 return $next($request);
             }
         }

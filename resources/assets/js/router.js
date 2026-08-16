@@ -74,6 +74,7 @@ import SchoolLevelsSetting from './views/settings/SchoolLevelsSetting.vue'
 import AcademicYearsIndex from './views/academic/AcademicYearsIndex.vue'
 import AcademicStructureIndex from './views/academic/AcademicStructureIndex.vue'
 import EnrollmentsIndex from './views/academic/EnrollmentsIndex.vue'
+import AuditLogsIndex from './views/academic/AuditLogsIndex.vue'
 import Customization from './views/settings/CustomizationSetting.vue'
 import Notifications from './views/settings/NotificationsSetting.vue'
 import Preferences from './views/settings/PreferencesSetting.vue'
@@ -371,6 +372,11 @@ const routes = [
             path: 'enrollments',
             name: 'academic.enrollments',
             component: EnrollmentsIndex,
+          },
+          {
+            path: 'audit-logs',
+            name: 'system.audit.logs',
+            component: AuditLogsIndex,
           },
           {
             path: 'customization',
