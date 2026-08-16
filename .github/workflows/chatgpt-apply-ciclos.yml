@@ -1,0 +1,103 @@
+name: Aplicar y validar parche academico
+
+on:
+  push:
+    branches:
+      - chatgpt/ciclos-estructura-20260816
+    paths:
+      - '.github/workflows/chatgpt-apply-ciclos.yml'
+      - '.chatgpt/claude_ciclos.patch.gz.b64'
+
+permissions:
+  contents: write
+
+jobs:
+  aplicar:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: chatgpt/ciclos-estructura-20260816
+
+      - name: Configurar Git
+        run: |
+          git config user.name "ChatGPT"
+          git config user.email "noreply@openai.com"
+
+      - name: Aplicar los dos commits de Claude
+        run: |
+          base64 -d .chatgpt/claude_ciclos.patch.gz.b64 | gzip -d > /tmp/ciclos.patch
+          git am --3way /tmp/ciclos.patch
+
+      - name: Endurecer validaciones multi-institucion
+        run: |
+          python3 <<'PY'
+          from pathlib import Path
+
+          p = Path('app/Http/Requests/Academic/DivisionRequest.php')
+          s = p.read_text()
+          s = s.replace('use Illuminate\\Foundation\\Http\\FormRequest;\n', 'use Crater\\Support\\TenantContext;\nuse Illuminate\\Foundation\\Http\\FormRequest;\n')
+          s = s.replace("        $id = optional($this->route('division'))->id;\n\n        return [\n            'academic_year_id' => ['required', 'integer', 'exists:academic_years,id'],\n            'grade_level_id' => ['required', 'integer', 'exists:grade_levels,id'],", "        $id = optional($this->route('division'))->id;\n        $companyId = TenantContext::companyId();\n        $schoolLevelId = TenantContext::schoolLevelId();\n\n        return [\n            'academic_year_id' => [\n                'required',\n                'integer',\n                Rule::exists('academic_years', 'id')->where(fn ($q) => $q\n                    ->where('company_id', $companyId)\n                    ->where('school_level_id', $schoolLevelId)),\n            ],\n            'grade_level_id' => [\n                'required',\n                'integer',\n                Rule::exists('grade_levels', 'id')->where(fn ($q) => $q\n                    ->where('company_id', $companyId)\n                    ->where('school_level_id', $schoolLevelId)),\n            ],")
+          s = s.replace("                        ->where('academic_year_id', $this->academic_year_id)\n                        ->where('grade_level_id', $this->grade_level_id))", "                        ->where('company_id', $companyId)\n                        ->where('school_level_id', $schoolLevelId)\n                        ->where('academic_year_id', $this->academic_year_id)\n                        ->where('grade_level_id', $this->grade_level_id))")
+          s = s.replace("            'head_teacher_id' => ['nullable', 'integer', 'exists:users,id'],", "            'head_teacher_id' => [\n                'nullable',\n                'integer',\n                Rule::exists('users', 'id')->where(fn ($q) => $q->where('company_id', $companyId)),\n            ],")
+          p.write_text(s)
+
+          p = Path('app/Http/Controllers/V1/Academic/GradeLevelsController.php')
+          s = p.read_text()
+          s = s.replace("                Rule::unique('grade_levels')\n                    ->where(fn ($q) => $q->where('school_level_id', $request->header('school-level')))\n                    ->ignore(optional($actual)->id),", "                Rule::unique('grade_levels')\n                    ->where(fn ($q) => $q\n                        ->where('company_id', TenantContext::companyId())\n                        ->where('school_level_id', TenantContext::schoolLevelId()))\n                    ->ignore(optional($actual)->id),")
+          s = s.replace("            'promotes_to_id' => ['nullable', 'integer', 'exists:grade_levels,id'],", "            'promotes_to_id' => [\n                'nullable',\n                'integer',\n                Rule::exists('grade_levels', 'id')->where(fn ($q) => $q\n                    ->where('company_id', TenantContext::companyId())\n                    ->where('school_level_id', TenantContext::schoolLevelId())),\n            ],")
+          p.write_text(s)
+          PY
+
+      - name: Dejar informe para Claude
+        run: |
+          cat > CORRECCIONES_CHATGPT_CICLOS.md <<'EOF'
+          # Correcciones sobre `pantallaciclosyestructura.patch`
+
+          ## Contexto
+          Se aplicaron los dos commits entregados por Claude sobre la rama de produccion `claude/web-app-migration-laf9yy`, primero en una rama aislada.
+
+          ## Correcciones de seguridad
+          El parche original usaba reglas `exists:*` sin filtro de tenant. Esas reglas consultan la tabla directamente y no heredan los global scopes de Eloquent.
+
+          Se endurecieron:
+          - `DivisionRequest.academic_year_id`: debe pertenecer a la empresa y nivel actuales.
+          - `DivisionRequest.grade_level_id`: debe pertenecer a la empresa y nivel actuales.
+          - `DivisionRequest.head_teacher_id`: debe pertenecer a la empresa actual.
+          - Unicidad de `Division.name`: ahora incluye empresa y nivel, ademas de ciclo y curso.
+          - `GradeLevelsController.promotes_to_id`: solo admite cursos de la misma empresa y nivel.
+          - Unicidad de `GradeLevel.position`: usa `TenantContext` como fuente canonica, no el header crudo.
+
+          ## Aislamiento de alcances
+          Se conserva el segundo commit de Claude que filtra `scopedDivisionIds()` por `company_id` tanto en `user_scopes` como en `course_sections`.
+
+          ## Validaciones ejecutadas
+          - `php -l` sobre los controladores y request nuevos.
+          - `php verificar-acceso.php` para el banco de permisos y aislamiento.
+          - Verificacion estatica de que no quedaron `exists:` crudos en las nuevas validaciones academicas.
+
+          ## Regla para cambios futuros
+          En tablas academicas multi-tenant no usar `exists:tabla,id` ni `unique:tabla` sin condiciones de `company_id` y, cuando corresponda, `school_level_id`. Preferir `Rule::exists/unique(...)->where(...)` con `TenantContext`.
+          EOF
+
+      - name: Validar sintaxis y aislamiento
+        run: |
+          php -l app/Http/Controllers/V1/Academic/DivisionsController.php
+          php -l app/Http/Controllers/V1/Academic/GradeLevelsController.php
+          php -l app/Http/Requests/Academic/DivisionRequest.php
+          ! grep -R "exists:academic_years,id\|exists:grade_levels,id\|exists:users,id" app/Http/Requests/Academic/DivisionRequest.php app/Http/Controllers/V1/Academic/GradeLevelsController.php
+          php verificar-acceso.php
+
+      - name: Commit de endurecimiento
+        run: |
+          git add app/Http/Requests/Academic/DivisionRequest.php app/Http/Controllers/V1/Academic/GradeLevelsController.php CORRECCIONES_CHATGPT_CICLOS.md
+          git commit -m "cerrar referencias cruzadas entre instituciones"
+
+      - name: Retirar archivos auxiliares
+        run: |
+          git rm .chatgpt/claude_ciclos.patch.gz.b64 .github/workflows/chatgpt-apply-ciclos.yml
+          git commit -m "retirar automatizacion temporal del parche"
+
+      - name: Empujar rama validada
+        run: git push origin HEAD:chatgpt/ciclos-estructura-20260816
