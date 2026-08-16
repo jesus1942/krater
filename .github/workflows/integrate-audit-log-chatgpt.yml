@@ -1,0 +1,644 @@
+name: Integrar bitacora de auditoria
+
+on:
+  push:
+    branches:
+      - chatgpt/bitacora-auditoria-20260816
+
+permissions:
+  contents: write
+
+jobs:
+  integrate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: chatgpt/bitacora-auditoria-20260816
+          fetch-depth: 0
+
+      - name: Crear backend y migracion de auditoria
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p app/Http/Controllers/V1/Audit app/Services/Audit app/Traits resources/assets/js/views/academic
+
+          cat > database/migrations/2026_09_01_000500_create_audit_logs_table.php <<'PHP'
+          <?php
+
+          use Illuminate\Database\Migrations\Migration;
+          use Illuminate\Database\Schema\Blueprint;
+          use Illuminate\Support\Facades\Schema;
+
+          class CreateAuditLogsTable extends Migration
+          {
+              public function up()
+              {
+                  Schema::create('audit_logs', function (Blueprint $table) {
+                      $table->increments('id');
+                      $table->unsignedInteger('company_id')->nullable();
+                      $table->unsignedInteger('school_level_id')->nullable();
+                      $table->unsignedInteger('user_id')->nullable();
+                      $table->string('action', 150);
+                      $table->string('auditable_type', 190)->nullable();
+                      $table->unsignedInteger('auditable_id')->nullable();
+                      $table->json('old_values')->nullable();
+                      $table->json('new_values')->nullable();
+                      $table->string('ip_address', 45)->nullable();
+                      $table->string('user_agent', 255)->nullable();
+                      $table->string('severity', 20)->default('low');
+                      $table->timestamp('created_at')->useCurrent();
+
+                      $table->foreign('company_id')->references('id')->on('companies')->nullOnDelete();
+                      $table->foreign('school_level_id')->references('id')->on('school_levels')->nullOnDelete();
+                      $table->foreign('user_id')->references('id')->on('users')->nullOnDelete();
+
+                      $table->index(['company_id', 'created_at'], 'audit_logs_company_time');
+                      $table->index(['school_level_id', 'created_at'], 'audit_logs_level_time');
+                      $table->index(['user_id', 'created_at'], 'audit_logs_user_time');
+                      $table->index(['severity', 'created_at'], 'audit_logs_severity_time');
+                      $table->index(['auditable_type', 'auditable_id'], 'audit_logs_object');
+                  });
+              }
+
+              public function down()
+              {
+                  Schema::dropIfExists('audit_logs');
+              }
+          }
+          PHP
+
+          cat > app/Models/AuditLog.php <<'PHP'
+          <?php
+
+          namespace Crater\Models;
+
+          use Illuminate\Database\Eloquent\Model;
+          use RuntimeException;
+
+          class AuditLog extends Model
+          {
+              public $timestamps = false;
+
+              protected $guarded = ['id'];
+
+              protected $casts = [
+                  'old_values' => 'array',
+                  'new_values' => 'array',
+                  'created_at' => 'datetime',
+              ];
+
+              const SEVERITY_LOW = 'low';
+              const SEVERITY_MEDIUM = 'medium';
+              const SEVERITY_HIGH = 'high';
+              const SEVERITY_CRITICAL = 'critical';
+
+              protected static function booted()
+              {
+                  static::updating(function () {
+                      throw new RuntimeException('La bitacora de auditoria es append-only: no se modifica.');
+                  });
+
+                  static::deleting(function () {
+                      throw new RuntimeException('La bitacora de auditoria es append-only: no se borra.');
+                  });
+              }
+
+              public function user()
+              {
+                  return $this->belongsTo(User::class);
+              }
+
+              public function company()
+              {
+                  return $this->belongsTo(Company::class);
+              }
+
+              public function schoolLevel()
+              {
+                  return $this->belongsTo(SchoolLevel::class);
+              }
+
+              public function scopeWhereCompany($query, $companyId)
+              {
+                  return $query->where('company_id', $companyId);
+              }
+          }
+          PHP
+
+          cat > app/Services/Audit/Auditor.php <<'PHP'
+          <?php
+
+          namespace Crater\Services\Audit;
+
+          use Crater\Models\AuditLog;
+          use Crater\Models\User;
+          use Crater\Support\TenantContext;
+          use Illuminate\Support\Facades\Log;
+          use Throwable;
+
+          class Auditor
+          {
+              const CAMPOS_EXCLUIDOS = [
+                  'password', 'remember_token', 'credentials', 'value',
+                  'signature_data', 'attendee_secret', 'moderator_secret',
+                  'teacher_comment', 'justification', 'notes', 'override_reason',
+                  'equivalence_note',
+              ];
+
+              public function record(
+                  string $action,
+                  ?User $user = null,
+                  array $sobre = [],
+                  array $anteriores = [],
+                  array $nuevos = [],
+                  string $severity = AuditLog::SEVERITY_LOW
+              ): void {
+                  try {
+                      $companyId = array_key_exists('company_id', $sobre)
+                          ? $sobre['company_id']
+                          : (TenantContext::companyId() ?: optional($user)->company_id);
+                      $schoolLevelId = array_key_exists('school_level_id', $sobre)
+                          ? $sobre['school_level_id']
+                          : TenantContext::schoolLevelId();
+
+                      $request = app()->bound('request') ? request() : null;
+
+                      AuditLog::create([
+                          'company_id' => $companyId,
+                          'school_level_id' => $schoolLevelId,
+                          'user_id' => optional($user)->id,
+                          'action' => $action,
+                          'auditable_type' => $sobre['type'] ?? null,
+                          'auditable_id' => $sobre['id'] ?? null,
+                          'old_values' => $this->limpiar($anteriores) ?: null,
+                          'new_values' => $this->limpiar($nuevos) ?: null,
+                          'ip_address' => $request ? $request->ip() : null,
+                          'user_agent' => $request ? substr((string) $request->userAgent(), 0, 255) : null,
+                          'severity' => $severity,
+                          'created_at' => now(),
+                      ]);
+                  } catch (Throwable $e) {
+                      Log::error('No se pudo escribir en la bitacora de auditoria', [
+                          'action' => $action,
+                          'user_id' => optional($user)->id,
+                          'error' => $e->getMessage(),
+                      ]);
+                  }
+              }
+
+              public function recordPermissionUse(string $permission, User $user, string $ruta, string $metodo): void
+              {
+                  $this->record(
+                      'permission.'.$permission,
+                      $user,
+                      [],
+                      [],
+                      ['ruta' => $metodo.' '.$ruta],
+                      $this->severidadDe($permission)
+                  );
+              }
+
+              protected function limpiar(array $valores): array
+              {
+                  $limpio = [];
+                  foreach ($valores as $clave => $valor) {
+                      if (in_array($clave, self::CAMPOS_EXCLUIDOS, true)) {
+                          $limpio[$clave] = '[omitido]';
+                          continue;
+                      }
+                      if (is_string($valor) && mb_strlen($valor) > 500) {
+                          $limpio[$clave] = mb_substr($valor, 0, 500).'… [recortado]';
+                          continue;
+                      }
+                      $limpio[$clave] = $valor;
+                  }
+                  return $limpio;
+              }
+
+              protected function severidadDe(string $permission): string
+              {
+                  $criticos = [
+                      'system.secrets.manage', 'system.secrets.view_masked',
+                      'system.role.manage', 'promotion.revert',
+                      'promotion.execute', 'academic.year.close',
+                  ];
+                  if (in_array($permission, $criticos, true)) {
+                      return AuditLog::SEVERITY_CRITICAL;
+                  }
+
+                  $altos = [
+                      'students.view_sensitive', 'system.role.assign',
+                      'documents.annul', 'documents.sign',
+                      'grading.term.reopen', 'academic.enrollment.transfer',
+                  ];
+
+                  return in_array($permission, $altos, true)
+                      ? AuditLog::SEVERITY_HIGH
+                      : AuditLog::SEVERITY_MEDIUM;
+              }
+          }
+          PHP
+
+          cat > app/Traits/Auditable.php <<'PHP'
+          <?php
+
+          namespace Crater\Traits;
+
+          use Crater\Models\AuditLog;
+          use Crater\Services\Audit\Auditor;
+          use Illuminate\Support\Facades\Auth;
+
+          trait Auditable
+          {
+              protected static function bootAuditable()
+              {
+                  static::created(function ($model) {
+                      $model->registrarEnBitacora('created', [], $model->getAttributes());
+                  });
+
+                  static::updated(function ($model) {
+                      $cambios = $model->getChanges();
+                      unset($cambios['updated_at']);
+                      if (empty($cambios)) {
+                          return;
+                      }
+
+                      $anteriores = [];
+                      foreach (array_keys($cambios) as $campo) {
+                          $anteriores[$campo] = $model->getOriginal($campo);
+                      }
+                      $model->registrarEnBitacora('updated', $anteriores, $cambios);
+                  });
+
+                  static::deleted(function ($model) {
+                      $model->registrarEnBitacora('deleted', $model->getOriginal(), []);
+                  });
+              }
+
+              protected function registrarEnBitacora(string $evento, array $anteriores, array $nuevos): void
+              {
+                  $nombre = strtolower(class_basename($this));
+                  $user = app()->bound('auth') ? Auth::user() : null;
+
+                  app(Auditor::class)->record(
+                      $nombre.'.'.$evento,
+                      $user,
+                      [
+                          'type' => static::class,
+                          'id' => $this->getKey(),
+                          'company_id' => $this->getAttribute('company_id'),
+                          'school_level_id' => $this->getAttribute('school_level_id'),
+                      ],
+                      $anteriores,
+                      $nuevos,
+                      $this->auditSeverity ?? AuditLog::SEVERITY_MEDIUM
+                  );
+              }
+          }
+          PHP
+
+          cat > app/Http/Controllers/V1/Audit/AuditLogsController.php <<'PHP'
+          <?php
+
+          namespace Crater\Http\Controllers\V1\Audit;
+
+          use Crater\Http\Controllers\Controller;
+          use Crater\Models\AuditLog;
+          use Crater\Services\Access\AccessManager;
+          use Crater\Support\TenantContext;
+          use Illuminate\Http\Request;
+
+          class AuditLogsController extends Controller
+          {
+              protected $access;
+
+              public function __construct(AccessManager $access)
+              {
+                  $this->access = $access;
+              }
+
+              public function index(Request $request)
+              {
+                  $request->validate([
+                      'severity' => ['nullable', 'in:low,medium,high,critical'],
+                      'user_id' => ['nullable', 'integer'],
+                      'action' => ['nullable', 'string', 'max:100'],
+                      'desde' => ['nullable', 'date'],
+                      'hasta' => ['nullable', 'date'],
+                      'por_pagina' => ['nullable', 'integer', 'min:10', 'max:200'],
+                  ]);
+
+                  $base = $this->scopedQuery($request);
+                  $summaryBase = clone $base;
+
+                  $logs = $base
+                      ->with(['user:id,name,email', 'company:id,name', 'schoolLevel:id,name'])
+                      ->when($request->severity, fn ($q, $v) => $q->where('severity', $v))
+                      ->when($request->user_id, fn ($q, $v) => $q->where('user_id', $v))
+                      ->when($request->action, fn ($q, $v) => $q->where('action', 'like', "%{$v}%"))
+                      ->when($request->desde, fn ($q, $v) => $q->whereDate('created_at', '>=', $v))
+                      ->when($request->hasta, fn ($q, $v) => $q->whereDate('created_at', '<=', $v))
+                      ->orderByDesc('created_at')
+                      ->paginate($request->por_pagina ?: 50);
+
+                  $payload = $logs->toArray();
+                  $payload['audit_summary'] = [
+                      'total' => (clone $summaryBase)->count(),
+                      'ultimos_7_dias' => (clone $summaryBase)->where('created_at', '>=', now()->subDays(7))->count(),
+                      'criticos_7_dias' => (clone $summaryBase)
+                          ->where('severity', AuditLog::SEVERITY_CRITICAL)
+                          ->where('created_at', '>=', now()->subDays(7))->count(),
+                      'altos_7_dias' => (clone $summaryBase)
+                          ->where('severity', AuditLog::SEVERITY_HIGH)
+                          ->where('created_at', '>=', now()->subDays(7))->count(),
+                  ];
+
+                  return response()->json($payload);
+              }
+
+              protected function scopedQuery(Request $request)
+              {
+                  $query = AuditLog::query();
+                  $user = $request->user();
+
+                  // La administracion total conserva vista transversal completa.
+                  if ($this->access->isTotalAdmin($user)) {
+                      return $query;
+                  }
+
+                  $query->whereCompany(TenantContext::companyId());
+
+                  // Un rol limitado a un nivel ve SOLO ese nivel. Los eventos
+                  // institucionales (school_level_id NULL) quedan reservados a
+                  // quien tenga alcance global dentro de la empresa.
+                  if (TenantContext::schoolLevelId()) {
+                      $query->where('school_level_id', TenantContext::schoolLevelId());
+                  }
+
+                  return $query;
+              }
+          }
+          PHP
+
+      - name: Integrar auditoria en permisos y modelos
+        shell: python
+        run: |
+          from pathlib import Path
+
+          def replace_once(path, old, new):
+              p = Path(path)
+              s = p.read_text()
+              if s.count(old) != 1:
+                  raise SystemExit(f'Ancla inesperada en {path}: {old[:80]!r} count={s.count(old)}')
+              p.write_text(s.replace(old, new, 1))
+
+          # Middleware: auditar ejercicio de permisos sensibles.
+          replace_once('app/Http/Middleware/CheckPermission.php',
+              'use Closure;\nuse Crater\\Services\\Access\\AccessManager;\nuse Illuminate\\Http\\Request;',
+              'use Closure;\nuse Crater\\Enums\\Permission;\nuse Crater\\Services\\Access\\AccessManager;\nuse Crater\\Services\\Audit\\Auditor;\nuse Illuminate\\Http\\Request;')
+          replace_once('app/Http/Middleware/CheckPermission.php',
+              '    protected $access;\n\n    public function __construct(AccessManager $access)\n    {\n        $this->access = $access;\n    }',
+              '    protected $access;\n\n    protected $auditor;\n\n    public function __construct(AccessManager $access, Auditor $auditor)\n    {\n        $this->access = $access;\n        $this->auditor = $auditor;\n    }')
+          replace_once('app/Http/Middleware/CheckPermission.php',
+              '            if ($this->access->allows($user, $permission, $schoolLevelId)) {\n                return $next($request);\n            }',
+              '            if ($this->access->allows($user, $permission, $schoolLevelId)) {\n                if (Permission::isAudited($permission)) {\n                    $this->auditor->recordPermissionUse($permission, $user, $request->path(), $request->method());\n                }\n\n                return $next($request);\n            }')
+
+          models = {
+              'app/Models/AcademicYear.php': ('use Crater\\Traits\\BelongsToSchoolLevel;', 'use Crater\\Models\\AuditLog;\nuse Crater\\Traits\\Auditable;\nuse Crater\\Traits\\BelongsToSchoolLevel;', 'class AcademicYear extends Model\n{', 'class AcademicYear extends Model\n{\n    use Auditable;', "    const STATUS_CLOSED = 'closed';", "    const STATUS_CLOSED = 'closed';\n\n    protected $auditSeverity = AuditLog::SEVERITY_HIGH;"),
+              'app/Models/Enrollment.php': ('use Crater\\Traits\\BelongsToSchoolLevel;', 'use Crater\\Models\\AuditLog;\nuse Crater\\Traits\\Auditable;\nuse Crater\\Traits\\BelongsToSchoolLevel;', 'class Enrollment extends Model\n{', 'class Enrollment extends Model\n{\n    use Auditable;', "    const STATUS_COMPLETED = 'completed';", "    const STATUS_COMPLETED = 'completed';\n\n    protected $auditSeverity = AuditLog::SEVERITY_HIGH;"),
+              'app/Models/Division.php': ('use Crater\\Traits\\BelongsToSchoolLevel;', 'use Crater\\Traits\\Auditable;\nuse Crater\\Traits\\BelongsToSchoolLevel;', 'class Division extends Model\n{', 'class Division extends Model\n{\n    use Auditable;', None, None),
+              'app/Models/GradeLevel.php': ('use Crater\\Traits\\BelongsToSchoolLevel;', 'use Crater\\Traits\\Auditable;\nuse Crater\\Traits\\BelongsToSchoolLevel;', 'class GradeLevel extends Model\n{', 'class GradeLevel extends Model\n{\n    use Auditable;', None, None),
+              'app/Models/Subject.php': ('use Crater\\Traits\\BelongsToSchoolLevel;', 'use Crater\\Traits\\Auditable;\nuse Crater\\Traits\\BelongsToSchoolLevel;', 'class Subject extends Model\n{', 'class Subject extends Model\n{\n    use Auditable;', None, None),
+          }
+          for path, vals in models.items():
+              replace_once(path, vals[0], vals[1])
+              replace_once(path, vals[2], vals[3])
+              if vals[4]: replace_once(path, vals[4], vals[5])
+
+      - name: Crear pantalla y conectar rutas
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat > resources/assets/js/views/academic/AuditLogsIndex.vue <<'VUE'
+          <template>
+            <div>
+              <div class="flex items-start justify-between mb-6">
+                <div>
+                  <h1 class="text-2xl font-semibold text-gray-900">Bitácora de auditoría</h1>
+                  <p class="mt-1 text-sm text-gray-500">Registro de accesos sensibles y cambios relevantes. Las entradas son de solo lectura.</p>
+                </div>
+              </div>
+
+              <div class="grid grid-cols-2 gap-3 mb-5 md:grid-cols-4">
+                <div v-for="t in tarjetas" :key="t.label" class="p-4 bg-white border rounded-lg" :class="t.clase">
+                  <div class="text-xs uppercase">{{ t.label }}</div>
+                  <div class="mt-1 text-2xl font-semibold">{{ t.valor }}</div>
+                </div>
+              </div>
+
+              <sw-card>
+                <div class="p-5">
+                  <div class="grid grid-cols-1 gap-3 mb-5 md:grid-cols-5">
+                    <sw-select v-model="filtros.severity" @change="buscar">
+                      <option value="">Toda gravedad</option>
+                      <option value="low">Baja</option>
+                      <option value="medium">Media</option>
+                      <option value="high">Alta</option>
+                      <option value="critical">Crítica</option>
+                    </sw-select>
+                    <sw-input v-model="filtros.action" placeholder="Acción" @input="buscarConEspera" />
+                    <sw-input v-model="filtros.desde" type="date" @change="buscar" />
+                    <sw-input v-model="filtros.hasta" type="date" @change="buscar" />
+                    <sw-button v-if="hayFiltros" variant="primary-outline" @click="limpiar">Limpiar</sw-button>
+                  </div>
+
+                  <p v-if="loading" class="py-8 text-sm text-center text-gray-500">Cargando bitácora…</p>
+                  <p v-else-if="error" class="py-8 text-sm text-center text-red-600">{{ error }}</p>
+
+                  <div v-else class="overflow-x-auto">
+                    <table v-if="logs.length" class="w-full text-sm">
+                      <thead>
+                        <tr class="text-left text-gray-500 border-b">
+                          <th class="py-2">Fecha</th>
+                          <th class="py-2">Usuario</th>
+                          <th class="py-2">Institución / nivel</th>
+                          <th class="py-2">Acción</th>
+                          <th class="py-2">Objeto</th>
+                          <th class="py-2">Gravedad</th>
+                          <th class="py-2">Origen</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr v-for="l in logs" :key="l.id" class="align-top border-b last:border-0">
+                          <td class="py-2 whitespace-nowrap text-gray-600">{{ fechaHora(l.created_at) }}</td>
+                          <td class="py-2"><span v-if="l.user">{{ l.user.name }}</span><span v-else class="text-gray-400">sistema</span></td>
+                          <td class="py-2 text-xs text-gray-600">
+                            <div>{{ l.company ? l.company.name : '—' }}</div>
+                            <div class="text-gray-400">{{ l.school_level ? l.school_level.name : 'institucional' }}</div>
+                          </td>
+                          <td class="py-2">
+                            <span class="font-mono text-xs">{{ l.action }}</span>
+                            <button v-if="l.old_values || l.new_values" type="button" class="block mt-1 text-xs text-primary-500 hover:underline" @click="detalle = detalle === l.id ? null : l.id">
+                              {{ detalle === l.id ? 'Ocultar cambios' : 'Ver cambios' }}
+                            </button>
+                            <div v-if="detalle === l.id" class="p-2 mt-2 text-xs bg-gray-50 rounded">
+                              <div v-for="(valor, campo) in (l.new_values || {})" :key="campo" class="mb-1">
+                                <span class="font-medium">{{ campo }}:</span>
+                                <span v-if="l.old_values && l.old_values[campo] !== undefined" class="text-gray-500"> {{ mostrar(l.old_values[campo]) }} → </span>
+                                <span>{{ mostrar(valor) }}</span>
+                              </div>
+                            </div>
+                          </td>
+                          <td class="py-2 text-gray-600"><span v-if="l.auditable_type">{{ tipoCorto(l.auditable_type) }} #{{ l.auditable_id }}</span><span v-else class="text-gray-400">—</span></td>
+                          <td class="py-2"><span class="px-2 py-1 text-xs rounded-full" :class="claseGravedad(l.severity)">{{ gravedad(l.severity) }}</span></td>
+                          <td class="py-2 text-xs text-gray-500">{{ l.ip_address || '—' }}</td>
+                        </tr>
+                      </tbody>
+                    </table>
+                    <p v-else class="py-8 text-sm text-center text-gray-500">No hay registros que coincidan con los filtros.</p>
+                  </div>
+
+                  <div v-if="!loading && paginacion.last_page > 1" class="flex items-center justify-between mt-5">
+                    <span class="text-sm text-gray-500">Página {{ paginacion.current_page }} de {{ paginacion.last_page }} · {{ paginacion.total }} registros</span>
+                    <div class="flex gap-2">
+                      <sw-button variant="primary-outline" size="sm" :disabled="paginacion.current_page <= 1" @click="irA(paginacion.current_page - 1)">Anterior</sw-button>
+                      <sw-button variant="primary-outline" size="sm" :disabled="paginacion.current_page >= paginacion.last_page" @click="irA(paginacion.current_page + 1)">Siguiente</sw-button>
+                    </div>
+                  </div>
+                </div>
+              </sw-card>
+            </div>
+          </template>
+
+          <script>
+          export default {
+            data() {
+              return { loading: true, error: null, logs: [], paginacion: {}, resumen: {}, detalle: null, temporizador: null, filtros: { severity: '', action: '', desde: '', hasta: '' } }
+            },
+            computed: {
+              hayFiltros() { return Object.values(this.filtros).some((v) => v) },
+              tarjetas() {
+                return [
+                  { label: 'Total', valor: this.resumen.total || 0, clase: 'border-gray-200 text-gray-700' },
+                  { label: 'Últimos 7 días', valor: this.resumen.ultimos_7_dias || 0, clase: 'border-gray-200 text-gray-700' },
+                  { label: 'Altos (7 días)', valor: this.resumen.altos_7_dias || 0, clase: 'border-yellow-200 bg-yellow-50 text-yellow-800' },
+                  { label: 'Críticos (7 días)', valor: this.resumen.criticos_7_dias || 0, clase: 'border-red-200 bg-red-50 text-red-800' },
+                ]
+              },
+            },
+            async created() { await this.cargar() },
+            beforeDestroy() { clearTimeout(this.temporizador) },
+            methods: {
+              async cargar(pagina = 1) {
+                this.loading = true; this.error = null
+                try {
+                  const lista = await window.axios.get('/api/v1/audit-logs', { params: { ...this.filtros, page: pagina } })
+                  this.logs = lista.data.data
+                  this.paginacion = { current_page: lista.data.current_page, last_page: lista.data.last_page, total: lista.data.total }
+                  this.resumen = lista.data.audit_summary || {}
+                } catch (e) {
+                  this.error = e.response && e.response.status === 403 ? 'No tenés permiso para consultar la bitácora.' : 'No se pudo cargar la bitácora.'
+                } finally { this.loading = false }
+              },
+              buscar() { this.cargar(1) },
+              buscarConEspera() { clearTimeout(this.temporizador); this.temporizador = setTimeout(() => this.cargar(1), 350) },
+              limpiar() { this.filtros = { severity: '', action: '', desde: '', hasta: '' }; this.cargar(1) },
+              irA(pagina) { this.cargar(pagina) },
+              fechaHora(v) { if (!v) return '—'; return new Date(v).toLocaleString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }) },
+              tipoCorto(t) { return String(t).split('\\').pop() },
+              mostrar(v) { if (v === null || v === undefined) return '—'; if (typeof v === 'boolean') return v ? 'sí' : 'no'; return String(v) },
+              gravedad(s) { return { low: 'Baja', medium: 'Media', high: 'Alta', critical: 'Crítica' }[s] || s },
+              claseGravedad(s) { return { low: 'bg-gray-100 text-gray-700', medium: 'bg-blue-100 text-blue-800', high: 'bg-yellow-100 text-yellow-800', critical: 'bg-red-100 text-red-800' }[s] || 'bg-gray-100 text-gray-700' },
+            },
+          }
+          </script>
+          VUE
+
+      - name: Integrar API menu router y traducciones
+        shell: python
+        run: |
+          from pathlib import Path
+          import json
+
+          def replace_once(path, old, new):
+              p=Path(path); s=p.read_text()
+              if s.count(old)!=1: raise SystemExit(f'Ancla inesperada {path}: count={s.count(old)}')
+              p.write_text(s.replace(old,new,1))
+
+          replace_once('routes/api.php',
+              'use Crater\\Http\\Controllers\\V1\\Academic\\AcademicYearsController;\n',
+              'use Crater\\Http\\Controllers\\V1\\Academic\\AcademicYearsController;\nuse Crater\\Http\\Controllers\\V1\\Audit\\AuditLogsController;\n')
+          replace_once('routes/api.php',
+              "        Route::put('/enrollments/{enrollment}', [EnrollmentsController::class, 'update'])\n            ->middleware('permission:academic.enrollment.manage,academic.enrollment.transfer');\n",
+              "        Route::put('/enrollments/{enrollment}', [EnrollmentsController::class, 'update'])\n            ->middleware('permission:academic.enrollment.manage,academic.enrollment.transfer');\n\n        Route::get('/audit-logs', [AuditLogsController::class, 'index'])\n            ->middleware('permission:system.audit.view');\n")
+
+          replace_once('resources/assets/js/router.js',
+              "import EnrollmentsIndex from './views/academic/EnrollmentsIndex.vue'\n",
+              "import EnrollmentsIndex from './views/academic/EnrollmentsIndex.vue'\nimport AuditLogsIndex from './views/academic/AuditLogsIndex.vue'\n")
+          replace_once('resources/assets/js/router.js',
+              "          {\n            path: 'enrollments',\n            name: 'academic.enrollments',\n            component: EnrollmentsIndex,\n          },\n",
+              "          {\n            path: 'enrollments',\n            name: 'academic.enrollments',\n            component: EnrollmentsIndex,\n          },\n          {\n            path: 'audit-logs',\n            name: 'system.audit.logs',\n            component: AuditLogsIndex,\n          },\n")
+
+          replace_once('resources/assets/js/views/settings/SettingsIndex.vue',
+              "        {\n          link: '/admin/settings/enrollments',\n          title: 'settings.menu_title.enrollments',\n          icon: 'user-add-icon',\n        },\n",
+              "        {\n          link: '/admin/settings/enrollments',\n          title: 'settings.menu_title.enrollments',\n          icon: 'user-add-icon',\n        },\n        {\n          link: '/admin/settings/audit-logs',\n          title: 'settings.menu_title.audit_logs',\n          icon: 'clipboard-list-icon',\n        },\n")
+
+          for path, value in [('resources/assets/js/plugins/es.json','Bitácora de auditoría'),('resources/assets/js/plugins/en.json','Audit log')]:
+              p=Path(path); data=json.loads(p.read_text()); data['settings']['menu_title']['audit_logs']=value
+              p.write_text(json.dumps(data, ensure_ascii=False, indent=2)+'\n')
+
+      - name: Validar PHP y estructura
+        shell: bash
+        run: |
+          set -euo pipefail
+          php -l database/migrations/2026_09_01_000500_create_audit_logs_table.php
+          php -l app/Models/AuditLog.php
+          php -l app/Services/Audit/Auditor.php
+          php -l app/Traits/Auditable.php
+          php -l app/Http/Controllers/V1/Audit/AuditLogsController.php
+          php -l app/Http/Middleware/CheckPermission.php
+          php -l app/Models/AcademicYear.php
+          php -l app/Models/Enrollment.php
+          php -l app/Models/Division.php
+          php -l app/Models/GradeLevel.php
+          php -l app/Models/Subject.php
+          php -l routes/api.php
+          grep -q "system.audit.view" routes/api.php
+          grep -q "audit-logs" resources/assets/js/router.js
+          grep -q "class CreateAuditLogsTable" database/migrations/2026_09_01_000500_create_audit_logs_table.php
+          ! grep -q "orWhereNull('school_level_id')" app/Http/Controllers/V1/Audit/AuditLogsController.php
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+
+      - name: Instalar dependencias y compilar frontend
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm ci --legacy-peer-deps
+          NODE_OPTIONS=--openssl-legacy-provider npm run production
+          grep -q "audit-logs" public/assets/js/app.js
+          grep -q "Bitácora de auditoría" public/assets/js/app.js
+
+      - name: Actualizar frontend precompilado
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -f build/frontend/app.js.gz.part.*
+          gzip -c public/assets/js/app.js | split -b 450K - build/frontend/app.js.gz.part.
+          cp public/assets/css/crater.css build/frontend/crater.css
+          cp public/mix-manifest.json build/frontend/mix-manifest.json
+
+      - name: Guardar integracion y retirar workflow temporal
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -f .github/workflows/integrate-audit-log-chatgpt.yml
+          git config user.name "ChatGPT"
+          git config user.email "actions@users.noreply.github.com"
+          git add app database/migrations routes/api.php resources/assets/js build/frontend .github/workflows/integrate-audit-log-chatgpt.yml
+          git commit -m "agregar bitacora de auditoria persistente y segura"
+          git push origin HEAD:chatgpt/bitacora-auditoria-20260816
