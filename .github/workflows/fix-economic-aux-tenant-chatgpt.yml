@@ -1,0 +1,95 @@
+name: Fix economic auxiliary tenant ChatGPT
+
+on:
+  push:
+    branches:
+      - chatgpt/auxiliares-economicos-tenant-20260816
+
+permissions:
+  contents: write
+
+jobs:
+  test-and-fix:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: chatgpt/auxiliares-economicos-tenant-20260816
+
+      - name: Add tenant middleware to resource auxiliary controllers
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          files = [
+              'app/Http/Controllers/V1/Customer/CustomerStatsController.php',
+              'app/Http/Controllers/V1/Estimate/ChangeEstimateStatusController.php',
+              'app/Http/Controllers/V1/Estimate/ConvertEstimateController.php',
+              'app/Http/Controllers/V1/Estimate/SendEstimateController.php',
+              'app/Http/Controllers/V1/Expense/ShowReceiptController.php',
+              'app/Http/Controllers/V1/Expense/UploadReceiptController.php',
+              'app/Http/Controllers/V1/Invoice/ChangeInvoiceStatusController.php',
+              'app/Http/Controllers/V1/Invoice/CloneInvoiceController.php',
+              'app/Http/Controllers/V1/Invoice/SendInvoiceController.php',
+              'app/Http/Controllers/V1/Payment/SendPaymentController.php',
+          ]
+          for name in files:
+              p = Path(name)
+              s = p.read_text()
+              if "$this->middleware('tenant')" in s:
+                  continue
+              cls = p.stem
+              marker = f'class {cls} extends Controller\n{{\n'
+              if marker not in s:
+                  raise SystemExit(f'class anchor not found: {name}')
+              s = s.replace(marker, marker + "    public function __construct()\n    {\n        $this->middleware('tenant');\n    }\n\n", 1)
+              p.write_text(s)
+          PY
+
+      - name: Setup PHP 7.4
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '7.4'
+          extensions: mbstring, pdo_sqlite, sqlite3
+          coverage: none
+
+      - name: Validate PHP syntax
+        run: |
+          for f in \
+            app/Http/Controllers/V1/Customer/CustomerStatsController.php \
+            app/Http/Controllers/V1/Estimate/ChangeEstimateStatusController.php \
+            app/Http/Controllers/V1/Estimate/ConvertEstimateController.php \
+            app/Http/Controllers/V1/Estimate/SendEstimateController.php \
+            app/Http/Controllers/V1/Expense/ShowReceiptController.php \
+            app/Http/Controllers/V1/Expense/UploadReceiptController.php \
+            app/Http/Controllers/V1/Invoice/ChangeInvoiceStatusController.php \
+            app/Http/Controllers/V1/Invoice/CloneInvoiceController.php \
+            app/Http/Controllers/V1/Invoice/SendInvoiceController.php \
+            app/Http/Controllers/V1/Payment/SendPaymentController.php \
+            tests/Isolation/EconomicAuxiliaryTenantTest.php; do php -l "$f"; done
+
+      - name: Install Composer dependencies
+        run: composer install --no-interaction --prefer-dist --no-progress
+
+      - name: Run auxiliary isolation regression
+        run: vendor/bin/pest tests/Isolation/EconomicAuxiliaryTenantTest.php
+
+      - name: Commit fix and self-delete workflow
+        run: |
+          git config user.name "Jesus Olguin"
+          git config user.email "47510848+jesus1942@users.noreply.github.com"
+          git add app/Http/Controllers/V1/Customer/CustomerStatsController.php \
+                  app/Http/Controllers/V1/Estimate/ChangeEstimateStatusController.php \
+                  app/Http/Controllers/V1/Estimate/ConvertEstimateController.php \
+                  app/Http/Controllers/V1/Estimate/SendEstimateController.php \
+                  app/Http/Controllers/V1/Expense/ShowReceiptController.php \
+                  app/Http/Controllers/V1/Expense/UploadReceiptController.php \
+                  app/Http/Controllers/V1/Invoice/ChangeInvoiceStatusController.php \
+                  app/Http/Controllers/V1/Invoice/CloneInvoiceController.php \
+                  app/Http/Controllers/V1/Invoice/SendInvoiceController.php \
+                  app/Http/Controllers/V1/Payment/SendPaymentController.php
+          git commit -m "Aislar operaciones económicas auxiliares por nivel"
+          rm .github/workflows/fix-economic-aux-tenant-chatgpt.yml
+          git add -u .github/workflows/fix-economic-aux-tenant-chatgpt.yml
+          git commit -m "Retirar workflow temporal de auxiliares económicos"
+          git push origin HEAD:chatgpt/auxiliares-economicos-tenant-20260816
