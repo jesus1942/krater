@@ -14,19 +14,23 @@ jobs:
           ref: chatgpt/student-course-placement-20260816
           fetch-depth: 0
       - name: Apply canonical student placement
-        run: python3 .github/scripts/fix_student_course.py
+        run: |
+          python3 .github/scripts/fix_student_course.py
+          sed -i '5d;7d' tests/Isolation/StudentCoursePlacementTest.php
       - name: Setup PHP 7.4
         uses: shivammathur/setup-php@v2
         with:
           php-version: '7.4'
           extensions: mbstring, sqlite3, pdo_sqlite
           tools: composer:v2
-      - name: Validate PHP syntax
+      - name: Validate PHP syntax and invariants
         run: |
           php -l app/Http/Controllers/V1/Student/StudentsController.php
           php -l app/Http/Requests/StudentRequest.php
           php -l database/migrations/2026_09_01_000800_repair_student_level_consistency.php
           php -l tests/Isolation/StudentCoursePlacementTest.php
+          ! grep -Fq "$validated['school_level_id'] = $request->header('school-level')" app/Http/Controllers/V1/Student/StudentsController.php
+          grep -Fq "applyCanonicalPlacement" app/Http/Controllers/V1/Student/StudentsController.php
       - name: Install PHP dependencies
         run: composer install --no-interaction --prefer-dist --no-progress
       - name: Run placement regressions
