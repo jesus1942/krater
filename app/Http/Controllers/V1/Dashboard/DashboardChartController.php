@@ -8,6 +8,11 @@ use Illuminate\Http\Request;
 
 class DashboardChartController extends Controller
 {
+    public function __construct()
+    {
+        $this->middleware('tenant');
+    }
+
     /**
      * Handle the incoming request.
      *
