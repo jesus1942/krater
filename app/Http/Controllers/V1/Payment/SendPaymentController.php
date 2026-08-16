@@ -8,6 +8,11 @@ use Crater\Models\Payment;
 
 class SendPaymentController extends Controller
 {
+    public function __construct()
+    {
+        $this->middleware('tenant');
+    }
+
     /**
      * Handle the incoming request.
      *
