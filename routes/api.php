@@ -66,6 +66,7 @@ use Crater\Http\Controllers\V1\Update\UnzipUpdateController;
 use Crater\Http\Controllers\V1\Users\UsersController;
 use Crater\Http\Controllers\V1\Academic\AcademicYearsController;
 use Crater\Http\Controllers\V1\Academic\DivisionsController;
+use Crater\Http\Controllers\V1\Academic\EnrollmentsController;
 use Crater\Http\Controllers\V1\Academic\GradeLevelsController;
 use Crater\Http\Controllers\V1\Academic\SubjectsController;
 use Illuminate\Support\Facades\Route;
@@ -217,6 +218,19 @@ Route::prefix('/v1')->group(function () {
 
         Route::delete('/subjects/{subject}', [SubjectsController::class, 'destroy'])
             ->middleware('permission:academic.study_plan.manage');
+
+        // --- matriculas ---
+        Route::get('/enrollments', [EnrollmentsController::class, 'index'])
+            ->middleware('permission:academic.enrollment.view');
+
+        Route::get('/enrollments/disponibles', [EnrollmentsController::class, 'disponibles'])
+            ->middleware('permission:academic.enrollment.view');
+
+        Route::post('/enrollments', [EnrollmentsController::class, 'store'])
+            ->middleware('permission:academic.enrollment.manage');
+
+        Route::put('/enrollments/{enrollment}', [EnrollmentsController::class, 'update'])
+            ->middleware('permission:academic.enrollment.manage,academic.enrollment.transfer');
 
     });
 

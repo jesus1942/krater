@@ -73,6 +73,7 @@ import SchoolLevelsSetting from './views/settings/SchoolLevelsSetting.vue'
 // Academico
 import AcademicYearsIndex from './views/academic/AcademicYearsIndex.vue'
 import AcademicStructureIndex from './views/academic/AcademicStructureIndex.vue'
+import EnrollmentsIndex from './views/academic/EnrollmentsIndex.vue'
 import Customization from './views/settings/CustomizationSetting.vue'
 import Notifications from './views/settings/NotificationsSetting.vue'
 import Preferences from './views/settings/PreferencesSetting.vue'
@@ -365,6 +366,11 @@ const routes = [
             path: 'academic-structure',
             name: 'academic.structure',
             component: AcademicStructureIndex,
+          },
+          {
+            path: 'enrollments',
+            name: 'academic.enrollments',
+            component: EnrollmentsIndex,
           },
           {
             path: 'customization',

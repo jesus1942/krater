@@ -6,6 +6,7 @@ use Crater\Enums\Permission;
 use Crater\Models\AcademicYear;
 use Crater\Models\CourseSection;
 use Crater\Models\Division;
+use Crater\Models\Enrollment;
 use Crater\Models\User;
 use Crater\Services\Access\AccessManager;
 use Illuminate\Auth\Access\HandlesAuthorization;
@@ -51,15 +52,10 @@ class AcademicPolicy
 
     public function manageAcademicYear(User $user, ?AcademicYear $year = null): bool
     {
-        // La empresa se valida tambien en la policy. Es una segunda barrera:
-        // incluso si una ruta futura enlaza el modelo antes de TenantContext,
-        // un ID de otra institucion se rechaza.
         if ($year && ! $this->belongsToUserCompany($user, $year)) {
             return false;
         }
 
-        // Un ciclo cerrado no se edita ni con el permiso: es historia. Para
-        // tocarlo hay que reabrirlo, que es una accion con doble control.
         if ($year && $year->isClosed()) {
             return false;
         }
@@ -87,11 +83,6 @@ class AcademicPolicy
         return $this->access->allows($user, Permission::DIVISION_VIEW, $this->level());
     }
 
-    /**
-     * Ver una division concreta. Aca entra el alcance fino: un preceptor solo
-     * ve las divisiones que tiene asignadas en `user_scopes`, y un docente
-     * alcanza por tener alguna seccion de esa division.
-     */
     public function viewDivision(User $user, Division $division): bool
     {
         if (! $this->belongsToUserCompany($user, $division)) {
@@ -165,6 +156,61 @@ class AcademicPolicy
         );
     }
 
+    // --- matriculas ------------------------------------------------------------
+
+    public function viewAnyEnrollment(User $user): bool
+    {
+        return $this->access->allows($user, Permission::ENROLLMENT_VIEW, $this->level());
+    }
+
+    public function viewEnrollmentsOfDivision(User $user, Division $division): bool
+    {
+        if (! $this->belongsToUserCompany($user, $division)) {
+            return false;
+        }
+
+        return $this->access->allows(
+            $user,
+            Permission::ENROLLMENT_VIEW,
+            $division->school_level_id,
+            ['type' => 'division', 'id' => $division->id]
+        );
+    }
+
+    public function manageEnrollment(User $user, Division $division): bool
+    {
+        if (! $this->belongsToUserCompany($user, $division)) {
+            return false;
+        }
+
+        if (optional($division->academicYear)->isClosed()) {
+            return false;
+        }
+
+        return $this->access->allows(
+            $user,
+            Permission::ENROLLMENT_MANAGE,
+            $division->school_level_id
+        );
+    }
+
+    public function transferEnrollment(User $user, Division $division): bool
+    {
+        if (! $this->belongsToUserCompany($user, $division)) {
+            return false;
+        }
+
+        if (optional($division->academicYear)->isClosed()) {
+            return false;
+        }
+
+        return $this->access->allows(
+            $user,
+            Permission::ENROLLMENT_TRANSFER,
+            $division->school_level_id
+        );
+    }
+
     // --- planes y materias -----------------------------------------------------
 
     public function viewStudyPlan(User $user): bool
@@ -177,20 +223,11 @@ class AcademicPolicy
         return $this->access->allows($user, Permission::STUDY_PLAN_MANAGE, $this->level());
     }
 
-    /**
-     * Una policy de objeto nunca confia solo en el ID ni en el nivel. La
-     * empresa del recurso tiene que coincidir con la empresa autenticada.
-     */
     protected function belongsToUserCompany(User $user, $resource): bool
     {
         return (int) $resource->company_id === (int) $user->company_id;
     }
 
-    /**
-     * Nivel del contexto actual. Se lee del header ya validado por
-     * ValidateTenant; para objetos concretos se usa el nivel del objeto, que es
-     * mas confiable.
-     */
     protected function level(): ?int
     {
         $level = \Crater\Support\TenantContext::schoolLevelId();
