@@ -187,7 +187,7 @@
             <option value="withdrawn">Baja</option>
           </select>
           <span v-if="formBaja.status === 'transferred_out'" class="block mt-1 text-xs text-gray-500">
-            El pase requiere permiso específico y queda registrado en la auditoría.
+            El pase requiere un permiso específico.
           </span>
         </label>
 

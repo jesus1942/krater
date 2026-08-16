@@ -61,6 +61,7 @@ import {
   AcademicCapIcon,
   CalendarIcon,
   TemplateIcon,
+  UserAddIcon,
   BellIcon,
   CheckCircleIcon,
   ClipboardListIcon,
@@ -86,6 +87,7 @@ export default {
     AcademicCapIcon,
     CalendarIcon,
     TemplateIcon,
+    UserAddIcon,
     PencilAltIcon,
     CogIcon,
     CheckCircleIcon,
@@ -133,6 +135,11 @@ export default {
           link: '/admin/settings/academic-structure',
           title: 'Estructura académica',
           icon: 'template-icon',
+        },
+        {
+          link: '/admin/settings/enrollments',
+          title: 'settings.menu_title.enrollments',
+          icon: 'user-add-icon',
         },
         {
           link: '/admin/settings/preferences',
