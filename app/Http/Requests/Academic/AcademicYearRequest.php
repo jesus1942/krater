@@ -20,7 +20,10 @@ class AcademicYearRequest extends FormRequest
 
     public function rules()
     {
-        $id = optional($this->route('academic_year'))->id;
+        // La ruta usa `{academicYear}`. Se conserva el fallback en snake_case
+        // para que el request tambien funcione si se reutiliza en otra ruta.
+        $routeYear = $this->route('academicYear') ?: $this->route('academic_year');
+        $id = optional($routeYear)->id;
         $levelId = $this->header('school-level');
 
         return [
@@ -38,7 +41,10 @@ class AcademicYearRequest extends FormRequest
             'name' => ['required', 'string', 'max:255'],
             'starts_on' => ['required', 'date'],
             'ends_on' => ['required', 'date', 'after:starts_on'],
-            'status' => ['sometimes', Rule::in(['draft', 'active', 'closing', 'closed'])],
+            // El cierre y la reapertura tienen permisos y doble control
+            // propios. Este endpoint general solo puede alternar entre
+            // borrador y activo.
+            'status' => ['sometimes', Rule::in(['draft', 'active'])],
         ];
     }
 

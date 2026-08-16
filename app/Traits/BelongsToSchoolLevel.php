@@ -37,10 +37,29 @@ trait BelongsToSchoolLevel
     protected static function bootBelongsToSchoolLevel()
     {
         static::creating(function ($model) {
+            $companyId = TenantContext::companyId();
             $levelId = TenantContext::schoolLevelId();
+
+            if (! $model->company_id && $companyId) {
+                $model->company_id = $companyId;
+            }
 
             if (! $model->school_level_id && $levelId) {
                 $model->school_level_id = $levelId;
+            }
+        });
+
+        // El nivel es el tenant interno, pero la empresa sigue siendo el
+        // tenant externo. Filtrar solo por nivel deja una ventana en el route
+        // model binding cuando un administrador global consulta por ID.
+        static::addGlobalScope('company', function ($query) {
+            $companyId = TenantContext::companyId();
+
+            if ($companyId) {
+                $query->where(
+                    $query->getModel()->getTable().'.company_id',
+                    $companyId
+                );
             }
         });
 

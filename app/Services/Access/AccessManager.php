@@ -104,6 +104,8 @@ class AccessManager
                 ->join('permission_role', 'permission_role.role_id', '=', 'roles.id')
                 ->join('permissions', 'permissions.id', '=', 'permission_role.permission_id')
                 ->where('role_user.user_id', $user->id)
+                ->where('role_user.company_id', $user->company_id)
+                ->where('roles.company_id', $user->company_id)
                 // El rol aplica si es global, o si es del nivel consultado.
                 ->where(function ($q) use ($schoolLevelId) {
                     $q->whereNull('role_user.school_level_id');
@@ -159,6 +161,7 @@ class AccessManager
         // es negar.
         $has = DB::table('user_scopes')
             ->where('user_id', $user->id)
+            ->where('company_id', $user->company_id)
             ->where('scope_type', $scope['type'])
             ->where('scope_id', $scope['id'])
             ->exists();
@@ -174,6 +177,8 @@ class AccessManager
             return DB::table('user_scopes')
                 ->join('course_sections', 'course_sections.id', '=', 'user_scopes.scope_id')
                 ->where('user_scopes.user_id', $user->id)
+                ->where('user_scopes.company_id', $user->company_id)
+                ->where('course_sections.company_id', $user->company_id)
                 ->where('user_scopes.scope_type', 'course_section')
                 ->where('course_sections.division_id', $scope['id'])
                 ->exists();
@@ -192,10 +197,21 @@ class AccessManager
     public function isTotalAdmin(User $user): bool
     {
         return Cache::remember("acl:u{$user->id}:total_admin", self::CACHE_TTL, function () use ($user) {
+            $today = now()->toDateString();
+
             return DB::table('role_user')
                 ->join('roles', 'roles.id', '=', 'role_user.role_id')
                 ->where('role_user.user_id', $user->id)
+                ->where('role_user.company_id', $user->company_id)
+                ->where('roles.company_id', $user->company_id)
                 ->where('roles.name', RoleName::TOTAL_ADMIN)
+                ->whereNull('role_user.school_level_id')
+                ->where(function ($query) use ($today) {
+                    $query->whereNull('role_user.starts_on')->orWhere('role_user.starts_on', '<=', $today);
+                })
+                ->where(function ($query) use ($today) {
+                    $query->whereNull('role_user.ends_on')->orWhere('role_user.ends_on', '>=', $today);
+                })
                 ->exists();
         });
     }
@@ -206,9 +222,19 @@ class AccessManager
      */
     public function hierarchyLevel(User $user): int
     {
+        $today = now()->toDateString();
+
         $min = DB::table('role_user')
             ->join('roles', 'roles.id', '=', 'role_user.role_id')
             ->where('role_user.user_id', $user->id)
+            ->where('role_user.company_id', $user->company_id)
+            ->where('roles.company_id', $user->company_id)
+            ->where(function ($query) use ($today) {
+                $query->whereNull('role_user.starts_on')->orWhere('role_user.starts_on', '<=', $today);
+            })
+            ->where(function ($query) use ($today) {
+                $query->whereNull('role_user.ends_on')->orWhere('role_user.ends_on', '>=', $today);
+            })
             ->min('roles.hierarchy_level');
 
         return $min === null ? PHP_INT_MAX : (int) $min;
@@ -275,6 +301,8 @@ class AccessManager
         return DB::table('role_user')
             ->join('roles', 'roles.id', '=', 'role_user.role_id')
             ->where('role_user.user_id', $user->id)
+            ->where('role_user.company_id', $user->company_id)
+            ->where('roles.company_id', $user->company_id)
             ->where(function ($q) use ($schoolLevelId) {
                 $q->whereNull('role_user.school_level_id');
                 if ($schoolLevelId !== null) {

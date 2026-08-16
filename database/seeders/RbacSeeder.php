@@ -29,6 +29,7 @@ class RbacSeeder extends Seeder
 
         foreach (Company::all() as $company) {
             $this->sembrarRoles($company->id);
+            $this->migrarRolesHeredados($company->id);
         }
     }
 
@@ -135,5 +136,52 @@ class RbacSeeder extends Seeder
         $this->command->info(
             'Roles sembrados para la empresa '.$companyId.': '.count(RoleName::definitions())
         );
+    }
+
+    /**
+     * Puente de compatibilidad para instalaciones existentes.
+     *
+     * Solo asigna un rol nuevo cuando la persona todavia no tiene ninguna
+     * entrada RBAC. De ese modo una ejecucion posterior del seeder nunca pisa
+     * decisiones hechas desde la administracion de la escuela.
+     */
+    protected function migrarRolesHeredados($companyId)
+    {
+        $roleIds = DB::table('roles')
+            ->where('company_id', $companyId)
+            ->whereIn('name', [RoleName::TOTAL_ADMIN, RoleName::GENERAL_DIRECTOR])
+            ->pluck('id', 'name');
+
+        $users = DB::table('users')
+            ->where('company_id', $companyId)
+            ->whereIn('role', ['super admin', 'admin'])
+            ->get(['id', 'role']);
+
+        foreach ($users as $user) {
+            if (DB::table('role_user')->where('user_id', $user->id)->exists()) {
+                continue;
+            }
+
+            $roleName = $user->role === 'super admin'
+                ? RoleName::TOTAL_ADMIN
+                : RoleName::GENERAL_DIRECTOR;
+
+            if (! isset($roleIds[$roleName])) {
+                continue;
+            }
+
+            DB::table('role_user')->insert([
+                'user_id' => $user->id,
+                'role_id' => $roleIds[$roleName],
+                'company_id' => $companyId,
+                'school_level_id' => null,
+                'starts_on' => null,
+                'ends_on' => null,
+                'granted_by' => null,
+                'granted_at' => now(),
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+        }
     }
 }

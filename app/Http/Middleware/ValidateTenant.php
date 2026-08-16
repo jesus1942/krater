@@ -75,7 +75,7 @@ class ValidateTenant
 
             // El usuario tiene que estar vinculado al nivel, salvo que tenga un
             // rol global (administracion total, direccion general).
-            if (! $this->tieneAlcanceGlobal($user->id) && ! $this->perteneceAlNivel($user->id, $levelId)) {
+            if (! $this->tieneAlcanceGlobal($user->id, $companyId) && ! $this->perteneceAlNivel($user->id, $levelId)) {
                 return response()->json(['error' => 'forbidden'], 403);
             }
         }
@@ -99,13 +99,23 @@ class ValidateTenant
             ->exists();
     }
 
-    protected function tieneAlcanceGlobal($userId): bool
+    protected function tieneAlcanceGlobal($userId, $companyId): bool
     {
+        $today = now()->toDateString();
+
         return DB::table('role_user')
             ->join('roles', 'roles.id', '=', 'role_user.role_id')
             ->where('role_user.user_id', $userId)
+            ->where('role_user.company_id', $companyId)
+            ->where('roles.company_id', $companyId)
             ->where('roles.scope_type', 'global')
             ->whereNull('role_user.school_level_id')
+            ->where(function ($query) use ($today) {
+                $query->whereNull('role_user.starts_on')->orWhere('role_user.starts_on', '<=', $today);
+            })
+            ->where(function ($query) use ($today) {
+                $query->whereNull('role_user.ends_on')->orWhere('role_user.ends_on', '>=', $today);
+            })
             ->exists();
     }
 }
