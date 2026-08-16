@@ -44,6 +44,18 @@ class Student extends Model
         return $this->belongsTo(User::class, 'guardian_id');
     }
 
+    public function familyMembers()
+    {
+        return $this->belongsToMany(FamilyMember::class, 'student_family_members')
+            ->withPivot([
+                'relationship',
+                'is_responsible',
+                'is_financial_responsible',
+                'is_primary_contact',
+            ])
+            ->withTimestamps();
+    }
+
     public function company()
     {
         return $this->belongsTo(Company::class);
