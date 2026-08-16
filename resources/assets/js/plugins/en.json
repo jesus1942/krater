@@ -608,6 +608,8 @@
   "settings": {
     "menu_title": {
       "account_settings": "Account Settings",
+      "school_levels": "School levels",
+      "academic_years": "Academic years",
       "company_information": "Company Information",
       "customization": "Customization",
       "preferences": "Preferences",

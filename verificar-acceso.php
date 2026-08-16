@@ -249,6 +249,74 @@ Capsule::table('role_user')->where('user_id', $suplente->id)->update([
 $contenedor->instance('cache', new Repository(new ArrayStore()));
 comprobar('un rol vencido ya no otorga permisos', $acceso->allows($suplente, P::GRADE_RECORD, $niveles['secondary']), false);
 
+
+echo "\n== filtrado de listados por alcance ==\n";
+
+// La direccion ve todo el nivel; el preceptor y el docente, solo lo suyo.
+comprobar('la direccion de nivel tiene alcance de nivel completo', $acceso->hasLevelWideScope($directorNivel, $niveles['secondary']), true);
+comprobar('el preceptor NO tiene alcance de nivel completo', $acceso->hasLevelWideScope($preceptor, $niveles['secondary']), false);
+comprobar('el docente NO tiene alcance de nivel completo', $acceso->hasLevelWideScope($docente, $niveles['secondary']), false);
+comprobar('la administracion total tiene alcance completo', $acceso->hasLevelWideScope($admin, $niveles['secondary']), true);
+
+// Se arma estructura real para probar el filtrado de divisiones.
+$cicloId = Capsule::table('academic_years')->insertGetId([
+    'company_id' => $empresaId, 'school_level_id' => $niveles['secondary'],
+    'year' => 2027, 'name' => 'Ciclo 2027', 'starts_on' => '2027-03-01', 'ends_on' => '2027-12-15',
+    'status' => 'active', 'created_at' => $ahora, 'updated_at' => $ahora,
+]);
+$cursoId = Capsule::table('grade_levels')->insertGetId([
+    'company_id' => $empresaId, 'school_level_id' => $niveles['secondary'],
+    'name' => '3.er anio', 'position' => 3, 'enabled' => 1,
+    'created_at' => $ahora, 'updated_at' => $ahora,
+]);
+$divA = Capsule::table('divisions')->insertGetId([
+    'company_id' => $empresaId, 'school_level_id' => $niveles['secondary'],
+    'academic_year_id' => $cicloId, 'grade_level_id' => $cursoId, 'name' => 'A',
+    'enabled' => 1, 'created_at' => $ahora, 'updated_at' => $ahora,
+]);
+$divB = Capsule::table('divisions')->insertGetId([
+    'company_id' => $empresaId, 'school_level_id' => $niveles['secondary'],
+    'academic_year_id' => $cicloId, 'grade_level_id' => $cursoId, 'name' => 'B',
+    'enabled' => 1, 'created_at' => $ahora, 'updated_at' => $ahora,
+]);
+$materiaId = Capsule::table('subjects')->insertGetId([
+    'company_id' => $empresaId, 'school_level_id' => $niveles['secondary'],
+    'name' => 'Matematica', 'duration' => 'annual', 'counts_for_promotion' => 1, 'enabled' => 1,
+    'created_at' => $ahora, 'updated_at' => $ahora,
+]);
+$seccionEnA = Capsule::table('course_sections')->insertGetId([
+    'company_id' => $empresaId, 'school_level_id' => $niveles['secondary'],
+    'academic_year_id' => $cicloId, 'division_id' => $divA, 'subject_id' => $materiaId,
+    'status' => 'active', 'created_at' => $ahora, 'updated_at' => $ahora,
+]);
+
+// El preceptor tiene asignada solo la division B.
+Capsule::table('user_scopes')->insert([
+    'user_id' => $preceptor->id, 'company_id' => $empresaId,
+    'scope_type' => 'division', 'scope_id' => $divB,
+    'created_at' => $ahora, 'updated_at' => $ahora,
+]);
+
+$alcancePreceptor = $acceso->scopedDivisionIds($preceptor);
+comprobar('el preceptor alcanza solo su division', $alcancePreceptor === [$divB], true);
+
+// El docente no tiene division asignada, pero dicta una seccion en la A: la
+// alcanza por relacion, sin necesidad de duplicar el alcance.
+Capsule::table('user_scopes')->insert([
+    'user_id' => $docente->id, 'company_id' => $empresaId,
+    'scope_type' => 'course_section', 'scope_id' => $seccionEnA,
+    'created_at' => $ahora, 'updated_at' => $ahora,
+]);
+
+$alcanceDocente = $acceso->scopedDivisionIds($docente);
+comprobar('el docente alcanza la division por su seccion', in_array($divA, $alcanceDocente, true), true);
+comprobar('el docente NO alcanza la division ajena', in_array($divB, $alcanceDocente, true), false);
+
+// Alguien sin ningun alcance no alcanza nada. Que devuelva lista vacia importa:
+// el controlador la usa en un whereIn, y una lista vacia devuelve cero filas.
+$sinAlcance = crearUsuario(R::STAFF, $niveles['secondary'], $empresaId, $rolId, $ahora);
+comprobar('sin alcance asignado no se alcanza ninguna division', $acceso->scopedDivisionIds($sinAlcance) === [], true);
+
 // --- informe -------------------------------------------------------------------
 
 echo "\n".str_repeat('=', 72)."\n";

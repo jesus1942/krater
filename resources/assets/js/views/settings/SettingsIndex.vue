@@ -121,6 +121,11 @@ export default {
           icon: 'academic-cap-icon',
         },
         {
+          link: '/admin/settings/academic-years',
+          title: 'settings.menu_title.academic_years',
+          icon: 'calendar-icon',
+        },
+        {
           link: '/admin/settings/preferences',
           title: 'settings.menu_title.preferences',
           icon: 'cog-icon',

@@ -69,6 +69,9 @@ import ReportLayout from './views/reports/layout/Index.vue'
 import SettingsLayout from './views/settings/SettingsIndex.vue'
 import CompanyInfo from './views/settings/CompanyInfoSetting.vue'
 import SchoolLevelsSetting from './views/settings/SchoolLevelsSetting.vue'
+
+// Academico
+import AcademicYearsIndex from './views/academic/AcademicYearsIndex.vue'
 import Customization from './views/settings/CustomizationSetting.vue'
 import Notifications from './views/settings/NotificationsSetting.vue'
 import Preferences from './views/settings/PreferencesSetting.vue'
@@ -348,6 +351,14 @@ const routes = [
             path: 'school-levels',
             name: 'school.levels',
             component: SchoolLevelsSetting,
+          },
+          {
+            // Los ciclos lectivos viven bajo configuracion mientras no exista
+            // el modulo academico completo: es donde la escuela va a buscarlos
+            // ahora, junto a los niveles institucionales.
+            path: 'academic-years',
+            name: 'academic.years',
+            component: AcademicYearsIndex,
           },
           {
             path: 'customization',
