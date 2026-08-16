@@ -4,8 +4,13 @@ namespace Crater\Http\Controllers\V1\Student;
 
 use Crater\Http\Controllers\Controller;
 use Crater\Http\Requests\StudentRequest;
+use Crater\Models\AcademicYear;
+use Crater\Models\Division;
 use Crater\Models\FamilyMember;
+use Crater\Models\GradeLevel;
+use Crater\Models\SchoolLevel;
 use Crater\Models\Student;
+use Crater\Support\TenantContext;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -57,16 +62,43 @@ class StudentsController extends Controller
         ]);
     }
 
+    public function placementOptions(Request $request)
+    {
+        $companyId = (int) $request->header('company');
+        $schoolLevelId = (int) TenantContext::schoolLevelId();
+
+        $academicYears = AcademicYear::where('company_id', $companyId)
+            ->where('school_level_id', $schoolLevelId)
+            ->orderByDesc('year')
+            ->get(['id', 'year', 'name', 'status']);
+
+        $gradeLevels = GradeLevel::where('company_id', $companyId)
+            ->where('school_level_id', $schoolLevelId)
+            ->enabled()
+            ->ordered()
+            ->get(['id', 'school_level_id', 'name', 'position']);
+
+        $divisions = Division::where('company_id', $companyId)
+            ->where('school_level_id', $schoolLevelId)
+            ->where('enabled', true)
+            ->orderBy('grade_level_id')
+            ->orderBy('name')
+            ->get(['id', 'academic_year_id', 'grade_level_id', 'school_level_id', 'name', 'shift', 'capacity']);
+
+        return response()->json([
+            'academic_years' => $academicYears,
+            'grade_levels' => $gradeLevels,
+            'divisions' => $divisions,
+        ]);
+    }
+
     public function store(StudentRequest $request)
     {
         $companyId = (int) $request->header('company');
         $validated = $request->validated();
         $familyMembers = $validated['family_members'] ?? [];
         unset($validated['family_members']);
-
-        if ($request->header('school-level')) {
-            $validated['school_level_id'] = $request->header('school-level');
-        }
+        $validated = $this->applyCanonicalPlacement($validated, $companyId);
 
         $student = DB::transaction(function () use ($validated, $familyMembers, $companyId) {
             $student = Student::create(array_merge($validated, [
@@ -98,10 +130,7 @@ class StudentsController extends Controller
         $hasFamilyPayload = array_key_exists('family_members', $validated);
         $familyMembers = $validated['family_members'] ?? [];
         unset($validated['family_members']);
-
-        if ($request->header('school-level')) {
-            $validated['school_level_id'] = $request->header('school-level');
-        }
+        $validated = $this->applyCanonicalPlacement($validated, $companyId);
 
         DB::transaction(function () use ($student, $validated, $familyMembers, $hasFamilyPayload, $companyId) {
             $student->update($validated);
@@ -122,6 +151,43 @@ class StudentsController extends Controller
         $student->delete();
 
         return response()->json(['success' => true]);
+    }
+
+    private function applyCanonicalPlacement(array $validated, int $companyId): array
+    {
+        $schoolLevelId = (int) TenantContext::schoolLevelId();
+
+        $academicYear = AcademicYear::where('company_id', $companyId)
+            ->where('school_level_id', $schoolLevelId)
+            ->find($validated['academic_year_id']);
+        $gradeLevel = GradeLevel::where('company_id', $companyId)
+            ->where('school_level_id', $schoolLevelId)
+            ->where('enabled', true)
+            ->find($validated['grade_level_id']);
+        $division = Division::where('company_id', $companyId)
+            ->where('school_level_id', $schoolLevelId)
+            ->where('academic_year_id', optional($academicYear)->id)
+            ->where('grade_level_id', optional($gradeLevel)->id)
+            ->where('enabled', true)
+            ->find($validated['division_id']);
+
+        abort_unless($academicYear && $gradeLevel && $division, 422, 'El curso, la división y el ciclo deben pertenecer al nivel institucional activo.');
+
+        $schoolLevel = SchoolLevel::where('company_id', $companyId)->findOrFail($gradeLevel->school_level_id);
+        $levelLabels = [
+            'primary' => 'Primario',
+            'secondary' => 'Secundario',
+            'tertiary' => 'Terciario',
+        ];
+
+        unset($validated['academic_year_id'], $validated['grade_level_id'], $validated['division_id']);
+        $validated['school_level_id'] = $gradeLevel->school_level_id;
+        $validated['level'] = $levelLabels[$schoolLevel->code] ?? $schoolLevel->name;
+        $validated['grade'] = $gradeLevel->name;
+        $validated['division'] = $division->name;
+        $validated['school_year'] = $academicYear->year;
+
+        return $validated;
     }
 
     private function syncFamilyMembers(Student $student, array $items, $companyId)

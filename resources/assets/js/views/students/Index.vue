@@ -90,15 +90,28 @@
           <label class="text-sm">Apellido *<sw-input v-model="form.last_name" class="mt-1" required /></label>
           <label class="text-sm">DNI<sw-input v-model="form.dni" class="mt-1" /></label>
           <label class="text-sm">Fecha de nacimiento<sw-input v-model="form.birth_date" type="date" class="mt-1" /></label>
-          <label class="text-sm">Nivel institucional *
-            <select v-model="form.school_level_id" required class="w-full h-10 px-3 mt-1 bg-white border border-gray-300 rounded" @change="syncLevelName">
-              <option value="">Seleccionar</option>
-              <option v-for="level in schoolLevels" :key="level.id" :value="level.id">{{ level.name }}</option>
+          <label class="text-sm">Ciclo lectivo *
+            <select v-model="form.academic_year_id" required class="w-full h-10 px-3 mt-1 bg-white border border-gray-300 rounded" @change="onAcademicYearChange">
+              <option value="">Seleccionar ciclo</option>
+              <option v-for="year in academicYears" :key="year.id" :value="year.id">{{ year.name || year.year }}</option>
             </select>
           </label>
-          <label class="text-sm">Curso/Año<sw-input v-model="form.grade" class="mt-1" placeholder="Ej.: 4.º" /></label>
-          <label class="text-sm">División<sw-input v-model="form.division" class="mt-1" placeholder="Ej.: A" /></label>
-          <label class="text-sm">Ciclo lectivo *<sw-input v-model="form.school_year" type="number" class="mt-1" required /></label>
+          <label class="text-sm">Curso/Año *
+            <select v-model="form.grade_level_id" required class="w-full h-10 px-3 mt-1 bg-white border border-gray-300 rounded" @change="onGradeLevelChange">
+              <option value="">Seleccionar curso</option>
+              <option v-for="grade in gradeLevels" :key="grade.id" :value="grade.id">{{ grade.name }}</option>
+            </select>
+          </label>
+          <label class="text-sm">División *
+            <select v-model="form.division_id" required class="w-full h-10 px-3 mt-1 bg-white border border-gray-300 rounded">
+              <option value="">Seleccionar división</option>
+              <option v-for="division in availableDivisions" :key="division.id" :value="division.id">{{ division.name }}</option>
+            </select>
+          </label>
+          <div class="text-sm">
+            <span class="block">Nivel institucional</span>
+            <div class="flex items-center h-10 px-3 mt-1 text-gray-600 bg-gray-50 border border-gray-200 rounded">{{ activeLevelName }}</div>
+          </div>
           <label class="text-sm">Estado
             <select v-model="form.status" class="w-full h-10 px-3 mt-1 bg-white border border-gray-300 rounded">
               <option value="active">Activo</option>
@@ -189,6 +202,9 @@ const newFamilyMember = () => ({
 const emptyForm = () => ({
   id: null,
   school_level_id: window.Ls.get('selectedSchoolLevel') || '',
+  academic_year_id: '',
+  grade_level_id: '',
+  division_id: '',
   first_name: '',
   last_name: '',
   dni: '',
@@ -209,6 +225,9 @@ export default {
     return {
       students: [],
       schoolLevels: [],
+      academicYears: [],
+      gradeLevels: [],
+      divisions: [],
       summary: { total: 0, active: 0, pending: 0 },
       filters: { search: '', level: '', status: '', school_year: new Date().getFullYear() },
       levels: ['Primario', 'Secundario', 'Terciario'],
@@ -222,12 +241,36 @@ export default {
   },
   created() {
     this.fetchSchoolLevels()
+    this.fetchPlacementOptions()
     this.fetchStudents()
+  },
+  computed: {
+    availableDivisions() {
+      return this.divisions.filter((division) =>
+        Number(division.academic_year_id) === Number(this.form.academic_year_id) &&
+        Number(division.grade_level_id) === Number(this.form.grade_level_id)
+      )
+    },
+    activeLevelName() {
+      const selectedId = window.Ls.get('selectedSchoolLevel')
+      const level = this.schoolLevels.find((item) => String(item.id) === String(selectedId))
+      return level ? level.name : 'Nivel activo'
+    },
   },
   methods: {
     async fetchSchoolLevels() {
       const response = await window.axios.get('/api/v1/school-levels')
       this.schoolLevels = response.data.levels.filter((level) => level.enabled)
+    },
+    async fetchPlacementOptions() {
+      const response = await window.axios.get('/api/v1/students/placement-options')
+      this.academicYears = response.data.academic_years || []
+      this.gradeLevels = response.data.grade_levels || []
+      this.divisions = response.data.divisions || []
+      if (!this.form.academic_year_id && this.academicYears.length) {
+        const current = this.academicYears.find((year) => Number(year.year) === new Date().getFullYear()) || this.academicYears[0]
+        this.form.academic_year_id = current.id
+      }
     },
     async fetchStudents() {
       this.loading = true
@@ -243,12 +286,14 @@ export default {
       clearTimeout(this.timer)
       this.timer = setTimeout(this.fetchStudents, 350)
     },
-    openCreate() {
+    async openCreate() {
       this.form = emptyForm()
+      await this.fetchPlacementOptions()
       this.error = ''
       this.showForm = true
     },
-    openEdit(student) {
+    async openEdit(student) {
+      await this.fetchPlacementOptions()
       const members = (student.family_members || []).map((member) => ({
         ...newFamilyMember(),
         id: member.id,
@@ -277,9 +322,20 @@ export default {
         })
       }
 
+      const academicYear = this.academicYears.find((year) => Number(year.year) === Number(student.school_year))
+      const gradeLevel = this.gradeLevels.find((grade) => grade.name === student.grade)
+      const division = this.divisions.find((item) =>
+        gradeLevel && academicYear &&
+        Number(item.grade_level_id) === Number(gradeLevel.id) &&
+        Number(item.academic_year_id) === Number(academicYear.id) &&
+        item.name === student.division
+      )
       this.form = {
         ...emptyForm(),
         ...student,
+        academic_year_id: academicYear ? academicYear.id : '',
+        grade_level_id: gradeLevel ? gradeLevel.id : '',
+        division_id: division ? division.id : '',
         guardian_id: student.guardian_id || null,
         family_members: members,
       }
@@ -322,9 +378,11 @@ export default {
         this.saving = false
       }
     },
-    syncLevelName() {
-      const level = this.schoolLevels.find((item) => String(item.id) === String(this.form.school_level_id))
-      this.form.level = level ? { primary: 'Primario', secondary: 'Secundario', tertiary: 'Terciario' }[level.code] : ''
+    onAcademicYearChange() {
+      this.form.division_id = ''
+    },
+    onGradeLevelChange() {
+      this.form.division_id = ''
     },
     async remove(student) {
       if (!window.confirm(`¿Eliminar el legajo de ${student.full_name}?`)) return
