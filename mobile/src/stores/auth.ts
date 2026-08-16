@@ -37,15 +37,22 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   async function login(email: string, password: string) {
+    // La API valida `username`, no `email` (ver V1\Mobile\AuthController::login).
+    // Mandar `email` devolvia 422 siempre: el login de la PWA estaba roto, no
+    // degradado.
     const { data } = await http.post('/auth/login', {
-      email,
+      username: email,
       password,
       device_name: 'crater-pwa',
     })
+
     token.value = data.token
-    user.value = data.user
     localStorage.setItem('auth_token', data.token)
-    localStorage.setItem('auth_user', JSON.stringify(data.user))
+
+    // La respuesta del login solo trae `type` y `token`; el usuario no viene.
+    // Antes se hacia `user.value = data.user`, que quedaba undefined y rompia
+    // todo lo que dependiera del usuario. Se pide aparte.
+    await fetchMe()
   }
 
   async function logout() {
@@ -56,6 +63,7 @@ export const useAuthStore = defineStore('auth', () => {
       user.value = null
       localStorage.removeItem('auth_token')
       localStorage.removeItem('auth_user')
+      localStorage.removeItem('auth_company')
     }
   }
 
@@ -63,6 +71,11 @@ export const useAuthStore = defineStore('auth', () => {
     const { data } = await http.get('/me')
     user.value = data.user
     localStorage.setItem('auth_user', JSON.stringify(data.user))
+
+    // El interceptor de http.ts lee esto para mandar el header `company`.
+    if (data.user?.company?.id) {
+      localStorage.setItem('auth_company', String(data.user.company.id))
+    }
   }
 
   return { user, token, isAuthenticated, currentUser, company, currency, loadFromStorage, login, logout, fetchMe }

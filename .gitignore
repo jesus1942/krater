@@ -12,3 +12,4 @@ Homestead.yaml
 /.expo
 /.vscode
 /docker-compose/db/data/
+/.env.testing.local

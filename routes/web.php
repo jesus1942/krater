@@ -21,7 +21,11 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
-Route::post('login', [LoginController::class, 'login']);
+// Limite de intentos: 5 cada 15 minutos por IP y usuario. Sin esto, la ruta
+// admite fuerza bruta ilimitada, y desde que la landing es publica el
+// formulario esta a un clic de cualquiera que encuentre el sitio.
+Route::post('login', [LoginController::class, 'login'])
+    ->middleware('throttle:5,15');
 
 
 Route::prefix('reports')->group(function () {

@@ -29,7 +29,10 @@ return [
     |
     */
 
-    'expiration' => null,
+    // Antes era null: los tokens no vencian nunca. Un token filtrado servia
+    // para siempre. 480 minutos = 8 horas, una jornada laboral. La PWA renueva
+    // con el refresh; ver docs/09-plan-de-seguridad.md seccion 2.1.
+    'expiration' => env('SANCTUM_EXPIRATION', 480),
 
     /*
     |--------------------------------------------------------------------------
