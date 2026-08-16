@@ -152,7 +152,23 @@ class EnrollmentsController extends Controller
             $datos['left_on'] = null;
         }
 
-        $enrollment->update($datos);
+        if ($datos['status'] === 'active' && $enrollment->status !== 'active') {
+            DB::transaction(function () use ($division, $enrollment, $datos) {
+                $lockedDivision = Division::whereKey($division->id)
+                    ->lockForUpdate()
+                    ->firstOrFail();
+
+                if (! $lockedDivision->hasCapacity()) {
+                    throw ValidationException::withMessages([
+                        'status' => ['No quedan lugares en esta división para reincorporar al estudiante.'],
+                    ]);
+                }
+
+                $enrollment->update($datos);
+            });
+        } else {
+            $enrollment->update($datos);
+        }
 
         return response()->json([
             'data' => $enrollment->fresh('student:id,first_name,last_name,dni'),
