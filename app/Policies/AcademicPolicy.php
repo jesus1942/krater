@@ -42,11 +42,22 @@ class AcademicPolicy
 
     public function viewAcademicYear(User $user, AcademicYear $year): bool
     {
+        if (! $this->belongsToUserCompany($user, $year)) {
+            return false;
+        }
+
         return $this->access->allows($user, Permission::ACADEMIC_YEAR_VIEW, $year->school_level_id);
     }
 
     public function manageAcademicYear(User $user, ?AcademicYear $year = null): bool
     {
+        // La empresa se valida tambien en la policy. Es una segunda barrera:
+        // incluso si una ruta futura enlaza el modelo antes de TenantContext,
+        // un ID de otra institucion se rechaza.
+        if ($year && ! $this->belongsToUserCompany($user, $year)) {
+            return false;
+        }
+
         // Un ciclo cerrado no se edita ni con el permiso: es historia. Para
         // tocarlo hay que reabrirlo, que es una accion con doble control.
         if ($year && $year->isClosed()) {
@@ -62,7 +73,7 @@ class AcademicPolicy
 
     public function closeAcademicYear(User $user, AcademicYear $year): bool
     {
-        if ($year->isClosed()) {
+        if (! $this->belongsToUserCompany($user, $year) || $year->isClosed()) {
             return false;
         }
 
@@ -83,6 +94,10 @@ class AcademicPolicy
      */
     public function viewDivision(User $user, Division $division): bool
     {
+        if (! $this->belongsToUserCompany($user, $division)) {
+            return false;
+        }
+
         return $this->access->allows(
             $user,
             Permission::DIVISION_VIEW,
@@ -93,6 +108,10 @@ class AcademicPolicy
 
     public function manageDivision(User $user, ?Division $division = null): bool
     {
+        if ($division && ! $this->belongsToUserCompany($user, $division)) {
+            return false;
+        }
+
         if ($division && optional($division->academicYear)->isClosed()) {
             return false;
         }
@@ -108,6 +127,10 @@ class AcademicPolicy
 
     public function viewSection(User $user, CourseSection $section): bool
     {
+        if (! $this->belongsToUserCompany($user, $section)) {
+            return false;
+        }
+
         return $this->access->allows(
             $user,
             Permission::SECTION_VIEW,
@@ -118,6 +141,10 @@ class AcademicPolicy
 
     public function manageSection(User $user, ?CourseSection $section = null): bool
     {
+        if ($section && ! $this->belongsToUserCompany($user, $section)) {
+            return false;
+        }
+
         return $this->access->allows(
             $user,
             Permission::SECTION_MANAGE,
@@ -127,6 +154,10 @@ class AcademicPolicy
 
     public function assignTeacher(User $user, CourseSection $section): bool
     {
+        if (! $this->belongsToUserCompany($user, $section)) {
+            return false;
+        }
+
         return $this->access->allows(
             $user,
             Permission::SECTION_ASSIGN_TEACHER,
@@ -144,6 +175,15 @@ class AcademicPolicy
     public function manageStudyPlan(User $user): bool
     {
         return $this->access->allows($user, Permission::STUDY_PLAN_MANAGE, $this->level());
+    }
+
+    /**
+     * Una policy de objeto nunca confia solo en el ID ni en el nivel. La
+     * empresa del recurso tiene que coincidir con la empresa autenticada.
+     */
+    protected function belongsToUserCompany(User $user, $resource): bool
+    {
+        return (int) $resource->company_id === (int) $user->company_id;
     }
 
     /**
