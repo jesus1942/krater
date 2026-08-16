@@ -28,7 +28,7 @@ Route::post('login', [LoginController::class, 'login'])
     ->middleware('throttle:5,15');
 
 
-Route::prefix('reports')->group(function () {
+Route::prefix('reports')->middleware(['redirect-if-unauthenticated', 'report-tenant'])->group(function () {
 
     // sales report by customer
     //----------------------------------
