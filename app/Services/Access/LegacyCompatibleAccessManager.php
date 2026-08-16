@@ -3,6 +3,7 @@
 namespace Crater\Services\Access;
 
 use Crater\Models\User;
+use Illuminate\Support\Facades\DB;
 
 /**
  * Capa de compatibilidad para la migracion desde el esquema legacy de Crater.
@@ -60,5 +61,37 @@ class LegacyCompatibleAccessManager extends AccessManager
         }
 
         return $this->hierarchyLevel($actor) < $this->hierarchyLevel($target);
+    }
+
+    /**
+     * El usuario ve TODA la institucion, atravesando los niveles escolares.
+     *
+     * Es una pregunta distinta de hasLevelWideScope(): un director de nivel
+     * puede ver todo SU nivel sin poder consultar el padron de los demas.
+     * Solo la administracion total y los roles globales sin nivel asignado
+     * atraviesan la institucion completa.
+     */
+    public function hasInstitutionWideScope(User $user): bool
+    {
+        if ($this->isTotalAdmin($user)) {
+            return true;
+        }
+
+        $today = now()->toDateString();
+
+        return DB::table('role_user')
+            ->join('roles', 'roles.id', '=', 'role_user.role_id')
+            ->where('role_user.user_id', $user->id)
+            ->where('role_user.company_id', $user->company_id)
+            ->where('roles.company_id', $user->company_id)
+            ->where('roles.scope_type', 'global')
+            ->whereNull('role_user.school_level_id')
+            ->where(function ($q) use ($today) {
+                $q->whereNull('role_user.starts_on')->orWhere('role_user.starts_on', '<=', $today);
+            })
+            ->where(function ($q) use ($today) {
+                $q->whereNull('role_user.ends_on')->orWhere('role_user.ends_on', '>=', $today);
+            })
+            ->exists();
     }
 }
