@@ -1,0 +1,368 @@
+name: Fix student course placement ChatGPT
+on:
+  push:
+    branches: [chatgpt/student-course-placement-20260816]
+permissions:
+  contents: write
+jobs:
+  fix-build-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: chatgpt/student-course-placement-20260816
+          fetch-depth: 0
+      - name: Apply canonical student placement
+        shell: bash
+        run: |
+          python3 <<'PY'
+          from pathlib import Path
+
+          # StudentRequest: placement is selected by canonical IDs, never free text.
+          p = Path('app/Http/Requests/StudentRequest.php')
+          s = p.read_text()
+          old = """            'school_level_id' => [\n                'required',\n                Rule::exists('school_levels', 'id')->where(function ($query) use ($companyId) {\n                    return $query->where('company_id', $companyId)->where('enabled', true);\n                }),\n            ],\n            'level' => ['nullable', Rule::in(['Primario', 'Secundario', 'Terciario'])],\n            'grade' => ['nullable', 'string', 'max:50'],\n            'division' => ['nullable', 'string', 'max:20'],\n            'school_year' => ['required', 'integer', 'min:2022', 'max:2100'],\n"""
+          new = """            // La ubicación académica se elige por IDs canónicos. El nivel,\n            // nombre del curso, división y año se derivan en backend; nunca se\n            // confían desde texto libre del cliente.\n            'academic_year_id' => ['required', 'integer'],\n            'grade_level_id' => ['required', 'integer'],\n            'division_id' => ['required', 'integer'],\n"""
+          if old not in s: raise SystemExit('StudentRequest placement block not found')
+          p.write_text(s.replace(old, new))
+
+          # StudentsController: canonical placement options + derivation.
+          p = Path('app/Http/Controllers/V1/Student/StudentsController.php')
+          s = p.read_text()
+          s = s.replace("use Crater\\Models\\FamilyMember;\nuse Crater\\Models\\Student;", "use Crater\\Models\\AcademicYear;\nuse Crater\\Models\\Division;\nuse Crater\\Models\\FamilyMember;\nuse Crater\\Models\\GradeLevel;\nuse Crater\\Models\\SchoolLevel;\nuse Crater\\Models\\Student;\nuse Crater\\Support\\TenantContext;")
+
+          marker = "    public function store(StudentRequest $request)\n"
+          method = r'''    public function placementOptions(Request $request)
+    {
+        $companyId = (int) $request->header('company');
+        $schoolLevelId = (int) TenantContext::schoolLevelId();
+
+        $academicYears = AcademicYear::where('company_id', $companyId)
+            ->where('school_level_id', $schoolLevelId)
+            ->orderByDesc('year')
+            ->get(['id', 'year', 'name', 'status']);
+
+        $gradeLevels = GradeLevel::where('company_id', $companyId)
+            ->where('school_level_id', $schoolLevelId)
+            ->enabled()
+            ->ordered()
+            ->get(['id', 'school_level_id', 'name', 'position']);
+
+        $divisions = Division::where('company_id', $companyId)
+            ->where('school_level_id', $schoolLevelId)
+            ->where('enabled', true)
+            ->orderBy('grade_level_id')
+            ->orderBy('name')
+            ->get(['id', 'academic_year_id', 'grade_level_id', 'school_level_id', 'name', 'shift', 'capacity']);
+
+        return response()->json([
+            'academic_years' => $academicYears,
+            'grade_levels' => $gradeLevels,
+            'divisions' => $divisions,
+        ]);
+    }
+
+'''
+          if marker not in s: raise SystemExit('store marker not found')
+          s = s.replace(marker, method + marker, 1)
+
+          old_store = r'''        $validated = $request->validated();
+        $familyMembers = $validated['family_members'] ?? [];
+        unset($validated['family_members']);
+
+        if ($request->header('school-level')) {
+            $validated['school_level_id'] = $request->header('school-level');
+        }
+
+        $student = DB::transaction(function () use ($validated, $familyMembers, $companyId) {
+'''
+          new_store = r'''        $validated = $request->validated();
+        $familyMembers = $validated['family_members'] ?? [];
+        unset($validated['family_members']);
+        $validated = $this->applyCanonicalPlacement($validated, $companyId);
+
+        $student = DB::transaction(function () use ($validated, $familyMembers, $companyId) {
+'''
+          if old_store not in s: raise SystemExit('store placement block not found')
+          s = s.replace(old_store, new_store, 1)
+
+          old_update = r'''        $familyMembers = $validated['family_members'] ?? [];
+        unset($validated['family_members']);
+
+        if ($request->header('school-level')) {
+            $validated['school_level_id'] = $request->header('school-level');
+        }
+
+        DB::transaction(function () use ($student, $validated, $familyMembers, $hasFamilyPayload, $companyId) {
+'''
+          new_update = r'''        $familyMembers = $validated['family_members'] ?? [];
+        unset($validated['family_members']);
+        $validated = $this->applyCanonicalPlacement($validated, $companyId);
+
+        DB::transaction(function () use ($student, $validated, $familyMembers, $hasFamilyPayload, $companyId) {
+'''
+          if old_update not in s: raise SystemExit('update placement block not found')
+          s = s.replace(old_update, new_update, 1)
+
+          insert_before = "    private function syncFamilyMembers(Student $student, array $items, $companyId)\n"
+          helper = r'''    private function applyCanonicalPlacement(array $validated, int $companyId): array
+    {
+        $schoolLevelId = (int) TenantContext::schoolLevelId();
+
+        $academicYear = AcademicYear::where('company_id', $companyId)
+            ->where('school_level_id', $schoolLevelId)
+            ->find($validated['academic_year_id']);
+        $gradeLevel = GradeLevel::where('company_id', $companyId)
+            ->where('school_level_id', $schoolLevelId)
+            ->where('enabled', true)
+            ->find($validated['grade_level_id']);
+        $division = Division::where('company_id', $companyId)
+            ->where('school_level_id', $schoolLevelId)
+            ->where('academic_year_id', optional($academicYear)->id)
+            ->where('grade_level_id', optional($gradeLevel)->id)
+            ->where('enabled', true)
+            ->find($validated['division_id']);
+
+        abort_unless($academicYear && $gradeLevel && $division, 422, 'El curso, la división y el ciclo deben pertenecer al nivel institucional activo.');
+
+        $schoolLevel = SchoolLevel::where('company_id', $companyId)->findOrFail($gradeLevel->school_level_id);
+        $levelLabels = [
+            'primary' => 'Primario',
+            'secondary' => 'Secundario',
+            'tertiary' => 'Terciario',
+        ];
+
+        unset($validated['academic_year_id'], $validated['grade_level_id'], $validated['division_id']);
+        $validated['school_level_id'] = $gradeLevel->school_level_id;
+        $validated['level'] = $levelLabels[$schoolLevel->code] ?? $schoolLevel->name;
+        $validated['grade'] = $gradeLevel->name;
+        $validated['division'] = $division->name;
+        $validated['school_year'] = $academicYear->year;
+
+        return $validated;
+    }
+
+'''
+          if insert_before not in s: raise SystemExit('syncFamilyMembers marker not found')
+          s = s.replace(insert_before, helper + insert_before, 1)
+          p.write_text(s)
+
+          # Route placement options before apiResource so it is not treated as {student}.
+          p = Path('routes/api.php')
+          s = p.read_text()
+          old = """        Route::apiResource('students', StudentsController::class);\n"""
+          new = """        Route::get('/students/placement-options', [StudentsController::class, 'placementOptions']);\n        Route::apiResource('students', StudentsController::class);\n"""
+          if old not in s: raise SystemExit('student apiResource not found')
+          p.write_text(s.replace(old, new, 1))
+
+          # Generic repair: legacy textual level is authoritative only when it is explicit.
+          migration = Path('database/migrations/2026_09_01_000800_repair_student_level_consistency.php')
+          migration.write_text(r'''<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
+
+class RepairStudentLevelConsistency extends Migration
+{
+    public function up()
+    {
+        if (! Schema::hasTable('students') || ! Schema::hasTable('school_levels')) {
+            return;
+        }
+
+        $map = [
+            'Primario' => 'primary',
+            'Secundario' => 'secondary',
+            'Terciario' => 'tertiary',
+        ];
+
+        foreach ($map as $legacyLabel => $code) {
+            $levels = DB::table('school_levels')->where('code', $code)->get(['id', 'company_id']);
+            foreach ($levels as $level) {
+                DB::table('students')
+                    ->where('company_id', $level->company_id)
+                    ->where('level', $legacyLabel)
+                    ->where(function ($query) use ($level) {
+                        $query->whereNull('school_level_id')->orWhere('school_level_id', '<>', $level->id);
+                    })
+                    ->update(['school_level_id' => $level->id]);
+            }
+        }
+    }
+
+    public function down()
+    {
+        // Corrección de consistencia: no se revierte a una asociación conocida como incorrecta.
+    }
+}
+''')
+
+          # Frontend: remove free text placement and load canonical dropdown options.
+          p = Path('resources/assets/js/views/students/Index.vue')
+          s = p.read_text()
+          old_ui = '''          <label class="text-sm">Nivel institucional *\n            <select v-model="form.school_level_id" required class="w-full h-10 px-3 mt-1 bg-white border border-gray-300 rounded" @change="syncLevelName">\n              <option value="">Seleccionar</option>\n              <option v-for="level in schoolLevels" :key="level.id" :value="level.id">{{ level.name }}</option>\n            </select>\n          </label>\n          <label class="text-sm">Curso/Año<sw-input v-model="form.grade" class="mt-1" placeholder="Ej.: 4.º" /></label>\n          <label class="text-sm">División<sw-input v-model="form.division" class="mt-1" placeholder="Ej.: A" /></label>\n          <label class="text-sm">Ciclo lectivo *<sw-input v-model="form.school_year" type="number" class="mt-1" required /></label>\n'''
+          new_ui = '''          <label class="text-sm">Ciclo lectivo *\n            <select v-model="form.academic_year_id" required class="w-full h-10 px-3 mt-1 bg-white border border-gray-300 rounded" @change="onAcademicYearChange">\n              <option value="">Seleccionar ciclo</option>\n              <option v-for="year in academicYears" :key="year.id" :value="year.id">{{ year.name || year.year }}</option>\n            </select>\n          </label>\n          <label class="text-sm">Curso/Año *\n            <select v-model="form.grade_level_id" required class="w-full h-10 px-3 mt-1 bg-white border border-gray-300 rounded" @change="onGradeLevelChange">\n              <option value="">Seleccionar curso</option>\n              <option v-for="grade in gradeLevels" :key="grade.id" :value="grade.id">{{ grade.name }}</option>\n            </select>\n          </label>\n          <label class="text-sm">División *\n            <select v-model="form.division_id" required class="w-full h-10 px-3 mt-1 bg-white border border-gray-300 rounded">\n              <option value="">Seleccionar división</option>\n              <option v-for="division in availableDivisions" :key="division.id" :value="division.id">{{ division.name }}</option>\n            </select>\n          </label>\n          <div class="text-sm">\n            <span class="block">Nivel institucional</span>\n            <div class="flex items-center h-10 px-3 mt-1 text-gray-600 bg-gray-50 border border-gray-200 rounded">{{ activeLevelName }}</div>\n          </div>\n'''
+          if old_ui not in s: raise SystemExit('student free-text UI block not found')
+          s = s.replace(old_ui, new_ui, 1)
+
+          old_form = """  school_level_id: window.Ls.get('selectedSchoolLevel') || '',\n  first_name: '',\n"""
+          new_form = """  school_level_id: window.Ls.get('selectedSchoolLevel') || '',\n  academic_year_id: '',\n  grade_level_id: '',\n  division_id: '',\n  first_name: '',\n"""
+          if old_form not in s: raise SystemExit('emptyForm school_level block not found')
+          s = s.replace(old_form, new_form, 1)
+
+          old_data = """      schoolLevels: [],\n      summary: { total: 0, active: 0, pending: 0 },\n"""
+          new_data = """      schoolLevels: [],\n      academicYears: [],\n      gradeLevels: [],\n      divisions: [],\n      summary: { total: 0, active: 0, pending: 0 },\n"""
+          if old_data not in s: raise SystemExit('data schoolLevels block not found')
+          s = s.replace(old_data, new_data, 1)
+
+          old_created = """    this.fetchSchoolLevels()\n    this.fetchStudents()\n"""
+          new_created = """    this.fetchSchoolLevels()\n    this.fetchPlacementOptions()\n    this.fetchStudents()\n"""
+          if old_created not in s: raise SystemExit('created block not found')
+          s = s.replace(old_created, new_created, 1)
+
+          method_marker = """    async fetchStudents() {\n"""
+          placement_methods = r'''    async fetchPlacementOptions() {
+      const response = await window.axios.get('/api/v1/students/placement-options')
+      this.academicYears = response.data.academic_years || []
+      this.gradeLevels = response.data.grade_levels || []
+      this.divisions = response.data.divisions || []
+      if (!this.form.academic_year_id && this.academicYears.length) {
+        const current = this.academicYears.find((year) => Number(year.year) === new Date().getFullYear()) || this.academicYears[0]
+        this.form.academic_year_id = current.id
+      }
+    },
+'''
+          if method_marker not in s: raise SystemExit('fetchStudents marker not found')
+          s = s.replace(method_marker, placement_methods + method_marker, 1)
+
+          old_open_create = """    openCreate() {\n      this.form = emptyForm()\n      this.error = ''\n      this.showForm = true\n    },\n"""
+          new_open_create = """    async openCreate() {\n      this.form = emptyForm()\n      await this.fetchPlacementOptions()\n      this.error = ''\n      this.showForm = true\n    },\n"""
+          if old_open_create not in s: raise SystemExit('openCreate block not found')
+          s = s.replace(old_open_create, new_open_create, 1)
+
+          old_open_edit = """    openEdit(student) {\n"""
+          new_open_edit = """    async openEdit(student) {\n      await this.fetchPlacementOptions()\n"""
+          if old_open_edit not in s: raise SystemExit('openEdit signature not found')
+          s = s.replace(old_open_edit, new_open_edit, 1)
+
+          old_assignment = """      this.form = {\n        ...emptyForm(),\n        ...student,\n        guardian_id: student.guardian_id || null,\n        family_members: members,\n      }\n      this.error = ''\n"""
+          new_assignment = """      const academicYear = this.academicYears.find((year) => Number(year.year) === Number(student.school_year))\n      const gradeLevel = this.gradeLevels.find((grade) => grade.name === student.grade)\n      const division = this.divisions.find((item) =>\n        gradeLevel && academicYear &&\n        Number(item.grade_level_id) === Number(gradeLevel.id) &&\n        Number(item.academic_year_id) === Number(academicYear.id) &&\n        item.name === student.division\n      )\n      this.form = {\n        ...emptyForm(),\n        ...student,\n        academic_year_id: academicYear ? academicYear.id : '',\n        grade_level_id: gradeLevel ? gradeLevel.id : '',\n        division_id: division ? division.id : '',\n        guardian_id: student.guardian_id || null,\n        family_members: members,\n      }\n      this.error = ''\n"""
+          if old_assignment not in s: raise SystemExit('openEdit assignment not found')
+          s = s.replace(old_assignment, new_assignment, 1)
+
+          old_sync = r'''    syncLevelName() {
+      const level = this.schoolLevels.find((item) => String(item.id) === String(this.form.school_level_id))
+      this.form.level = level ? { primary: 'Primario', secondary: 'Secundario', tertiary: 'Terciario' }[level.code] : ''
+    },
+'''
+          new_sync = r'''    onAcademicYearChange() {
+      this.form.division_id = ''
+    },
+    onGradeLevelChange() {
+      this.form.division_id = ''
+    },
+'''
+          if old_sync not in s: raise SystemExit('syncLevelName block not found')
+          s = s.replace(old_sync, new_sync, 1)
+
+          # Add computed before methods.
+          old_methods = """  methods: {\n"""
+          computed = r'''  computed: {
+    availableDivisions() {
+      return this.divisions.filter((division) =>
+        Number(division.academic_year_id) === Number(this.form.academic_year_id) &&
+        Number(division.grade_level_id) === Number(this.form.grade_level_id)
+      )
+    },
+    activeLevelName() {
+      const selectedId = window.Ls.get('selectedSchoolLevel')
+      const level = this.schoolLevels.find((item) => String(item.id) === String(selectedId))
+      return level ? level.name : 'Nivel activo'
+    },
+  },
+  methods: {
+'''
+          if old_methods not in s: raise SystemExit('methods marker not found')
+          s = s.replace(old_methods, computed, 1)
+          p.write_text(s)
+
+          # Regression test: source-level invariants + deterministic backfill logic.
+          test = Path('tests/Isolation/StudentCoursePlacementTest.php')
+          test.parent.mkdir(parents=True, exist_ok=True)
+          test.write_text(r'''<?php
+
+use Illuminate\Database\Capsule\Manager as Capsule;
+
+it('never derives student level from the request header anymore', function () {
+    $source = file_get_contents(base_path('app/Http/Controllers/V1/Student/StudentsController.php'));
+    expect($source)->not->toContain("$validated['school_level_id'] = $request->header('school-level')");
+    expect($source)->toContain('applyCanonicalPlacement');
+    expect($source)->toContain("$validated['school_level_id'] = $gradeLevel->school_level_id");
+});
+
+it('uses canonical dropdown identifiers instead of free text placement', function () {
+    $request = file_get_contents(base_path('app/Http/Requests/StudentRequest.php'));
+    $vue = file_get_contents(base_path('resources/assets/js/views/students/Index.vue'));
+    expect($request)->toContain("'academic_year_id' => ['required', 'integer']");
+    expect($request)->toContain("'grade_level_id' => ['required', 'integer']");
+    expect($request)->toContain("'division_id' => ['required', 'integer']");
+    expect($vue)->toContain('Seleccionar curso');
+    expect($vue)->toContain('Seleccionar división');
+    expect($vue)->not->toContain('placeholder="Ej.: 4.º"');
+});
+
+it('repairs explicit legacy level mismatches generically', function () {
+    $migration = file_get_contents(base_path('database/migrations/2026_09_01_000800_repair_student_level_consistency.php'));
+    expect($migration)->toContain("'Primario' => 'primary'");
+    expect($migration)->toContain("'Secundario' => 'secondary'");
+    expect($migration)->toContain("'Terciario' => 'tertiary'");
+    expect($migration)->not->toContain('55230674');
+    expect($migration)->not->toContain('Felipe');
+});
+''')
+          PY
+      - name: Setup PHP 7.4
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '7.4'
+          extensions: mbstring, sqlite3, pdo_sqlite
+          tools: composer:v2
+      - name: Validate PHP syntax
+        run: |
+          php -l app/Http/Controllers/V1/Student/StudentsController.php
+          php -l app/Http/Requests/StudentRequest.php
+          php -l database/migrations/2026_09_01_000800_repair_student_level_consistency.php
+          php -l tests/Isolation/StudentCoursePlacementTest.php
+      - name: Install PHP dependencies
+        run: composer install --no-interaction --prefer-dist --no-progress
+      - name: Run placement regressions
+        run: ./vendor/bin/pest tests/Isolation/StudentCoursePlacementTest.php
+      - name: Setup Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+      - name: Build production frontend
+        env:
+          NODE_OPTIONS: --openssl-legacy-provider
+        run: |
+          npm ci --legacy-peer-deps
+          npm run production
+          grep -q 'Seleccionar curso' public/assets/js/app.js
+          grep -q 'placement-options' public/assets/js/app.js
+      - name: Refresh Railway frontend bundle
+        run: |
+          rm -f build/frontend/app.js.gz.part.*
+          gzip -c public/assets/js/app.js | split -b 450K -d -a 2 - build/frontend/app.js.gz.part.
+          cp public/assets/css/crater.css build/frontend/crater.css
+          cp public/mix-manifest.json build/frontend/mix-manifest.json
+      - name: Commit fix and self-delete workflow
+        run: |
+          git config user.name 'Jesus Olguin'
+          git config user.email '47510848+jesus1942@users.noreply.github.com'
+          git add app/Http/Controllers/V1/Student/StudentsController.php app/Http/Requests/StudentRequest.php routes/api.php database/migrations/2026_09_01_000800_repair_student_level_consistency.php resources/assets/js/views/students/Index.vue tests/Isolation/StudentCoursePlacementTest.php build/frontend
+          git commit -m 'Vincular alumnos a cursos y divisiones canonicos'
+          git rm .github/workflows/fix-student-course-placement-chatgpt.yml
+          git commit -m 'Retirar workflow temporal de ubicacion academica'
+          git push origin HEAD:chatgpt/student-course-placement-20260816
