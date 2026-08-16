@@ -218,14 +218,19 @@ class AccessManager
      */
     public function scopedDivisionIds(User $user): array
     {
+        // El filtro por empresa va en las dos consultas: un alcance de otra
+        // institucion no debe alcanzar nada aca, aunque la fila exista.
         $directas = DB::table('user_scopes')
             ->where('user_id', $user->id)
+            ->where('company_id', $user->company_id)
             ->where('scope_type', 'division')
             ->pluck('scope_id');
 
         $porSeccion = DB::table('user_scopes')
             ->join('course_sections', 'course_sections.id', '=', 'user_scopes.scope_id')
             ->where('user_scopes.user_id', $user->id)
+            ->where('user_scopes.company_id', $user->company_id)
+            ->where('course_sections.company_id', $user->company_id)
             ->where('user_scopes.scope_type', 'course_section')
             ->pluck('course_sections.division_id');
 

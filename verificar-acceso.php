@@ -152,6 +152,10 @@ function crearUsuario(string $rol, ?int $nivelId, int $empresaId, array $rolId, 
 
     $u = new Crater\Models\User();
     $u->id = $id;
+    // company_id es obligatorio: el resolutor filtra todas las consultas de
+    // roles y alcances por empresa, asi que un usuario sin empresa no alcanza
+    // nada. Olvidarlo aca hacia fallar todas las comprobaciones.
+    $u->company_id = $empresaId;
     $u->exists = true;
 
     return $u;
@@ -316,6 +320,50 @@ comprobar('el docente NO alcanza la division ajena', in_array($divB, $alcanceDoc
 // el controlador la usa en un whereIn, y una lista vacia devuelve cero filas.
 $sinAlcance = crearUsuario(R::STAFF, $niveles['secondary'], $empresaId, $rolId, $ahora);
 comprobar('sin alcance asignado no se alcanza ninguna division', $acceso->scopedDivisionIds($sinAlcance) === [], true);
+
+
+echo "\n== aislamiento entre instituciones ==\n";
+
+// Segunda empresa con su propio juego de roles, para probar que nada cruza.
+$otraEmpresaId = Capsule::table('companies')->insertGetId([
+    'name' => 'Otra escuela', 'unique_hash' => 'otra', 'created_at' => $ahora, 'updated_at' => $ahora,
+]);
+$otroNivelId = Capsule::table('school_levels')->insertGetId([
+    'company_id' => $otraEmpresaId, 'code' => 'secondary', 'name' => 'Secundario ajeno',
+    'enabled' => 1, 'created_at' => $ahora, 'updated_at' => $ahora,
+]);
+$rolAjenoId = Capsule::table('roles')->insertGetId([
+    'company_id' => $otraEmpresaId, 'name' => R::TOTAL_ADMIN, 'label' => 'Administracion total',
+    'hierarchy_level' => 0, 'scope_type' => 'global', 'is_system' => 1,
+    'created_at' => $ahora, 'updated_at' => $ahora,
+]);
+foreach (R::definitions()[R::TOTAL_ADMIN]['permissions'] as $permiso) {
+    Capsule::table('permission_role')->insert([
+        'role_id' => $rolAjenoId, 'permission_id' => $permisoId[$permiso],
+    ]);
+}
+
+// Un usuario de NUESTRA empresa al que se le cuelga el rol de administracion
+// total de la OTRA empresa. Es el escenario de una fila mal insertada o de un
+// intento de escalada cruzando instituciones.
+$intruso = crearUsuario(R::TEACHER, $niveles['secondary'], $empresaId, $rolId, $ahora);
+Capsule::table('role_user')->insert([
+    'user_id' => $intruso->id, 'role_id' => $rolAjenoId, 'company_id' => $otraEmpresaId,
+    'school_level_id' => null, 'created_at' => $ahora, 'updated_at' => $ahora,
+]);
+$contenedor->instance('cache', new Repository(new ArrayStore()));
+
+comprobar('un rol de otra empresa NO convierte en administracion total', $acceso->isTotalAdmin($intruso), false);
+comprobar('un rol de otra empresa NO aporta permisos', $acceso->allows($intruso, P::USER_MANAGE, $niveles['secondary']), false);
+comprobar('un rol de otra empresa NO mejora la jerarquia', $acceso->hierarchyLevel($intruso) === 50, true);
+
+// Un alcance cargado bajo otra empresa tampoco alcanza.
+Capsule::table('user_scopes')->insert([
+    'user_id' => $docente->id, 'company_id' => $otraEmpresaId,
+    'scope_type' => 'division', 'scope_id' => 9999,
+    'created_at' => $ahora, 'updated_at' => $ahora,
+]);
+comprobar('un alcance de otra empresa no suma divisiones', in_array(9999, $acceso->scopedDivisionIds($docente), true), false);
 
 // --- informe -------------------------------------------------------------------
 
