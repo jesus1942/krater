@@ -1,0 +1,80 @@
+name: Fix core tenant isolation ChatGPT
+
+on:
+  push:
+    branches:
+      - chatgpt/aislamiento-transversal-20260816
+
+permissions:
+  contents: write
+
+jobs:
+  test-and-fix:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: chatgpt/aislamiento-transversal-20260816
+          fetch-depth: 0
+
+      - name: Apply tenant middleware to inherited controllers
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          files = [
+              'app/Http/Controllers/V1/Student/StudentsController.php',
+              'app/Http/Controllers/V1/Estimate/EstimatesController.php',
+              'app/Http/Controllers/V1/Invoice/InvoicesController.php',
+              'app/Http/Controllers/V1/Payment/PaymentsController.php',
+              'app/Http/Controllers/V1/Expense/ExpensesController.php',
+          ]
+          for name in files:
+              p = Path(name)
+              s = p.read_text()
+              if "$this->middleware('tenant')" in s:
+                  continue
+              marker = 'class ' + p.stem + ' extends Controller\n{\n'
+              if marker not in s:
+                  raise SystemExit(f'Class marker not found in {name}')
+              constructor = marker + "    public function __construct()\n    {\n        $this->middleware('tenant');\n    }\n\n"
+              s = s.replace(marker, constructor, 1)
+              p.write_text(s)
+          PY
+
+      - name: Setup PHP 7.4
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '7.4'
+          extensions: mbstring, pdo_sqlite, sqlite3
+          coverage: none
+
+      - name: Validate PHP syntax
+        run: |
+          php -l app/Http/Controllers/V1/Student/StudentsController.php
+          php -l app/Http/Controllers/V1/Estimate/EstimatesController.php
+          php -l app/Http/Controllers/V1/Invoice/InvoicesController.php
+          php -l app/Http/Controllers/V1/Payment/PaymentsController.php
+          php -l app/Http/Controllers/V1/Expense/ExpensesController.php
+          php -l tests/Isolation/CoreSchoolLevelIsolationTest.php
+
+      - name: Install Composer dependencies
+        run: composer install --no-interaction --prefer-dist --no-progress
+
+      - name: Run transversal isolation regression
+        run: vendor/bin/pest tests/Isolation/CoreSchoolLevelIsolationTest.php
+
+      - name: Commit fix and self-delete workflow
+        run: |
+          git config user.name "Jesus Olguin"
+          git config user.email "47510848+jesus1942@users.noreply.github.com"
+          git add app/Http/Controllers/V1/Student/StudentsController.php \
+                  app/Http/Controllers/V1/Estimate/EstimatesController.php \
+                  app/Http/Controllers/V1/Invoice/InvoicesController.php \
+                  app/Http/Controllers/V1/Payment/PaymentsController.php \
+                  app/Http/Controllers/V1/Expense/ExpensesController.php
+          git commit -m "Activar aislamiento por nivel en núcleo institucional"
+          rm .github/workflows/fix-core-tenant-isolation-chatgpt.yml
+          git add -u .github/workflows/fix-core-tenant-isolation-chatgpt.yml
+          git commit -m "Retirar workflow temporal de aislamiento"
+          git push origin HEAD:chatgpt/aislamiento-transversal-20260816
