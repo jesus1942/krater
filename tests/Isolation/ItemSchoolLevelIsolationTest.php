@@ -114,8 +114,8 @@ test('legacy cuota nivel backfill assigns only the primary level', function () {
     require_once base_path('database/migrations/2026_09_01_000700_add_school_level_to_items.php');
     (new AddSchoolLevelToItems())->up();
 
-    expect(DB::table('items')->where('name', 'Cuota nivel')->value('school_level_id'))
-        ->toBe($primaryId);
+    expect((int) DB::table('items')->where('name', 'Cuota nivel')->value('school_level_id'))
+        ->toBe((int) $primaryId);
 
     expect(DB::table('items')->where('name', 'Artículo legacy sin procedencia')->value('school_level_id'))
         ->toBeNull();
