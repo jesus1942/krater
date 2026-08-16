@@ -33,14 +33,6 @@ class RbacSeeder extends Seeder
         }
     }
 
-    /**
-     * Espeja Permission::catalog() en la tabla.
-     *
-     * Los permisos que ya no existen en el codigo NO se borran automaticamente:
-     * borrarlos arrastraria en cascada las asignaciones de rol, y si alguien
-     * renombro una constante por error se perderia la configuracion. Se
-     * reportan para revision manual.
-     */
     protected function sembrarPermisos()
     {
         $ahora = now();
@@ -98,10 +90,6 @@ class RbacSeeder extends Seeder
                 ->where('name', $nombre)
                 ->value('id');
 
-            // Se reemplaza el conjunto completo de permisos del rol: la
-            // definicion del codigo manda. Si alguien agrego un permiso a mano
-            // en la base, se pierde a proposito — para eso estan los roles
-            // personalizados, que no son is_system.
             DB::table('permission_role')->where('role_id', $rolId)->delete();
 
             $filas = [];
@@ -111,9 +99,6 @@ class RbacSeeder extends Seeder
                     continue;
                 }
 
-                // Cinturon y tirantes: aunque la definicion del rol se
-                // equivoque, ningun rol que no sea administracion total recibe
-                // un permiso exclusivo.
                 if ($nombre !== RoleName::TOTAL_ADMIN && PermissionEnum::isTotalAdminOnly($permiso)) {
                     $this->command->warn(
                         "El rol {$nombre} declara el permiso exclusivo {$permiso}. Se omite."
@@ -141,9 +126,14 @@ class RbacSeeder extends Seeder
     /**
      * Puente de compatibilidad para instalaciones existentes.
      *
-     * Solo asigna un rol nuevo cuando la persona todavia no tiene ninguna
-     * entrada RBAC. De ese modo una ejecucion posterior del seeder nunca pisa
-     * decisiones hechas desde la administracion de la escuela.
+     * Un `super admin` heredado SIEMPRE debe conservar administracion total al
+     * migrar al RBAC nuevo, aunque ya tenga alguna otra fila en `role_user`.
+     * Antes se omitia a cualquier usuario que tuviera un rol previo y eso
+     * podia dejar al administrador historico sin acceso a los modulos nuevos.
+     *
+     * Para los `admin` heredados seguimos siendo conservadores: solo se les
+     * asigna Direccion general cuando aun no tienen ninguna asignacion RBAC,
+     * para no pisar decisiones tomadas manualmente.
      */
     protected function migrarRolesHeredados($companyId)
     {
@@ -158,21 +148,49 @@ class RbacSeeder extends Seeder
             ->get(['id', 'role']);
 
         foreach ($users as $user) {
+            if ($user->role === 'super admin') {
+                if (! isset($roleIds[RoleName::TOTAL_ADMIN])) {
+                    continue;
+                }
+
+                $alreadyTotalAdmin = DB::table('role_user')
+                    ->where('user_id', $user->id)
+                    ->where('company_id', $companyId)
+                    ->where('role_id', $roleIds[RoleName::TOTAL_ADMIN])
+                    ->whereNull('school_level_id')
+                    ->exists();
+
+                if ($alreadyTotalAdmin) {
+                    continue;
+                }
+
+                DB::table('role_user')->insert([
+                    'user_id' => $user->id,
+                    'role_id' => $roleIds[RoleName::TOTAL_ADMIN],
+                    'company_id' => $companyId,
+                    'school_level_id' => null,
+                    'starts_on' => null,
+                    'ends_on' => null,
+                    'granted_by' => null,
+                    'granted_at' => now(),
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]);
+
+                continue;
+            }
+
             if (DB::table('role_user')->where('user_id', $user->id)->exists()) {
                 continue;
             }
 
-            $roleName = $user->role === 'super admin'
-                ? RoleName::TOTAL_ADMIN
-                : RoleName::GENERAL_DIRECTOR;
-
-            if (! isset($roleIds[$roleName])) {
+            if (! isset($roleIds[RoleName::GENERAL_DIRECTOR])) {
                 continue;
             }
 
             DB::table('role_user')->insert([
                 'user_id' => $user->id,
-                'role_id' => $roleIds[$roleName],
+                'role_id' => $roleIds[RoleName::GENERAL_DIRECTOR],
                 'company_id' => $companyId,
                 'school_level_id' => null,
                 'starts_on' => null,
