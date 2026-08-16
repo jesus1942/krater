@@ -47,6 +47,17 @@ class StudentRequest extends FormRequest
             'school_year' => ['required', 'integer', 'min:2022', 'max:2100'],
             'status' => ['required', Rule::in(['active', 'pending', 'withdrawn', 'graduated'])],
             'notes' => ['nullable', 'string', 'max:2000'],
+
+            'family_members' => ['nullable', 'array'],
+            'family_members.*.id' => ['nullable', 'integer'],
+            'family_members.*.name' => ['required', 'string', 'max:190'],
+            'family_members.*.dni' => ['nullable', 'string', 'max:30'],
+            'family_members.*.email' => ['nullable', 'email', 'max:190'],
+            'family_members.*.phone' => ['nullable', 'string', 'max:60'],
+            'family_members.*.relationship' => ['nullable', 'string', 'max:40'],
+            'family_members.*.is_responsible' => ['nullable', 'boolean'],
+            'family_members.*.is_financial_responsible' => ['nullable', 'boolean'],
+            'family_members.*.is_primary_contact' => ['nullable', 'boolean'],
         ];
     }
 }
