@@ -38,14 +38,6 @@ class CheckPermission
             return response()->json(['error' => 'unauthenticated'], 401);
         }
 
-        // Puente de compatibilidad durante la migracion a RBAC. El middleware
-        // admin heredado ya considera este valor administracion total, por lo
-        // que no debe perder acceso a los modulos nuevos si role_user aun no
-        // fue poblado correctamente.
-        if ($user->role === 'super admin') {
-            return $next($request);
-        }
-
         $schoolLevelId = $request->header('school-level');
         $schoolLevelId = $schoolLevelId !== null ? (int) $schoolLevelId : null;
 
