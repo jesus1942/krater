@@ -50,6 +50,12 @@ class StudentRequest extends FormRequest
 
             'family_members' => ['nullable', 'array'],
             'family_members.*.id' => ['nullable', 'integer'],
+            'family_members.*.user_id' => [
+                'nullable',
+                Rule::exists('users', 'id')->where(function ($query) use ($companyId) {
+                    return $query->where('company_id', $companyId)->where('role', 'customer');
+                }),
+            ],
             'family_members.*.name' => ['required', 'string', 'max:190'],
             'family_members.*.dni' => ['nullable', 'string', 'max:30'],
             'family_members.*.email' => ['nullable', 'email', 'max:190'],
