@@ -23,8 +23,8 @@ jobs:
           node-version: '20'
           cache: 'npm'
 
-      - name: Instalar dependencias
-        run: npm ci
+      - name: Instalar dependencias legacy
+        run: npm ci --legacy-peer-deps
 
       - name: Compilar frontend de produccion
         run: npm run production
