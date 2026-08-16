@@ -272,7 +272,9 @@ class Payment extends Model implements HasMedia
     public static function getNextPaymentNumber($value)
     {
         // Get the last created order
-        $payment = Payment::where('payment_number', 'LIKE', $value.'-%')
+        $payment = Payment::acrossLevels()
+            ->where('payments.company_id', request()->header('company'))
+            ->where('payment_number', 'LIKE', $value.'-%')
             ->orderBy('payment_number', 'desc')
             ->first();
 

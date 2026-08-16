@@ -77,7 +77,9 @@ class Invoice extends Model implements HasMedia
     public static function getNextInvoiceNumber($value)
     {
         // Get the last created order
-        $lastOrder = Invoice::where('invoice_number', 'LIKE', $value.'-%')
+        $lastOrder = Invoice::acrossLevels()
+            ->where('invoices.company_id', request()->header('company'))
+            ->where('invoice_number', 'LIKE', $value.'-%')
             ->orderBy('invoice_number', 'desc')
             ->first();
 
