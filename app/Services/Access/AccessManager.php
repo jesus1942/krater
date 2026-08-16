@@ -234,7 +234,12 @@ class AccessManager
             ->where('user_scopes.scope_type', 'course_section')
             ->pluck('course_sections.division_id');
 
-        return $directas->merge($porSeccion)->unique()->values()->all();
+        return $directas
+            ->merge($porSeccion)
+            ->map(fn ($id) => (int) $id)
+            ->unique()
+            ->values()
+            ->all();
     }
 
     /**

@@ -75,10 +75,18 @@ class GradeLevelsController extends Controller
                 // La posicion ordena la progresion: dos cursos con la misma
                 // dejarian ambigua la secuencia de promocion.
                 Rule::unique('grade_levels')
-                    ->where(fn ($q) => $q->where('school_level_id', $request->header('school-level')))
+                    ->where(fn ($q) => $q
+                        ->where('company_id', TenantContext::companyId())
+                        ->where('school_level_id', TenantContext::schoolLevelId()))
                     ->ignore(optional($actual)->id),
             ],
-            'promotes_to_id' => ['nullable', 'integer', 'exists:grade_levels,id'],
+            'promotes_to_id' => [
+                'nullable',
+                'integer',
+                Rule::exists('grade_levels', 'id')->where(fn ($q) => $q
+                    ->where('company_id', TenantContext::companyId())
+                    ->where('school_level_id', TenantContext::schoolLevelId())),
+            ],
             'pedagogical_unit' => ['nullable', 'string', 'max:50'],
             'enabled' => ['sometimes', 'boolean'],
         ], [
