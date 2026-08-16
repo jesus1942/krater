@@ -59,6 +59,7 @@ import {
   UserIcon,
   OfficeBuildingIcon,
   AcademicCapIcon,
+  CalendarIcon,
   BellIcon,
   CheckCircleIcon,
   ClipboardListIcon,
@@ -82,6 +83,7 @@ export default {
     UserIcon,
     OfficeBuildingIcon,
     AcademicCapIcon,
+    CalendarIcon,
     PencilAltIcon,
     CogIcon,
     CheckCircleIcon,
@@ -165,7 +167,6 @@ export default {
           title: 'settings.menu_title.expense_category',
           icon: 'clipboard-list-icon',
         },
-
         {
           link: '/admin/settings/mail-configuration',
           title: 'settings.mail.mail_config',
@@ -194,7 +195,12 @@ export default {
     '$route.path'(newValue) {
       if (newValue === '/admin/settings') {
         this.$router.push('/admin/settings/user-profile')
+        return
       }
+
+      this.currentSetting = this.menuItems.find(
+        (item) => item.link === newValue
+      ) || this.currentSetting
     },
   },
 
