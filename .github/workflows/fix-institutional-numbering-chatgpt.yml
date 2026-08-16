@@ -1,0 +1,90 @@
+name: Fix institutional numbering ChatGPT
+
+on:
+  push:
+    branches:
+      - chatgpt/numeracion-institucional-20260816
+
+permissions:
+  contents: write
+
+jobs:
+  test-and-fix:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: chatgpt/numeracion-institucional-20260816
+
+      - name: Fix company-wide numbering
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          replacements = {
+              'app/Models/Invoice.php': (
+                  "        $lastOrder = Invoice::where('invoice_number', 'LIKE', $value.'-%')\n            ->orderBy('invoice_number', 'desc')\n            ->first();",
+                  "        $lastOrder = Invoice::acrossLevels()\n            ->where('invoices.company_id', request()->header('company'))\n            ->where('invoice_number', 'LIKE', $value.'-%')\n            ->orderBy('invoice_number', 'desc')\n            ->first();"
+              ),
+              'app/Models/Estimate.php': (
+                  "        $lastOrder = Estimate::where('estimate_number', 'LIKE', $value.'-%')\n            ->orderBy('estimate_number', 'desc')\n            ->first();",
+                  "        $lastOrder = Estimate::acrossLevels()\n            ->where('estimates.company_id', request()->header('company'))\n            ->where('estimate_number', 'LIKE', $value.'-%')\n            ->orderBy('estimate_number', 'desc')\n            ->first();"
+              ),
+              'app/Models/Payment.php': (
+                  "        $payment = Payment::where('payment_number', 'LIKE', $value.'-%')\n            ->orderBy('payment_number', 'desc')\n            ->first();",
+                  "        $payment = Payment::acrossLevels()\n            ->where('payments.company_id', request()->header('company'))\n            ->where('payment_number', 'LIKE', $value.'-%')\n            ->orderBy('payment_number', 'desc')\n            ->first();"
+              ),
+          }
+
+          for name, (old, new) in replacements.items():
+              p = Path(name)
+              s = p.read_text()
+              if new in s:
+                  continue
+              if old not in s:
+                  raise SystemExit(f'numbering anchor not found: {name}')
+              p.write_text(s.replace(old, new, 1))
+
+          p = Path('app/Http/Controllers/V1/General/NextNumberController.php')
+          s = p.read_text()
+          if "$this->middleware('tenant')" not in s:
+              marker = "class NextNumberController extends Controller\n{\n"
+              if marker not in s:
+                  raise SystemExit('NextNumberController class anchor not found')
+              s = s.replace(marker, marker + "    public function __construct()\n    {\n        $this->middleware('tenant');\n    }\n\n", 1)
+              p.write_text(s)
+          PY
+
+      - name: Setup PHP 7.4
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '7.4'
+          extensions: mbstring, pdo_sqlite, sqlite3
+          coverage: none
+
+      - name: Validate PHP syntax
+        run: |
+          php -l app/Models/Invoice.php
+          php -l app/Models/Estimate.php
+          php -l app/Models/Payment.php
+          php -l app/Http/Controllers/V1/General/NextNumberController.php
+          php -l tests/Isolation/InstitutionalNumberingTest.php
+
+      - name: Install Composer dependencies
+        run: composer install --no-interaction --prefer-dist --no-progress
+
+      - name: Run numbering regression
+        run: vendor/bin/pest tests/Isolation/InstitutionalNumberingTest.php
+
+      - name: Commit fix and self-delete workflow
+        run: |
+          git config user.name "Jesus Olguin"
+          git config user.email "47510848+jesus1942@users.noreply.github.com"
+          git add app/Models/Invoice.php app/Models/Estimate.php app/Models/Payment.php \
+                  app/Http/Controllers/V1/General/NextNumberController.php
+          git commit -m "Corregir numeración institucional por empresa"
+          rm .github/workflows/fix-institutional-numbering-chatgpt.yml
+          git add -u .github/workflows/fix-institutional-numbering-chatgpt.yml
+          git commit -m "Retirar workflow temporal de numeración"
+          git push origin HEAD:chatgpt/numeracion-institucional-20260816
