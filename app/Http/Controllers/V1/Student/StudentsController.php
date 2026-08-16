@@ -6,7 +6,6 @@ use Crater\Http\Controllers\Controller;
 use Crater\Http\Requests\StudentRequest;
 use Crater\Models\FamilyMember;
 use Crater\Models\Student;
-use Crater\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -68,7 +67,6 @@ class StudentsController extends Controller
             $student = Student::create(array_merge($validated, [
                 'company_id' => $companyId,
             ]));
-
             $this->syncFamilyMembers($student, $familyMembers, $companyId);
 
             return $student;
@@ -84,9 +82,7 @@ class StudentsController extends Controller
     {
         $this->ensureCompany($request, $student);
 
-        return response()->json([
-            'student' => $this->loadStudentRelations($student),
-        ]);
+        return response()->json(['student' => $this->loadStudentRelations($student)]);
     }
 
     public function update(StudentRequest $request, Student $student)
@@ -130,7 +126,6 @@ class StudentsController extends Controller
 
         foreach ($items as $item) {
             $familyMember = $this->resolveFamilyMember($item, $companyId);
-
             if (isset($sync[$familyMember->id])) {
                 continue;
             }
@@ -154,37 +149,35 @@ class StudentsController extends Controller
 
         $student->familyMembers()->sync($sync);
 
-        // guardian_id queda como puente para facturacion y codigo legado.
-        // Solo se reemplaza cuando el nuevo esquema puede apuntar a un usuario
-        // real; si no, se conserva para no perder compatibilidad historica.
-        if ($legacyGuardianId) {
-            $student->guardian_id = $legacyGuardianId;
-            $student->save();
-        } elseif (empty($items)) {
-            $student->guardian_id = null;
-            $student->save();
-        }
+        // Mantiene el campo viejo solo cuando el nuevo responsable esta
+        // efectivamente vinculado a un usuario/cliente. Nunca deja apuntando
+        // a una persona que ya fue quitada del grupo familiar.
+        $student->guardian_id = $legacyGuardianId;
+        $student->save();
     }
 
     private function resolveFamilyMember(array $item, $companyId)
     {
-        if (! empty($item['id'])) {
-            $familyMember = FamilyMember::where('company_id', $companyId)->findOrFail($item['id']);
-            $this->updateFamilyMember($familyMember, $item);
-
-            return $familyMember;
-        }
-
         $dni = $this->normalizeDni($item['dni'] ?? null);
+
+        // El DNI institucional manda incluso si la interfaz traia un ID viejo:
+        // de esa forma dos hermanos terminan vinculados a la misma persona.
         if ($dni !== '') {
-            $familyMember = FamilyMember::where('company_id', $companyId)
+            $byDni = FamilyMember::where('company_id', $companyId)
                 ->where('dni', $dni)
                 ->first();
-            if ($familyMember) {
-                $this->updateFamilyMember($familyMember, $item, $dni);
+            if ($byDni) {
+                $this->updateFamilyMember($byDni, $item, $dni);
 
-                return $familyMember;
+                return $byDni;
             }
+        }
+
+        if (! empty($item['id'])) {
+            $familyMember = FamilyMember::where('company_id', $companyId)->findOrFail($item['id']);
+            $this->updateFamilyMember($familyMember, $item, $dni ?: null);
+
+            return $familyMember;
         }
 
         if (! empty($item['user_id'])) {
@@ -219,7 +212,6 @@ class StudentsController extends Controller
         if (array_key_exists('user_id', $item) && ! $familyMember->user_id) {
             $data['user_id'] = $item['user_id'];
         }
-
         if (array_key_exists('dni', $item)) {
             $data['dni'] = $normalizedDni !== null
                 ? $normalizedDni
@@ -231,13 +223,8 @@ class StudentsController extends Controller
 
     private function loadStudentRelations(Student $student)
     {
-        $student->load([
-            'guardian:id,name,email,phone',
-            'familyMembers',
-        ]);
+        $student->load(['guardian:id,name,email,phone', 'familyMembers']);
 
-        // Los alumnos creados antes de esta mejora siguen mostrando su
-        // responsable aunque todavia no se haya convertido en familiar.
         if ($student->familyMembers->isEmpty() && $student->guardian) {
             $student->setAttribute('legacy_family_member', [
                 'user_id' => $student->guardian->id,
