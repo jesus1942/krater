@@ -10,6 +10,11 @@ use Illuminate\Http\Request;
 
 class PaymentsController extends Controller
 {
+    public function __construct()
+    {
+        $this->middleware('tenant');
+    }
+
     /**
      * Display a listing of the resource.
      *
