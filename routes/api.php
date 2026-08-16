@@ -67,6 +67,7 @@ use Crater\Http\Controllers\V1\Users\UsersController;
 use Crater\Http\Controllers\V1\Academic\AcademicYearsController;
 use Crater\Http\Controllers\V1\Academic\DivisionsController;
 use Crater\Http\Controllers\V1\Academic\GradeLevelsController;
+use Crater\Http\Controllers\V1\Academic\SubjectsController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -198,6 +199,25 @@ Route::prefix('/v1')->group(function () {
 
         Route::put('/divisions/{division}', [DivisionsController::class, 'update'])
             ->middleware('permission:academic.division.manage');
+
+        // --- materias (espacios curriculares) ---
+        // Se autorizan con los permisos de plan de estudios: cambiar una
+        // materia es cambiar el disenio curricular.
+        Route::get('/study-plans', [SubjectsController::class, 'studyPlans'])
+            ->middleware('permission:academic.study_plan.view');
+
+        Route::get('/subjects', [SubjectsController::class, 'index'])
+            ->middleware('permission:academic.study_plan.view');
+
+        Route::post('/subjects', [SubjectsController::class, 'store'])
+            ->middleware('permission:academic.study_plan.manage');
+
+        Route::put('/subjects/{subject}', [SubjectsController::class, 'update'])
+            ->middleware('permission:academic.study_plan.manage');
+
+        Route::delete('/subjects/{subject}', [SubjectsController::class, 'destroy'])
+            ->middleware('permission:academic.study_plan.manage');
+
     });
 
     Route::middleware(['auth:sanctum', 'admin'])->group(function () {
