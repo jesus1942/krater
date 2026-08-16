@@ -46,9 +46,11 @@ it('agrega el filtro de empresa a las consultas academicas', function () {
     TenantContext::set(41, null);
 
     try {
-        $query = AcademicYear::query();
+        // applyScopes devuelve el builder con los scopes globales materializados.
+        // Consultar los bindings del builder original no los incluiria.
+        $query = AcademicYear::query()->applyScopes();
 
-        expect($query->toSql())->toContain('academic_years.company_id');
+        expect($query->toSql())->toContain('company_id');
         expect($query->getBindings())->toContain(41);
     } finally {
         TenantContext::clear();
