@@ -69,6 +69,7 @@ class Kernel extends HttpKernel
 
         'permission' => \Crater\Http\Middleware\CheckPermission::class,
         'tenant' => \Crater\Http\Middleware\ValidateTenant::class,
+        'report-tenant' => \Crater\Http\Middleware\ReportTenant::class,
 
         'verified' => \Illuminate\Auth\Middleware\EnsureEmailIsVerified::class,
         'install' => \Crater\Http\Middleware\InstallationMiddleware::class,
