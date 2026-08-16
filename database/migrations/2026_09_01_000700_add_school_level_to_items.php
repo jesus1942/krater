@@ -1,32 +1,22 @@
 <?php
 
 use Illuminate\Database\Migrations\Migration;
-use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Schema;
 
 class AddSchoolLevelToItems extends Migration
 {
     public function up()
     {
-        if (! Schema::hasColumn('items', 'school_level_id')) {
-            Schema::table('items', function (Blueprint $table) {
-                $table->unsignedInteger('school_level_id')->nullable()->after('company_id');
-                $table->foreign('school_level_id')
-                    ->references('id')
-                    ->on('school_levels')
-                    ->nullOnDelete();
-                $table->index(['company_id', 'school_level_id'], 'items_company_level_index');
-            });
-        }
-
         /*
-         * Los artículos anteriores a esta migración no guardaban el nivel que
-         * estaba activo al crearlos, por lo que ese dato no puede reconstruirse
-         * genéricamente. El único concepto histórico identificado en esta
-         * instalación es "Cuota nivel" y fue confirmado como perteneciente a
-         * Primaria. Se corrige de forma acotada, sin inventar nivel para otros
-         * artículos legacy.
+         * `school_level_id` ya fue agregado a items por
+         * 2026_08_14_010000_create_school_levels_and_scopes. El problema era
+         * que el módulo de artículos no inicializaba TenantContext y los
+         * registros nuevos podían quedar con nivel nulo.
+         *
+         * Los artículos históricos nulos no pueden reasignarse de manera
+         * genérica porque no conservan el nivel que estaba activo al crearlos.
+         * El concepto "Cuota nivel" fue identificado y confirmado como
+         * perteneciente a Primaria, por lo que solo corregimos ese dato.
          */
         $companyIds = DB::table('items')
             ->whereNull('school_level_id')
@@ -53,12 +43,7 @@ class AddSchoolLevelToItems extends Migration
 
     public function down()
     {
-        if (Schema::hasColumn('items', 'school_level_id')) {
-            Schema::table('items', function (Blueprint $table) {
-                $table->dropForeign(['school_level_id']);
-                $table->dropIndex('items_company_level_index');
-                $table->dropColumn('school_level_id');
-            });
-        }
+        // No revertimos el dato: antes de esta migración el nivel era NULL y
+        // perder nuevamente la procedencia confirmada sería degradar datos.
     }
 }
