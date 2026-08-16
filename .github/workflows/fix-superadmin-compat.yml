@@ -1,0 +1,74 @@
+name: Corregir compatibilidad superadmin RBAC
+
+on:
+  push:
+    branches: [claude/web-app-migration-laf9yy]
+    paths:
+      - '.github/workflows/fix-superadmin-compat.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: claude/web-app-migration-laf9yy
+          fetch-depth: 0
+
+      - name: Agregar fallback seguro para super admin heredado
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path('app/Services/Access/AccessManager.php')
+          s = p.read_text()
+          old_doc = """     * Se consulta contra la tabla de roles, no contra `users.role`. La columna
+     * heredada de Crater se mantiene por compatibilidad durante la migracion,
+     * pero NO es fuente de verdad para autorizar.
+"""
+          new_doc = """     * La tabla RBAC es la fuente principal. Durante la migracion se mantiene
+     * un fallback estricto para el valor heredado `super admin`: ese mismo
+     * valor ya concede administracion total en el middleware legacy y evita
+     * dejar fuera al administrador historico si la asignacion RBAC no se creo.
+"""
+          if old_doc not in s:
+              raise SystemExit('No se encontro comentario esperado')
+          s = s.replace(old_doc, new_doc, 1)
+          old = """        return Cache::remember(\"acl:u{$user->id}:total_admin\", self::CACHE_TTL, function () use ($user) {
+            $today = now()->toDateString();
+
+            return DB::table('role_user')
+"""
+          new = """        return Cache::remember(\"acl:u{$user->id}:total_admin\", self::CACHE_TTL, function () use ($user) {
+            // Compatibilidad transitoria con Crater: quien ya es `super admin`
+            // en el esquema legacy no puede perder acceso al migrar a RBAC.
+            if ($user->role === 'super admin') {
+                return true;
+            }
+
+            $today = now()->toDateString();
+
+            return DB::table('role_user')
+"""
+          if old not in s:
+              raise SystemExit('No se encontro isTotalAdmin esperado')
+          p.write_text(s.replace(old, new, 1))
+          PY
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '7.4'
+
+      - name: Validar sintaxis
+        run: php -l app/Services/Access/AccessManager.php
+
+      - name: Guardar cambio y retirar workflow temporal
+        run: |
+          git config user.name "ChatGPT"
+          git config user.email "noreply@openai.com"
+          git add app/Services/Access/AccessManager.php
+          git rm .github/workflows/fix-superadmin-compat.yml
+          git commit -m "mantener acceso de super admin heredado en RBAC"
+          git push origin HEAD:claude/web-app-migration-laf9yy
