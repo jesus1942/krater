@@ -4,6 +4,7 @@ namespace Crater\Http\Middleware;
 
 use Closure;
 use Crater\Models\SchoolLevel;
+use Crater\Services\Access\AccessManager;
 use Crater\Support\TenantContext;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -11,27 +12,19 @@ use Illuminate\Support\Facades\DB;
 /**
  * Valida los headers de tenant CONTRA EL USUARIO AUTENTICADO.
  *
- * EL PROBLEMA QUE RESUELVE
- * ------------------------
- * El aislamiento multi-tenant de la app depende del header HTTP `company`, que
- * lo elige el cliente. Hay 82 usos de ese header en los controladores y las dos
- * validaciones que existen comparan *el recurso contra el header*, no *el
- * header contra el usuario*:
- *
- *     abort_unless((int) $schoolLevel->company_id === (int) $request->header('company'), 404);
- *
- * Eso se satisface falsificando el header. Cualquier usuario autenticado podia
- * mandar `company: 2` y operar sobre los datos de otra institucion.
- *
- * Este middleware invierte la comparacion: el header tiene que coincidir con la
- * empresa del usuario, y el nivel tiene que ser uno al que el usuario pertenece.
- *
- * Ademas fija el contexto en TenantContext, que es lo que consultan los scopes
- * globales. Antes leian `request()->header()` directamente, asi que fuera del
- * ciclo HTTP —consola, jobs, tests— no filtraban nada: fallaban abiertos.
+ * El usuario comun queda limitado a su empresa y a los niveles que alcanza.
+ * La administracion total conserva alcance transversal sobre todas las
+ * empresas/niveles, que luego siguen sujetos a los scopes del recurso.
  */
 class ValidateTenant
 {
+    private AccessManager $access;
+
+    public function __construct(AccessManager $access)
+    {
+        $this->access = $access;
+    }
+
     public function handle(Request $request, Closure $next)
     {
         $user = $request->user();
@@ -40,23 +33,23 @@ class ValidateTenant
             return $next($request);
         }
 
+        $isTotalAdmin = $this->access->isTotalAdmin($user);
+
         // --- empresa ---------------------------------------------------------
 
         $companyHeader = $request->header('company');
 
         if ($companyHeader === null) {
-            // Sin header se asume la empresa del usuario. No se hereda del
-            // recurso ni se deja abierto.
             $companyId = (int) $user->company_id;
         } else {
             $companyId = (int) $companyHeader;
 
-            if ($companyId !== (int) $user->company_id) {
+            if (! $isTotalAdmin && $companyId !== (int) $user->company_id) {
                 return response()->json(['error' => 'forbidden'], 403);
             }
         }
 
-        // --- nivel institucional ----------------------------------------------
+        // --- nivel institucional --------------------------------------------
 
         $levelHeader = $request->header('school-level');
         $levelId = null;
@@ -73,9 +66,9 @@ class ValidateTenant
                 return response()->json(['error' => 'forbidden'], 403);
             }
 
-            // El usuario tiene que estar vinculado al nivel, salvo que tenga un
-            // rol global (administracion total, direccion general).
-            if (! $this->tieneAlcanceGlobal($user->id, $companyId) && ! $this->perteneceAlNivel($user->id, $levelId)) {
+            if (! $isTotalAdmin
+                && ! $this->tieneAlcanceGlobal($user->id, $companyId)
+                && ! $this->perteneceAlNivel($user->id, $levelId)) {
                 return response()->json(['error' => 'forbidden'], 403);
             }
         }
@@ -85,8 +78,6 @@ class ValidateTenant
         try {
             return $next($request);
         } finally {
-            // Se limpia siempre: en workers de cola que reutilizan el proceso,
-            // dejar el contexto pegado filtraria datos del request anterior.
             TenantContext::clear();
         }
     }
