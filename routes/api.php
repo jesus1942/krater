@@ -312,6 +312,7 @@ Route::prefix('/v1')->group(function () {
         // Students / school records
         //----------------------------------
 
+        Route::get('/students/placement-options', [StudentsController::class, 'placementOptions']);
         Route::apiResource('students', StudentsController::class);
 
 
