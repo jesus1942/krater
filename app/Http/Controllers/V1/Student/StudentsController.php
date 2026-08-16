@@ -11,6 +11,11 @@ use Illuminate\Support\Facades\DB;
 
 class StudentsController extends Controller
 {
+    public function __construct()
+    {
+        $this->middleware('tenant');
+    }
+
     public function index(Request $request)
     {
         $companyId = $request->header('company');
