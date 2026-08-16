@@ -8,11 +8,23 @@ class CreateAuditLogsTable extends Migration
 {
     public function up()
     {
+        // Un deploy anterior puede haber alcanzado a crear la tabla antes de
+        // fallar en otra etapa de preDeploy. Si ya existe, no se intenta
+        // recrearla: la bitacora debe poder recuperarse sin bloquear el arranque.
+        if (Schema::hasTable('audit_logs')) {
+            return;
+        }
+
         Schema::create('audit_logs', function (Blueprint $table) {
             $table->increments('id');
+
+            // Se guardan como IDs historicos, deliberadamente SIN foreign keys.
+            // Una auditoria forense no debe perder la identidad original si un
+            // usuario, institucion o nivel se elimina despues.
             $table->unsignedInteger('company_id')->nullable();
             $table->unsignedInteger('school_level_id')->nullable();
             $table->unsignedInteger('user_id')->nullable();
+
             $table->string('action', 150);
             $table->string('auditable_type', 190)->nullable();
             $table->unsignedInteger('auditable_id')->nullable();
@@ -22,10 +34,6 @@ class CreateAuditLogsTable extends Migration
             $table->string('user_agent', 255)->nullable();
             $table->string('severity', 20)->default('low');
             $table->timestamp('created_at')->useCurrent();
-
-            $table->foreign('company_id')->references('id')->on('companies')->nullOnDelete();
-            $table->foreign('school_level_id')->references('id')->on('school_levels')->nullOnDelete();
-            $table->foreign('user_id')->references('id')->on('users')->nullOnDelete();
 
             $table->index(['company_id', 'created_at'], 'audit_logs_company_time');
             $table->index(['school_level_id', 'created_at'], 'audit_logs_level_time');
