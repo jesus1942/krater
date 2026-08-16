@@ -75,7 +75,9 @@ class Estimate extends Model implements HasMedia
     public static function getNextEstimateNumber($value)
     {
         // Get the last created order
-        $lastOrder = Estimate::where('estimate_number', 'LIKE', $value.'-%')
+        $lastOrder = Estimate::acrossLevels()
+            ->where('estimates.company_id', request()->header('company'))
+            ->where('estimate_number', 'LIKE', $value.'-%')
             ->orderBy('estimate_number', 'desc')
             ->first();
 
