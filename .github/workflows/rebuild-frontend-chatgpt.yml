@@ -27,6 +27,8 @@ jobs:
         run: npm ci --legacy-peer-deps
 
       - name: Compilar frontend de produccion
+        env:
+          NODE_OPTIONS: --openssl-legacy-provider
         run: npm run production
 
       - name: Verificar que las rutas nuevas esten en el bundle
