@@ -39,17 +39,6 @@ class AuthServiceProvider extends ServiceProvider
     {
         $this->registerPolicies();
 
-        // Compatibilidad con el superadmin heredado de Crater. El esquema
-        // anterior ya le otorgaba administracion total; durante la migracion
-        // a RBAC no debe quedar bloqueado porque falte una fila en role_user.
-        Gate::before(function ($user) {
-            if ($user->role === 'super admin') {
-                return true;
-            }
-
-            return null;
-        });
-
         /*
          * Gate generico para preguntar por un permiso suelto, sin objeto:
          *
