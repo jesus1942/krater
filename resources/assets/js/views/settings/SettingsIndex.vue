@@ -60,6 +60,7 @@ import {
   OfficeBuildingIcon,
   AcademicCapIcon,
   CalendarIcon,
+  TemplateIcon,
   BellIcon,
   CheckCircleIcon,
   ClipboardListIcon,
@@ -84,6 +85,7 @@ export default {
     OfficeBuildingIcon,
     AcademicCapIcon,
     CalendarIcon,
+    TemplateIcon,
     PencilAltIcon,
     CogIcon,
     CheckCircleIcon,
@@ -126,6 +128,11 @@ export default {
           link: '/admin/settings/academic-years',
           title: 'settings.menu_title.academic_years',
           icon: 'calendar-icon',
+        },
+        {
+          link: '/admin/settings/academic-structure',
+          title: 'Estructura académica',
+          icon: 'template-icon',
         },
         {
           link: '/admin/settings/preferences',
