@@ -79,7 +79,9 @@ class Kernel extends HttpKernel
     /**
      * The priority-sorted list of middleware.
      *
-     * This forces the listed middleware to always be in the given order.
+     * ValidateTenant tiene que ejecutarse despues de autenticar y antes de
+     * SubstituteBindings. De lo contrario Laravel resuelve por ID un modelo de
+     * otra institucion cuando TenantContext todavia esta vacio.
      *
      * @var array
      */
@@ -88,6 +90,7 @@ class Kernel extends HttpKernel
         \Illuminate\View\Middleware\ShareErrorsFromSession::class,
         \Crater\Http\Middleware\Authenticate::class,
         \Illuminate\Session\Middleware\AuthenticateSession::class,
+        \Crater\Http\Middleware\ValidateTenant::class,
         \Illuminate\Routing\Middleware\SubstituteBindings::class,
         \Illuminate\Auth\Middleware\Authorize::class,
     ];
