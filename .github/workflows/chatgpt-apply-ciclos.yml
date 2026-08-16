@@ -19,6 +19,12 @@ jobs:
           fetch-depth: 0
           ref: chatgpt/ciclos-estructura-20260816
 
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.0'
+          extensions: mbstring, pdo_sqlite, sqlite3
+          coverage: none
+
       - name: Configurar Git
         run: |
           git config user.name "ChatGPT"
@@ -33,7 +39,6 @@ jobs:
         run: |
           python3 <<'PY'
           from pathlib import Path
-
           p = Path('app/Http/Requests/Academic/DivisionRequest.php')
           s = p.read_text()
           s = s.replace('use Illuminate\\Foundation\\Http\\FormRequest;\n', 'use Crater\\Support\\TenantContext;\nuse Illuminate\\Foundation\\Http\\FormRequest;\n')
