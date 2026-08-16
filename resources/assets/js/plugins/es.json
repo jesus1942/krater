@@ -623,7 +623,8 @@
       "file_disk": "Disco de archivo",
       "custom_fields": "Campos Personalizados",
       "payment_modes": "Modos de pago",
-      "notes": "Notas"
+      "notes": "Notas",
+      "audit_logs": "Bitácora de auditoría"
     },
     "title": "Configuraciones",
     "setting": "Configuraciones | Configuraciones",

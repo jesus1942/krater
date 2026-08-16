@@ -2,6 +2,7 @@
 
 namespace Crater\Models;
 
+use Crater\Traits\Auditable;
 use Crater\Traits\BelongsToSchoolLevel;
 use Illuminate\Database\Eloquent\Model;
 
@@ -10,6 +11,7 @@ use Illuminate\Database\Eloquent\Model;
  */
 class Subject extends Model
 {
+    use Auditable;
     use BelongsToSchoolLevel;
 
     const DURATION_ANNUAL = 'annual';

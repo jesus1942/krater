@@ -65,6 +65,7 @@ use Crater\Http\Controllers\V1\Update\MigrateUpdateController;
 use Crater\Http\Controllers\V1\Update\UnzipUpdateController;
 use Crater\Http\Controllers\V1\Users\UsersController;
 use Crater\Http\Controllers\V1\Academic\AcademicYearsController;
+use Crater\Http\Controllers\V1\Audit\AuditLogsController;
 use Crater\Http\Controllers\V1\Academic\DivisionsController;
 use Crater\Http\Controllers\V1\Academic\EnrollmentsController;
 use Crater\Http\Controllers\V1\Academic\GradeLevelsController;
@@ -231,6 +232,9 @@ Route::prefix('/v1')->group(function () {
 
         Route::put('/enrollments/{enrollment}', [EnrollmentsController::class, 'update'])
             ->middleware('permission:academic.enrollment.manage,academic.enrollment.transfer');
+
+        Route::get('/audit-logs', [AuditLogsController::class, 'index'])
+            ->middleware('permission:system.audit.view');
 
     });
 

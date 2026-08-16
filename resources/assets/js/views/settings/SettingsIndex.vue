@@ -142,6 +142,11 @@ export default {
           icon: 'user-add-icon',
         },
         {
+          link: '/admin/settings/audit-logs',
+          title: 'settings.menu_title.audit_logs',
+          icon: 'clipboard-list-icon',
+        },
+        {
           link: '/admin/settings/preferences',
           title: 'settings.menu_title.preferences',
           icon: 'cog-icon',

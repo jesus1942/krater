@@ -2,6 +2,8 @@
 
 namespace Crater\Models;
 
+use Crater\Models\AuditLog;
+use Crater\Traits\Auditable;
 use Crater\Traits\BelongsToSchoolLevel;
 use Illuminate\Database\Eloquent\Model;
 
@@ -14,12 +16,15 @@ use Illuminate\Database\Eloquent\Model;
  */
 class Enrollment extends Model
 {
+    use Auditable;
     use BelongsToSchoolLevel;
 
     const STATUS_ACTIVE = 'active';
     const STATUS_TRANSFERRED_OUT = 'transferred_out';
     const STATUS_WITHDRAWN = 'withdrawn';
     const STATUS_COMPLETED = 'completed';
+
+    protected $auditSeverity = AuditLog::SEVERITY_HIGH;
 
     protected $guarded = ['id'];
 

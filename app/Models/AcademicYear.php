@@ -2,6 +2,8 @@
 
 namespace Crater\Models;
 
+use Crater\Models\AuditLog;
+use Crater\Traits\Auditable;
 use Crater\Traits\BelongsToSchoolLevel;
 use Illuminate\Database\Eloquent\Model;
 
@@ -11,12 +13,15 @@ use Illuminate\Database\Eloquent\Model;
  */
 class AcademicYear extends Model
 {
+    use Auditable;
     use BelongsToSchoolLevel;
 
     const STATUS_DRAFT = 'draft';
     const STATUS_ACTIVE = 'active';
     const STATUS_CLOSING = 'closing';
     const STATUS_CLOSED = 'closed';
+
+    protected $auditSeverity = AuditLog::SEVERITY_HIGH;
 
     protected $guarded = ['id'];
 
