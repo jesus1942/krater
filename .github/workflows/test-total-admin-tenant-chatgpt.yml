@@ -1,0 +1,45 @@
+name: Test total admin tenant ChatGPT
+
+on:
+  push:
+    branches:
+      - chatgpt/total-admin-tenant-20260816
+
+permissions:
+  contents: write
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: chatgpt/total-admin-tenant-20260816
+
+      - name: Setup PHP 7.4
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '7.4'
+          extensions: mbstring, pdo_sqlite, sqlite3
+          coverage: none
+
+      - name: Validate PHP syntax
+        run: |
+          php -l app/Http/Middleware/ValidateTenant.php
+          php -l tests/Isolation/ValidateTenantTotalAdminTest.php
+
+      - name: Install Composer dependencies
+        run: composer install --no-interaction --prefer-dist --no-progress
+
+      - name: Run tenant hierarchy regression
+        run: vendor/bin/pest tests/Isolation/ValidateTenantTotalAdminTest.php
+
+      - name: Remove temporary workflow
+        run: |
+          git config user.name "Jesus Olguin"
+          git config user.email "47510848+jesus1942@users.noreply.github.com"
+          rm .github/workflows/test-total-admin-tenant-chatgpt.yml
+          git add -u .github/workflows/test-total-admin-tenant-chatgpt.yml
+          git commit -m "Retirar workflow temporal de tenant total admin"
+          git push origin HEAD:chatgpt/total-admin-tenant-20260816
