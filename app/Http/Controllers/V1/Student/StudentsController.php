@@ -10,6 +10,7 @@ use Crater\Models\FamilyMember;
 use Crater\Models\GradeLevel;
 use Crater\Models\SchoolLevel;
 use Crater\Models\Student;
+use Crater\Services\Access\AccessManager;
 use Crater\Support\TenantContext;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -23,10 +24,18 @@ class StudentsController extends Controller
 
     public function index(Request $request)
     {
-        $companyId = $request->header('company');
+        $companyId = (int) $request->header('company');
         $limit = $request->get('limit', 15);
+        $user = $request->user();
+        $canViewAllLevels = $user && app(AccessManager::class)->isTotalAdmin($user);
+        $allLevels = $canViewAllLevels && $request->boolean('all_levels');
 
-        $query = Student::with([
+        if (! $allLevels && ! TenantContext::schoolLevelId()) {
+            abort(422, 'Seleccioná un nivel institucional o usa la vista Todos los niveles si sos administrador total.');
+        }
+
+        $query = $allLevels ? Student::acrossLevels() : Student::query();
+        $query->with([
             'guardian:id,name,email,phone',
             'familyMembers',
         ])
@@ -38,9 +47,6 @@ class StudentsController extends Controller
                         ->orWhere('dni', 'like', '%'.$search.'%');
                 });
             })
-            ->when($request->level, function ($query, $level) {
-                $query->where('level', $level);
-            })
             ->when($request->status, function ($query, $status) {
                 $query->where('status', $status);
             })
@@ -51,14 +57,19 @@ class StudentsController extends Controller
             ->orderBy('first_name');
 
         $students = $limit === 'all' ? $query->get() : $query->paginate((int) $limit);
+        $summaryBase = function () use ($allLevels) {
+            return $allLevels ? Student::acrossLevels() : Student::query();
+        };
 
         return response()->json([
             'students' => $students,
             'summary' => [
-                'total' => Student::where('company_id', $companyId)->count(),
-                'active' => Student::where('company_id', $companyId)->where('status', 'active')->count(),
-                'pending' => Student::where('company_id', $companyId)->where('status', 'pending')->count(),
+                'total' => $summaryBase()->where('company_id', $companyId)->count(),
+                'active' => $summaryBase()->where('company_id', $companyId)->where('status', 'active')->count(),
+                'pending' => $summaryBase()->where('company_id', $companyId)->where('status', 'pending')->count(),
             ],
+            'can_view_all_levels' => (bool) $canViewAllLevels,
+            'view_mode' => $allLevels ? 'all_levels' : 'active_level',
         ]);
     }
 
@@ -66,6 +77,8 @@ class StudentsController extends Controller
     {
         $companyId = (int) $request->header('company');
         $schoolLevelId = (int) TenantContext::schoolLevelId();
+
+        abort_unless($schoolLevelId, 422, 'Seleccioná un nivel institucional antes de cargar un alumno.');
 
         $academicYears = AcademicYear::where('company_id', $companyId)
             ->where('school_level_id', $schoolLevelId)
@@ -148,14 +161,15 @@ class StudentsController extends Controller
     public function destroy(Request $request, Student $student)
     {
         $this->ensureCompany($request, $student);
-        $student->delete();
 
-        return response()->json(['success' => true]);
+        abort(409, 'Los legajos de alumnos no se eliminan físicamente. Cambiá su estado o reubicación para preservar el historial.');
     }
 
     private function applyCanonicalPlacement(array $validated, int $companyId): array
     {
         $schoolLevelId = (int) TenantContext::schoolLevelId();
+
+        abort_unless($schoolLevelId, 422, 'Seleccioná un nivel institucional antes de guardar un alumno.');
 
         $academicYear = AcademicYear::where('company_id', $companyId)
             ->where('school_level_id', $schoolLevelId)
@@ -220,9 +234,6 @@ class StudentsController extends Controller
 
         $student->familyMembers()->sync($sync);
 
-        // Mantiene el campo viejo solo cuando el nuevo responsable esta
-        // efectivamente vinculado a un usuario/cliente. Nunca deja apuntando
-        // a una persona que ya fue quitada del grupo familiar.
         $student->guardian_id = $legacyGuardianId;
         $student->save();
     }
@@ -231,8 +242,6 @@ class StudentsController extends Controller
     {
         $dni = $this->normalizeDni($item['dni'] ?? null);
 
-        // El DNI institucional manda incluso si la interfaz traia un ID viejo:
-        // de esa forma dos hermanos terminan vinculados a la misma persona.
         if ($dni !== '') {
             $byDni = FamilyMember::where('company_id', $companyId)
                 ->where('dni', $dni)
