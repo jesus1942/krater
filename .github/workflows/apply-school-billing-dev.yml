@@ -1,0 +1,83 @@
+name: Apply school billing dev cut
+
+on:
+  push:
+    branches:
+      - chatgpt/school-billing-canonical-20260816
+    paths:
+      - .github/workflows/apply-school-billing-dev.yml
+  workflow_dispatch:
+
+jobs:
+  apply-build-validate:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: chatgpt/school-billing-canonical-20260816
+          fetch-depth: 0
+
+      - name: Apply billing transformations
+        run: |
+          python3 scripts/chatgpt_school_billing_patch.py
+          python3 scripts/chatgpt_school_billing_payments_patch.py
+          python3 scripts/chatgpt_invoice_school_ui_patch.py
+
+      - name: Validate PHP syntax
+        run: |
+          php -l app/Http/Controllers/V1/Billing/SchoolBillingOptionsController.php
+          php -l app/Services/Billing/SchoolBillingAssignment.php
+          php -l app/Http/Controllers/V1/Invoice/InvoicesController.php
+          php -l app/Http/Controllers/V1/Payment/PaymentsController.php
+          php -l app/Http/Requests/InvoicesRequest.php
+          php -l app/Http/Requests/PaymentRequest.php
+          php -l app/Models/Invoice.php
+          php -l app/Models/Payment.php
+          php -l database/migrations/2026_09_01_001100_link_school_billing_to_students_and_family.php
+
+      - name: Verify school billing invariants
+        run: |
+          grep -Fq "student_id" app/Http/Requests/InvoicesRequest.php
+          grep -Fq "family_member_id" app/Http/Requests/InvoicesRequest.php
+          grep -Fq "SchoolBillingAssignment" app/Http/Controllers/V1/Invoice/InvoicesController.php
+          grep -Fq "Nueva cuota/comprobante" resources/assets/js/views/invoices/Create.vue
+          grep -Fq "Conceptos y aranceles" resources/assets/js/views/invoices/Create.vue
+          grep -Fq "Seleccionar alumno" resources/assets/js/views/invoices/Create.vue
+          grep -Fq "Responsable financiero" resources/assets/js/views/invoices/Create.vue
+          grep -Fq "Conceptos y aranceles" resources/assets/js/views/items/Index.vue
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install frontend dependencies
+        run: npm ci --legacy-peer-deps
+
+      - name: Build frontend
+        env:
+          NODE_OPTIONS: --openssl-legacy-provider
+        run: npm run production
+
+      - name: Refresh Railway frontend bundle
+        run: |
+          rm -f build/frontend/app.js.gz.part.*
+          gzip -c public/assets/js/app.js | split -d -a 2 -b 450K - build/frontend/app.js.gz.part.
+          cp public/assets/css/crater.css build/frontend/crater.css
+          cp public/mix-manifest.json build/frontend/mix-manifest.json
+
+      - name: Remove one-shot transformer files
+        run: |
+          rm -f scripts/chatgpt_school_billing_patch.py
+          rm -f scripts/chatgpt_school_billing_payments_patch.py
+          rm -f scripts/chatgpt_invoice_school_ui_patch.py
+          rm -f .github/workflows/apply-school-billing-dev.yml
+
+      - name: Commit generated development cut
+        run: |
+          git config user.name "ChatGPT"
+          git config user.email "actions@users.noreply.github.com"
+          git add -A
+          git commit -m "Convertir facturación en circuito escolar canónico"
+          git push origin HEAD:chatgpt/school-billing-canonical-20260816
