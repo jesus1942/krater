@@ -36,17 +36,35 @@ class PayrollController extends Controller
             ->where('company_id', $companyId)
             ->when(! $global || $levelId, fn ($q) => $q->where('school_level_id', $levelId))
             ->with(['schoolLevel:id,name,code', 'slips' => function ($q) {
-                $q->with(['staffMember:id,first_name,last_name,staff_category', 'payments' => function ($p) {
-                    $p->orderByDesc('paid_at')->orderByDesc('id');
-                }]);
+                $q->with([
+                    'staffMember' => function ($staffQuery) {
+                        $staffQuery
+                            ->select('id', 'first_name', 'last_name')
+                            ->with(['assignments' => function ($assignmentQuery) {
+                                $assignmentQuery
+                                    ->where('active', true)
+                                    ->select('id', 'staff_member_id', 'school_level_id', 'position_title', 'function_category', 'start_date', 'active')
+                                    ->orderByDesc('start_date')
+                                    ->orderByDesc('id');
+                            }]);
+                    },
+                    'payments' => function ($p) {
+                        $p->orderByDesc('paid_at')->orderByDesc('id');
+                    },
+                ]);
             }])
-            ->orderByDesc('year')->orderByDesc('month')->get();
+            ->orderByDesc('year')
+            ->orderByDesc('month')
+            ->get();
 
         $levels = SchoolLevel::query()
-            ->where('company_id', $companyId)->where('enabled', true)
+            ->where('company_id', $companyId)
+            ->where('enabled', true)
             ->when(! $global, fn ($q) => $q->whereKey($levelId))
             ->get(['id', 'name', 'code']);
 
+        // La función/categoría pertenece al cargo. Traemos los cargos activos para
+        // que cada período pueda mostrar únicamente el personal elegible de su nivel.
         $staff = StaffMember::query()
             ->where('company_id', $companyId)
             ->where('employment_status', 'active')
@@ -56,8 +74,18 @@ class PayrollController extends Controller
                     $q->where('school_level_id', $levelId);
                 }
             })
-            ->orderBy('last_name')->orderBy('first_name')
-            ->get(['id', 'first_name', 'last_name', 'staff_category']);
+            ->with(['assignments' => function ($q) use ($global, $levelId) {
+                $q->where('active', true);
+                if (! $global || $levelId) {
+                    $q->where('school_level_id', $levelId);
+                }
+                $q->select('id', 'staff_member_id', 'school_level_id', 'position_title', 'function_category', 'start_date', 'active')
+                    ->orderByDesc('start_date')
+                    ->orderByDesc('id');
+            }])
+            ->orderBy('last_name')
+            ->orderBy('first_name')
+            ->get(['id', 'first_name', 'last_name']);
 
         return response()->json([
             'data' => $periods,
@@ -80,7 +108,9 @@ class PayrollController extends Controller
 
         $exists = PayrollPeriod::where('company_id', TenantContext::companyId())
             ->where('school_level_id', $levelId)
-            ->where('year', $data['year'])->where('month', $data['month'])->exists();
+            ->where('year', $data['year'])
+            ->where('month', $data['month'])
+            ->exists();
         if ($exists) {
             throw ValidationException::withMessages(['month' => ['Ya existe un período de liquidación para ese nivel y mes.']]);
         }
@@ -114,9 +144,12 @@ class PayrollController extends Controller
         }
 
         $member = StaffMember::where('company_id', TenantContext::companyId())
-            ->whereKey($data['staff_member_id'])->firstOrFail();
-        $eligible = $member->assignments()->where('active', true)
-            ->where('school_level_id', $payrollPeriod->school_level_id)->exists();
+            ->whereKey($data['staff_member_id'])
+            ->firstOrFail();
+        $eligible = $member->assignments()
+            ->where('active', true)
+            ->where('school_level_id', $payrollPeriod->school_level_id)
+            ->exists();
         if (! $eligible) {
             throw ValidationException::withMessages(['staff_member_id' => ['La persona no tiene un cargo activo en este nivel.']]);
         }
@@ -147,6 +180,7 @@ class PayrollController extends Controller
             'approved_by' => $request->user()->id,
             'approved_at' => now(),
         ]);
+
         return response()->json(['data' => $payrollSlip->fresh()]);
     }
 
@@ -183,6 +217,7 @@ class PayrollController extends Controller
             ]);
             $newPaid = $paid + (int) $data['amount'];
             $payrollSlip->update(['status' => $newPaid >= (int) $payrollSlip->net_amount ? 'paid' : 'partially_paid']);
+
             return $payment;
         });
 
@@ -224,11 +259,15 @@ class PayrollController extends Controller
 
     protected function assertLevelAllowed(Request $request, int $levelId): int
     {
-        SchoolLevel::where('company_id', TenantContext::companyId())->whereKey($levelId)->where('enabled', true)->firstOrFail();
+        SchoolLevel::where('company_id', TenantContext::companyId())
+            ->whereKey($levelId)
+            ->where('enabled', true)
+            ->firstOrFail();
         if ($this->access->isTotalAdmin($request->user())) {
             return $levelId;
         }
         abort_unless((int) TenantContext::schoolLevelId() === $levelId, 403);
+
         return $levelId;
     }
 
