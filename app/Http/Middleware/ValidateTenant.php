@@ -50,11 +50,21 @@ class ValidateTenant
         }
 
         // --- nivel institucional --------------------------------------------
+        // La vista sin nivel equivale a "Toda la institucion" y es exclusiva
+        // de administracion total. Ocultarla en Vue no alcanza: este corte de
+        // backend evita que otro usuario la fuerce por headers/API.
 
         $levelHeader = $request->header('school-level');
         $levelId = null;
 
-        if ($levelHeader !== null && $levelHeader !== '') {
+        if ($levelHeader === null || $levelHeader === '') {
+            if (! $isTotalAdmin) {
+                return response()->json([
+                    'error' => 'school_level_required',
+                    'message' => 'Debe seleccionar un nivel institucional.',
+                ], 403);
+            }
+        } else {
             $levelId = (int) $levelHeader;
 
             $existe = SchoolLevel::whereKey($levelId)
@@ -84,9 +94,26 @@ class ValidateTenant
 
     protected function perteneceAlNivel($userId, $levelId): bool
     {
-        return DB::table('school_level_user')
+        $direct = DB::table('school_level_user')
             ->where('user_id', $userId)
             ->where('school_level_id', $levelId)
+            ->exists();
+
+        if ($direct) {
+            return true;
+        }
+
+        $today = now()->toDateString();
+
+        return DB::table('role_user')
+            ->where('user_id', $userId)
+            ->where('school_level_id', $levelId)
+            ->where(function ($query) use ($today) {
+                $query->whereNull('starts_on')->orWhere('starts_on', '<=', $today);
+            })
+            ->where(function ($query) use ($today) {
+                $query->whereNull('ends_on')->orWhere('ends_on', '>=', $today);
+            })
             ->exists();
     }
 

@@ -26,12 +26,13 @@
 
     <div class="flex items-center ml-auto mr-2 md:mr-4">
       <select
+        v-if="schoolLevels.length || isTotalAdmin"
         v-model="selectedLevelId"
         aria-label="Nivel institucional activo"
         class="ena-level-select w-24 h-9 px-2 text-xs font-semibold md:w-56 md:text-sm"
         @change="changeLevel"
       >
-        <option value="">Toda la institución</option>
+        <option v-if="isTotalAdmin" value="">Toda la institución</option>
         <option v-for="level in schoolLevels" :key="level.id" :value="String(level.id)">
           {{ level.name }}
         </option>
@@ -143,6 +144,14 @@ export default {
   computed: {
     ...mapGetters('user', ['currentUser']),
     ...mapGetters(['isSidebarOpen']),
+    isTotalAdmin() {
+      return Boolean(
+        this.currentUser &&
+          (this.currentUser.is_total_admin === true ||
+            this.currentUser.rbac_role === 'total_admin' ||
+            this.currentUser.role === 'super admin')
+      )
+    },
     selectedLevel() {
       return this.schoolLevels.find(
         (level) => String(level.id) === String(this.selectedLevelId)
@@ -160,23 +169,43 @@ export default {
       }
     },
   },
-  created() {
-    this.fetchCurrentUser()
-    this.fetchSchoolLevels()
+  async created() {
+    await this.fetchCurrentUser()
+    await this.fetchSchoolLevels()
   },
   methods: {
     async fetchSchoolLevels() {
       const response = await window.axios.get('/api/v1/school-levels')
       this.schoolLevels = response.data.levels.filter((level) => level.enabled)
-      if (
-        this.selectedLevelId &&
-        !this.schoolLevels.some((level) => String(level.id) === String(this.selectedLevelId))
-      ) {
-        window.Ls.remove('selectedSchoolLevel')
-        this.selectedLevelId = ''
+
+      const selectedIsAllowed = this.schoolLevels.some(
+        (level) => String(level.id) === String(this.selectedLevelId)
+      )
+
+      if (this.isTotalAdmin) {
+        if (this.selectedLevelId && !selectedIsAllowed) {
+          window.Ls.remove('selectedSchoolLevel')
+          this.selectedLevelId = ''
+        }
+        return
+      }
+
+      if (!selectedIsAllowed) {
+        if (this.schoolLevels.length) {
+          this.selectedLevelId = String(this.schoolLevels[0].id)
+          window.Ls.set('selectedSchoolLevel', this.selectedLevelId)
+          window.location.reload()
+        } else {
+          window.Ls.remove('selectedSchoolLevel')
+          this.selectedLevelId = ''
+        }
       }
     },
     changeLevel() {
+      if (!this.isTotalAdmin && !this.selectedLevelId) {
+        return
+      }
+
       if (this.selectedLevelId) {
         window.Ls.set('selectedSchoolLevel', this.selectedLevelId)
       } else {

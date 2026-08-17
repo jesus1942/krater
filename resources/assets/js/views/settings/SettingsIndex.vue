@@ -221,9 +221,14 @@ export default {
             currentUser.role === 'super admin')
       )
     },
+    isWholeInstitutionContext() {
+      return !window.Ls.get('selectedSchoolLevel')
+    },
     visibleMenuItems() {
       return this.menuItems.filter(
-        (item) => !item.totalAdminOnly || this.isTotalAdmin
+        (item) =>
+          !item.totalAdminOnly ||
+          (this.isTotalAdmin && this.isWholeInstitutionContext)
       )
     },
   },
