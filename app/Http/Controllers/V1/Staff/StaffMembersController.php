@@ -69,9 +69,15 @@ class StaffMembersController extends Controller
         $member = DB::transaction(function () use ($data, $assignment) {
             $data['company_id'] = TenantContext::companyId();
             $data['document_number_normalized'] = $this->normalizeDocument($data['document_number'] ?? null);
+
+            // Compatibilidad con registros y clientes viejos: la columna sigue existiendo,
+            // pero su valor se deriva de la función del cargo y ya no se solicita aparte.
+            $data['staff_category'] = $assignment['function_category'];
+
             $member = StaffMember::create($data);
             $assignment['company_id'] = TenantContext::companyId();
             $member->assignments()->create($assignment);
+
             return $member;
         });
 
@@ -86,6 +92,7 @@ class StaffMembersController extends Controller
         $this->assertUserCompany($data['user_id'] ?? null);
         $data['document_number_normalized'] = $this->normalizeDocument($data['document_number'] ?? null);
         $staffMember->update($data);
+
         return response()->json(['data' => $staffMember->fresh('assignments.schoolLevel')]);
     }
 
@@ -96,7 +103,14 @@ class StaffMembersController extends Controller
         $data = $this->validateAssignment($request, true);
         $this->assertLevelAllowed($request, $data['school_level_id'] ?? null);
         $data['company_id'] = TenantContext::companyId();
-        $assignment = $staffMember->assignments()->create($data);
+
+        $assignment = DB::transaction(function () use ($staffMember, $data) {
+            $assignment = $staffMember->assignments()->create($data);
+            $this->syncLegacyCategory($staffMember, $assignment);
+
+            return $assignment;
+        });
+
         return response()->json(['data' => $assignment->load('schoolLevel')], 201);
     }
 
@@ -108,7 +122,12 @@ class StaffMembersController extends Controller
         $this->assertCanManage($request);
         $data = $this->validateAssignment($request, false);
         $this->assertLevelAllowed($request, $data['school_level_id'] ?? $staffAssignment->school_level_id);
-        $staffAssignment->update($data);
+
+        DB::transaction(function () use ($staffMember, $staffAssignment, $data) {
+            $staffAssignment->update($data);
+            $this->syncLegacyCategory($staffMember, $staffAssignment->fresh());
+        });
+
         return response()->json(['data' => $staffAssignment->fresh('schoolLevel')]);
     }
 
@@ -148,7 +167,10 @@ class StaffMembersController extends Controller
 
     protected function assertUserCompany(?int $userId): void
     {
-        if ($userId === null) return;
+        if ($userId === null) {
+            return;
+        }
+
         if (! User::where('company_id', TenantContext::companyId())->whereKey($userId)->exists()) {
             throw ValidationException::withMessages(['user_id' => ['La cuenta de acceso no pertenece a esta institución.']]);
         }
@@ -164,7 +186,8 @@ class StaffMembersController extends Controller
             'last_name' => ['required', 'string', 'max:120'],
             'email' => ['nullable', 'email', 'max:150'],
             'phone' => ['nullable', 'string', 'max:60'],
-            'staff_category' => ['required', Rule::in(['teaching', 'administrative', 'maintenance', 'cleaning', 'management', 'support', 'other'])],
+            // staff_category se mantiene sólo como columna legada. La fuente de verdad
+            // para la función es StaffAssignment.function_category.
             'employment_status' => ['required', Rule::in(['active', 'leave', 'inactive', 'terminated'])],
             'hire_date' => ['nullable', 'date'],
             'termination_date' => ['nullable', 'date', 'after_or_equal:hire_date'],
@@ -175,6 +198,7 @@ class StaffMembersController extends Controller
     protected function validateAssignment(Request $request, bool $required): array
     {
         $prefix = $required ? 'required' : 'sometimes';
+
         return $request->validate([
             'school_level_id' => ['nullable', 'integer'],
             'position_code' => ['nullable', 'string', 'max:60'],
@@ -188,9 +212,33 @@ class StaffMembersController extends Controller
         ]);
     }
 
+    /**
+     * Mantiene staff_category sincronizado sólo por compatibilidad con código/datos
+     * heredados. Las pantallas nuevas deben leer siempre function_category del cargo.
+     */
+    protected function syncLegacyCategory(StaffMember $staffMember, ?StaffAssignment $preferred = null): void
+    {
+        $source = $preferred && $preferred->active ? $preferred : null;
+
+        if (! $source) {
+            $source = $staffMember->assignments()
+                ->where('active', true)
+                ->orderByDesc('start_date')
+                ->orderByDesc('id')
+                ->first();
+        }
+
+        if ($source && $staffMember->staff_category !== $source->function_category) {
+            $staffMember->update(['staff_category' => $source->function_category]);
+        }
+    }
+
     protected function normalizeDocument(?string $document): ?string
     {
-        if ($document === null || trim($document) === '') return null;
+        if ($document === null || trim($document) === '') {
+            return null;
+        }
+
         return strtoupper(preg_replace('/[^A-Za-z0-9]/', '', $document));
     }
 }
