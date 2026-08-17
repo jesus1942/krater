@@ -20,6 +20,7 @@ use Crater\Http\Controllers\V1\Expense\ExpensesController;
 use Crater\Http\Controllers\V1\Expense\ShowReceiptController;
 use Crater\Http\Controllers\V1\Expense\UploadReceiptController;
 use Crater\Http\Controllers\V1\Family\FamilyMembersController;
+use Crater\Http\Controllers\V1\Staff\StaffMembersController;
 use Crater\Http\Controllers\V1\General\BootstrapController;
 use Crater\Http\Controllers\V1\General\CountriesController;
 use Crater\Http\Controllers\V1\General\CurrenciesController;
@@ -170,6 +171,18 @@ Route::prefix('/v1')->group(function () {
     */
 
     Route::middleware(['auth:sanctum', 'tenant'])->group(function () {
+        // --- Personal ---
+        Route::get('/staff', [StaffMembersController::class, 'index'])
+            ->middleware('permission:system.user.view');
+        Route::post('/staff', [StaffMembersController::class, 'store'])
+            ->middleware('permission:system.user.manage');
+        Route::put('/staff/{staffMember}', [StaffMembersController::class, 'update'])
+            ->middleware('permission:system.user.manage');
+        Route::post('/staff/{staffMember}/assignments', [StaffMembersController::class, 'storeAssignment'])
+            ->middleware('permission:system.user.manage');
+        Route::put('/staff/{staffMember}/assignments/{staffAssignment}', [StaffMembersController::class, 'updateAssignment'])
+            ->middleware('permission:system.user.manage');
+
         Route::get('/academic-years', [AcademicYearsController::class, 'index'])
             ->middleware('permission:academic.year.view');
 
