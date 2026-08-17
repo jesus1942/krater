@@ -18,6 +18,7 @@ use Crater\Http\Controllers\V1\Expense\ExpenseCategoriesController;
 use Crater\Http\Controllers\V1\Expense\ExpensesController;
 use Crater\Http\Controllers\V1\Expense\ShowReceiptController;
 use Crater\Http\Controllers\V1\Expense\UploadReceiptController;
+use Crater\Http\Controllers\V1\Family\FamilyMembersController;
 use Crater\Http\Controllers\V1\General\BootstrapController;
 use Crater\Http\Controllers\V1\General\CountriesController;
 use Crater\Http\Controllers\V1\General\CurrenciesController;
@@ -308,6 +309,14 @@ Route::prefix('/v1')->group(function () {
         Route::get('customers/{customer}/stats', CustomerStatsController::class);
 
         Route::resource('customers', CustomersController::class);
+
+
+        // Families / responsible adults (canonical family_members)
+        //----------------------------------
+
+        Route::get('/family-members', [FamilyMembersController::class, 'index']);
+        Route::post('/family-members', [FamilyMembersController::class, 'store']);
+        Route::put('/family-members/{familyMember}', [FamilyMembersController::class, 'update']);
 
 
         // Students / school records
