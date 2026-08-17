@@ -187,7 +187,7 @@ export default {
         this.formData.from_date
       ).format('YYYY-MM-DD')}&to_date=${moment(this.formData.to_date).format(
         'YYYY-MM-DD'
-      )}`
+      )}&school_level_id=${window.Ls.get('selectedSchoolLevel') || ''}`
     },
 
     itemDateRangeUrl() {
@@ -195,7 +195,7 @@ export default {
         this.formData.from_date
       ).format('YYYY-MM-DD')}&to_date=${moment(this.formData.to_date).format(
         'YYYY-MM-DD'
-      )}`
+      )}&school_level_id=${window.Ls.get('selectedSchoolLevel') || ''}`
     },
   },
 

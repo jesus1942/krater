@@ -7,6 +7,7 @@ use Crater\Http\Controllers\V1\Backup\BackupsController;
 use Crater\Http\Controllers\V1\Backup\DownloadBackupController;
 use Crater\Http\Controllers\V1\Customer\CustomersController;
 use Crater\Http\Controllers\V1\Customer\CustomerStatsController;
+use Crater\Http\Controllers\V1\Billing\SchoolBillingOptionsController;
 use Crater\Http\Controllers\V1\CustomField\CustomFieldsController;
 use Crater\Http\Controllers\V1\Dashboard\DashboardController;
 use Crater\Http\Controllers\V1\Estimate\ChangeEstimateStatusController;
@@ -18,6 +19,9 @@ use Crater\Http\Controllers\V1\Expense\ExpenseCategoriesController;
 use Crater\Http\Controllers\V1\Expense\ExpensesController;
 use Crater\Http\Controllers\V1\Expense\ShowReceiptController;
 use Crater\Http\Controllers\V1\Expense\UploadReceiptController;
+use Crater\Http\Controllers\V1\Family\FamilyMembersController;
+use Crater\Http\Controllers\V1\Staff\StaffMembersController;
+use Crater\Http\Controllers\V1\Staff\PayrollController;
 use Crater\Http\Controllers\V1\General\BootstrapController;
 use Crater\Http\Controllers\V1\General\CountriesController;
 use Crater\Http\Controllers\V1\General\CurrenciesController;
@@ -51,9 +55,12 @@ use Crater\Http\Controllers\V1\Settings\DiskController;
 use Crater\Http\Controllers\V1\Settings\GetCompanySettingsController;
 use Crater\Http\Controllers\V1\Settings\GetUserSettingsController;
 use Crater\Http\Controllers\V1\Settings\MailConfigurationController;
+use Crater\Http\Controllers\V1\Settings\SchoolLevelsController;
 use Crater\Http\Controllers\V1\Settings\TaxTypesController;
 use Crater\Http\Controllers\V1\Settings\UpdateCompanySettingsController;
 use Crater\Http\Controllers\V1\Settings\UpdateUserSettingsController;
+use Crater\Http\Controllers\V1\Student\StudentsController;
+use Crater\Http\Controllers\V1\Student\StudentRelocationController;
 use Crater\Http\Controllers\V1\Update\CheckVersionController;
 use Crater\Http\Controllers\V1\Update\CopyFilesController;
 use Crater\Http\Controllers\V1\Update\DeleteFilesController;
@@ -62,6 +69,12 @@ use Crater\Http\Controllers\V1\Update\FinishUpdateController;
 use Crater\Http\Controllers\V1\Update\MigrateUpdateController;
 use Crater\Http\Controllers\V1\Update\UnzipUpdateController;
 use Crater\Http\Controllers\V1\Users\UsersController;
+use Crater\Http\Controllers\V1\Academic\AcademicYearsController;
+use Crater\Http\Controllers\V1\Audit\AuditLogsController;
+use Crater\Http\Controllers\V1\Academic\DivisionsController;
+use Crater\Http\Controllers\V1\Academic\EnrollmentsController;
+use Crater\Http\Controllers\V1\Academic\GradeLevelsController;
+use Crater\Http\Controllers\V1\Academic\SubjectsController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -143,6 +156,112 @@ Route::prefix('/v1')->group(function () {
     });
 
 
+        /*
+    |--------------------------------------------------------------------------
+    | Suite institucional — estructura academica
+    |--------------------------------------------------------------------------
+    |
+    | Rutas del esquema NUEVO de autorizacion. A diferencia del bloque `admin`
+    | de mas abajo, aca cada ruta declara el permiso que exige y el tenant se
+    | valida contra el usuario autenticado, no contra el header que mande el
+    | cliente.
+    |
+    | Mientras convivan los dos esquemas, todo lo academico va aca y lo
+    | economico sigue en el bloque viejo.
+    |
+    */
+
+    Route::middleware(['auth:sanctum', 'tenant'])->group(function () {
+        // --- Personal ---
+        Route::get('/staff', [StaffMembersController::class, 'index'])
+            ->middleware('permission:hr.staff.view');
+        Route::post('/staff', [StaffMembersController::class, 'store'])
+            ->middleware('permission:hr.staff.manage');
+        Route::put('/staff/{staffMember}', [StaffMembersController::class, 'update'])
+            ->middleware('permission:hr.staff.manage');
+        Route::post('/staff/{staffMember}/assignments', [StaffMembersController::class, 'storeAssignment'])
+            ->middleware('permission:hr.staff.manage');
+        Route::put('/staff/{staffMember}/assignments/{staffAssignment}', [StaffMembersController::class, 'updateAssignment'])
+            ->middleware('permission:hr.staff.manage');
+
+        Route::get('/payroll', [PayrollController::class, 'index'])->middleware('permission:hr.payroll.view');
+        Route::post('/payroll/periods', [PayrollController::class, 'storePeriod'])->middleware('permission:hr.payroll.manage');
+        Route::post('/payroll/periods/{payrollPeriod}/slips', [PayrollController::class, 'storeSlip'])->middleware('permission:hr.payroll.manage');
+        Route::post('/payroll/slips/{payrollSlip}/approve', [PayrollController::class, 'approveSlip'])->middleware('permission:hr.payroll.approve');
+        Route::post('/payroll/slips/{payrollSlip}/payments', [PayrollController::class, 'storePayment'])->middleware('permission:hr.payroll.pay');
+        Route::post('/payroll/payments/{payrollPayment}/reverse', [PayrollController::class, 'reversePayment'])->middleware('permission:hr.payroll.pay');
+
+        Route::get('/academic-years', [AcademicYearsController::class, 'index'])
+            ->middleware('permission:academic.year.view');
+
+        Route::get('/academic-years/{academicYear}', [AcademicYearsController::class, 'show'])
+            ->middleware('permission:academic.year.view');
+
+        Route::post('/academic-years', [AcademicYearsController::class, 'store'])
+            ->middleware('permission:academic.year.manage');
+
+        Route::put('/academic-years/{academicYear}', [AcademicYearsController::class, 'update'])
+            ->middleware('permission:academic.year.manage');
+
+        // --- cursos ---
+        Route::get('/grade-levels', [GradeLevelsController::class, 'index'])
+            ->middleware('permission:academic.division.view');
+
+        Route::post('/grade-levels', [GradeLevelsController::class, 'store'])
+            ->middleware('permission:academic.division.manage');
+
+        Route::put('/grade-levels/{gradeLevel}', [GradeLevelsController::class, 'update'])
+            ->middleware('permission:academic.division.manage');
+
+        // --- divisiones ---
+        Route::get('/divisions', [DivisionsController::class, 'index'])
+            ->middleware('permission:academic.division.view');
+
+        Route::get('/divisions/{division}', [DivisionsController::class, 'show'])
+            ->middleware('permission:academic.division.view');
+
+        Route::post('/divisions', [DivisionsController::class, 'store'])
+            ->middleware('permission:academic.division.manage');
+
+        Route::put('/divisions/{division}', [DivisionsController::class, 'update'])
+            ->middleware('permission:academic.division.manage');
+
+        // --- materias (espacios curriculares) ---
+        // Se autorizan con los permisos de plan de estudios: cambiar una
+        // materia es cambiar el disenio curricular.
+        Route::get('/study-plans', [SubjectsController::class, 'studyPlans'])
+            ->middleware('permission:academic.study_plan.view');
+
+        Route::get('/subjects', [SubjectsController::class, 'index'])
+            ->middleware('permission:academic.study_plan.view');
+
+        Route::post('/subjects', [SubjectsController::class, 'store'])
+            ->middleware('permission:academic.study_plan.manage');
+
+        Route::put('/subjects/{subject}', [SubjectsController::class, 'update'])
+            ->middleware('permission:academic.study_plan.manage');
+
+        Route::delete('/subjects/{subject}', [SubjectsController::class, 'destroy'])
+            ->middleware('permission:academic.study_plan.manage');
+
+        // --- matriculas ---
+        Route::get('/enrollments', [EnrollmentsController::class, 'index'])
+            ->middleware('permission:academic.enrollment.view');
+
+        Route::get('/enrollments/disponibles', [EnrollmentsController::class, 'disponibles'])
+            ->middleware('permission:academic.enrollment.view');
+
+        Route::post('/enrollments', [EnrollmentsController::class, 'store'])
+            ->middleware('permission:academic.enrollment.manage');
+
+        Route::put('/enrollments/{enrollment}', [EnrollmentsController::class, 'update'])
+            ->middleware('permission:academic.enrollment.manage,academic.enrollment.transfer');
+
+        Route::get('/audit-logs', [AuditLogsController::class, 'index'])
+            ->middleware('permission:system.audit.view');
+
+    });
+
     Route::middleware(['auth:sanctum', 'admin'])->group(function () {
 
 
@@ -214,6 +333,23 @@ Route::prefix('/v1')->group(function () {
         Route::resource('customers', CustomersController::class);
 
 
+        // Families / responsible adults (canonical family_members)
+        //----------------------------------
+
+        Route::get('/family-members', [FamilyMembersController::class, 'index']);
+        Route::post('/family-members', [FamilyMembersController::class, 'store']);
+        Route::put('/family-members/{familyMember}', [FamilyMembersController::class, 'update']);
+
+
+        // Students / school records
+        //----------------------------------
+
+        Route::get('/students/placement-options', [StudentsController::class, 'placementOptions']);
+        Route::get('/students/{student}/relocation-options', [StudentRelocationController::class, 'options']);
+        Route::put('/students/{student}/relocate', [StudentRelocationController::class, 'relocate']);
+        Route::apiResource('students', StudentsController::class);
+
+
         // Items
         //----------------------------------
 
@@ -223,6 +359,10 @@ Route::prefix('/v1')->group(function () {
 
         Route::resource('units', UnitsController::class);
 
+
+        // School billing options
+        //----------------------------------
+        Route::get('/school-billing/options', SchoolBillingOptionsController::class)->middleware('tenant');
 
         // Invoices
         //-------------------------------------------------
@@ -321,6 +461,10 @@ Route::prefix('/v1')->group(function () {
         Route::get('/company/settings', GetCompanySettingsController::class);
 
         Route::post('/company/settings', UpdateCompanySettingsController::class);
+
+        Route::get('/school-levels', [SchoolLevelsController::class, 'index']);
+
+        Route::put('/school-levels/{schoolLevel}', [SchoolLevelsController::class, 'update']);
 
 
         // Mails

@@ -28,6 +28,13 @@ import CustomerIndex from './views/customers/Index.vue'
 import CustomerCreate from './views/customers/Create.vue'
 import CustomerView from './views/customers/View.vue'
 
+// Students
+import StudentIndex from './views/students/Index.vue'
+
+// Personal
+import StaffIndex from './views/staff/Index.vue'
+import PayrollIndex from './views/staff/Payroll.vue'
+
 // Items
 import ItemsIndex from './views/items/Index.vue'
 import ItemCreate from './views/items/Create.vue'
@@ -65,6 +72,13 @@ import ReportLayout from './views/reports/layout/Index.vue'
 // Settings
 import SettingsLayout from './views/settings/SettingsIndex.vue'
 import CompanyInfo from './views/settings/CompanyInfoSetting.vue'
+import SchoolLevelsSetting from './views/settings/SchoolLevelsSetting.vue'
+
+// Academico
+import AcademicYearsIndex from './views/academic/AcademicYearsIndex.vue'
+import AcademicStructureIndex from './views/academic/AcademicStructureIndex.vue'
+import EnrollmentsIndex from './views/academic/EnrollmentsIndex.vue'
+import AuditLogsIndex from './views/academic/AuditLogsIndex.vue'
 import Customization from './views/settings/CustomizationSetting.vue'
 import Notifications from './views/settings/NotificationsSetting.vue'
 import Preferences from './views/settings/PreferencesSetting.vue'
@@ -178,6 +192,27 @@ const routes = [
         path: 'customers/:id/view',
         name: 'customers.view',
         component: CustomerView,
+      },
+
+      // Students
+      {
+        path: 'students',
+        name: 'students.index',
+        component: StudentIndex,
+      },
+
+      // Personal
+      {
+        path: 'staff',
+        name: 'staff.index',
+        component: StaffIndex,
+      },
+
+      // Liquidaciones y pagos de RRHH
+      {
+        path: 'payroll',
+        name: 'payroll.index',
+        component: PayrollIndex,
       },
 
       // Items
@@ -332,6 +367,34 @@ const routes = [
             path: 'company-info',
             name: 'company.info',
             component: CompanyInfo,
+          },
+          {
+            path: 'school-levels',
+            name: 'school.levels',
+            component: SchoolLevelsSetting,
+          },
+          {
+            // Los ciclos lectivos viven bajo configuracion mientras no exista
+            // el modulo academico completo: es donde la escuela va a buscarlos
+            // ahora, junto a los niveles institucionales.
+            path: 'academic-years',
+            name: 'academic.years',
+            component: AcademicYearsIndex,
+          },
+          {
+            path: 'academic-structure',
+            name: 'academic.structure',
+            component: AcademicStructureIndex,
+          },
+          {
+            path: 'enrollments',
+            name: 'academic.enrollments',
+            component: EnrollmentsIndex,
+          },
+          {
+            path: 'audit-logs',
+            name: 'system.audit.logs',
+            component: AuditLogsIndex,
           },
           {
             path: 'customization',

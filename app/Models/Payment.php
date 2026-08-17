@@ -8,6 +8,7 @@ use Crater\Jobs\GeneratePaymentPdfJob;
 use Crater\Mail\SendPaymentMail;
 use Crater\Traits\GeneratesPdfTrait;
 use Crater\Traits\HasCustomFieldsTrait;
+use Crater\Traits\BelongsToSchoolLevel;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Auth;
@@ -21,6 +22,7 @@ class Payment extends Model implements HasMedia
     use InteractsWithMedia;
     use GeneratesPdfTrait;
     use HasCustomFieldsTrait;
+    use BelongsToSchoolLevel;
 
     public const PAYMENT_MODE_CHECK = 'CHECK';
     public const PAYMENT_MODE_OTHER = 'OTHER';
@@ -107,6 +109,16 @@ class Payment extends Model implements HasMedia
     public function user()
     {
         return $this->belongsTo(User::class, 'user_id');
+    }
+
+    public function student()
+    {
+        return $this->belongsTo(Student::class);
+    }
+
+    public function familyMember()
+    {
+        return $this->belongsTo(FamilyMember::class);
     }
 
     public function creator()
@@ -270,7 +282,9 @@ class Payment extends Model implements HasMedia
     public static function getNextPaymentNumber($value)
     {
         // Get the last created order
-        $payment = Payment::where('payment_number', 'LIKE', $value.'-%')
+        $payment = Payment::acrossLevels()
+            ->where('payments.company_id', request()->header('company'))
+            ->where('payment_number', 'LIKE', $value.'-%')
             ->orderBy('payment_number', 'desc')
             ->first();
 

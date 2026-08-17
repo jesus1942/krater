@@ -4,6 +4,7 @@ namespace Crater\Models;
 
 use Carbon\Carbon;
 use Crater\Traits\HasCustomFieldsTrait;
+use Crater\Traits\BelongsToSchoolLevel;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Auth;
@@ -16,6 +17,7 @@ class Expense extends Model implements HasMedia
     use HasFactory;
     use InteractsWithMedia;
     use HasCustomFieldsTrait;
+    use BelongsToSchoolLevel;
 
     protected $guarded = ['id'];
 

@@ -6,10 +6,16 @@ use Crater\Http\Controllers\Controller;
 use Crater\Http\Requests\DeletePaymentsRequest;
 use Crater\Http\Requests\PaymentRequest;
 use Crater\Models\Payment;
+use Crater\Services\Billing\SchoolBillingAssignment;
 use Illuminate\Http\Request;
 
 class PaymentsController extends Controller
 {
+    public function __construct()
+    {
+        $this->middleware('tenant');
+    }
+
     /**
      * Display a listing of the resource.
      *
@@ -19,8 +25,8 @@ class PaymentsController extends Controller
     {
         $limit = $request->has('limit') ? $request->limit : 10;
 
-        $payments = Payment::with(['user', 'invoice', 'paymentMethod', 'creator'])
-            ->join('users', 'users.id', '=', 'payments.user_id')
+        $payments = Payment::with(['user', 'student', 'familyMember', 'invoice', 'paymentMethod', 'creator'])
+            ->leftJoin('users', 'users.id', '=', 'payments.user_id')
             ->leftJoin('invoices', 'invoices.id', '=', 'payments.invoice_id')
             ->leftJoin('payment_methods', 'payment_methods.id', '=', 'payments.payment_method_id')
             ->applyFilters($request->only([
@@ -49,8 +55,9 @@ class PaymentsController extends Controller
      * @param  \Illuminate\Http\Request  $request
      * @return \Illuminate\Http\Response
      */
-    public function store(PaymentRequest $request)
+    public function store(PaymentRequest $request, SchoolBillingAssignment $billing)
     {
+        $request->merge($billing->resolvePayment($request));
         $payment = Payment::createPayment($request);
 
         return response()->json([
@@ -63,6 +70,8 @@ class PaymentsController extends Controller
     {
         $payment->load([
             'user',
+            'student',
+            'familyMember',
             'invoice',
             'paymentMethod',
             'fields.customField',
@@ -75,8 +84,9 @@ class PaymentsController extends Controller
         ]);
     }
 
-    public function update(PaymentRequest $request, Payment $payment)
+    public function update(PaymentRequest $request, Payment $payment, SchoolBillingAssignment $billing)
     {
+        $request->merge($billing->resolvePayment($request));
         $payment = $payment->updatePayment($request);
 
         return response()->json([

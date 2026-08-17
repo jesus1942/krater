@@ -11,7 +11,7 @@
             to="/admin/dashboard"
           />
           <sw-breadcrumb-item
-            :title="$tc('invoices.invoice', 2)"
+            title="Cuotas y comprobantes"
             to="/admin/invoices"
           />
           <sw-breadcrumb-item
@@ -22,7 +22,7 @@
           />
           <sw-breadcrumb-item
             v-else
-            :title="$t('invoices.new_invoice')"
+            title="Nueva cuota/comprobante"
             to="#"
             active
           />
@@ -50,24 +50,41 @@
             size="lg"
           >
             <save-icon v-if="!isLoading" class="mr-2 -ml-1" />
-            {{ $t('invoices.save_invoice') }}
+            Guardar cuota/comprobante
           </sw-button>
         </template>
       </sw-page-header>
 
       <!-- Select Customer & Basic Fields  -->
       <div class="grid-cols-12 gap-8 mt-6 mb-8 lg:grid">
-        <customer-select
-          :valid="$v.selectedCustomer"
-          :customer-id="customerId"
-          class="col-span-5 pr-0"
-        />
+        <div class="col-span-5 p-5 bg-white border border-gray-200 rounded">
+          <h3 class="mb-4 text-sm font-semibold tracking-wide text-gray-600 uppercase">Asignación escolar</h3>
+          <label class="block mb-4 text-sm">Alumno *
+            <select v-model="newInvoice.student_id" required class="w-full h-10 px-3 mt-1 bg-white border border-gray-300 rounded" @change="onBillingStudentChange">
+              <option :value="null">Seleccionar alumno</option>
+              <option v-for="student in billingStudents" :key="student.id" :value="student.id">
+                {{ student.full_name }} · {{ student.course || 'Sin curso' }}
+              </option>
+            </select>
+          </label>
+          <label class="block text-sm">Responsable financiero *
+            <select v-model="newInvoice.family_member_id" required class="w-full h-10 px-3 mt-1 bg-white border border-gray-300 rounded">
+              <option :value="null">Seleccionar responsable</option>
+              <option v-for="member in billingResponsibles" :key="member.id" :value="member.id">
+                {{ member.name }}{{ member.relationship ? ` · ${member.relationship}` : '' }}
+              </option>
+            </select>
+          </label>
+          <p v-if="selectedBillingStudent" class="mt-3 text-xs text-gray-500">
+            Ciclo {{ selectedBillingStudent.academic_year || 'sin matrícula activa' }}. La deuda queda a nombre del alumno; el responsable indica quién administra/paga la obligación.
+          </p>
+        </div>
 
         <div
           class="grid grid-cols-1 col-span-7 gap-4 mt-8 lg:gap-6 lg:mt-0 lg:grid-cols-2"
         >
           <sw-input-group
-            :label="$t('invoices.invoice_date')"
+            label="Fecha de emisión"
             :error="invoiceDateError"
             required
           >
@@ -81,7 +98,7 @@
           </sw-input-group>
 
           <sw-input-group
-            :label="$t('invoices.due_date')"
+            label="Fecha de vencimiento"
             :error="dueDateError"
             required
           >
@@ -96,7 +113,7 @@
           </sw-input-group>
 
           <sw-input-group
-            :label="$t('invoices.invoice_number')"
+            label="Número de comprobante"
             :error="invoiceNumError"
             class="lg:mt-0"
             required
@@ -113,7 +130,7 @@
           </sw-input-group>
 
           <sw-input-group
-            :label="$t('invoices.ref_number')"
+            label="Referencia"
             :error="referenceError"
             class="lg:mt-0"
           >
@@ -130,21 +147,22 @@
       </div>
 
       <!-- Items -->
-      <table class="w-full text-center item-table">
-        <colgroup>
+      <div class="w-full pb-2">
+        <table class="block w-full text-center item-table md:table">
+        <colgroup class="hidden md:table-column-group">
           <col style="width: 40%" />
           <col style="width: 10%" />
           <col style="width: 15%" />
           <col v-if="discountPerItem === 'YES'" style="width: 15%" />
           <col style="width: 15%" />
         </colgroup>
-        <thead class="bg-white border border-gray-200 border-solid">
+        <thead class="hidden bg-white border border-gray-200 border-solid md:table-header-group">
           <tr>
             <th
               class="px-5 py-3 text-sm not-italic font-medium leading-5 text-left text-gray-700 border-t border-b border-gray-200 border-solid"
             >
               <span class="pl-12">
-                {{ $tc('items.item', 2) }}
+                Conceptos y aranceles
               </span>
             </th>
             <th
@@ -155,7 +173,7 @@
             <th
               class="px-5 py-3 text-sm not-italic font-medium leading-5 text-left text-gray-700 border-t border-b border-gray-200 border-solid"
             >
-              {{ $t('invoices.item.price') }}
+              Importe unitario
             </th>
             <th
               v-if="discountPerItem === 'YES'"
@@ -167,7 +185,7 @@
               class="px-5 py-3 text-sm not-italic font-medium leading-5 text-right text-gray-700 border-t border-b border-gray-200 border-solid"
             >
               <span class="pr-10">
-                {{ $t('invoices.item.amount') }}
+                Subtotal
               </span>
             </th>
           </tr>
@@ -175,7 +193,7 @@
 
         <draggable
           v-model="newInvoice.items"
-          class="item-body"
+          class="block item-body md:table-row-group"
           tag="tbody"
           handle=".handle"
         >
@@ -193,14 +211,15 @@
             @itemValidate="checkItemsData"
           />
         </draggable>
-      </table>
+        </table>
+      </div>
 
       <div
         class="flex items-center justify-center w-full px-6 py-3 text-base border-b border-gray-200 border-solid cursor-pointer text-primary-400 hover:bg-gray-200"
         @click="addItem"
       >
         <shopping-cart-icon class="h-5 mr-2" />
-        {{ $t('invoices.add_item') }}
+        Agregar concepto o arancel
       </div>
 
       <!-- Notes, Custom Fields & Total Section -->
@@ -248,6 +267,7 @@
           </div>
 
           <sw-input-group
+            v-if="false"
             :label="$t('invoices.invoice_template')"
             class="mt-6 mb-1"
             required
@@ -343,7 +363,7 @@
             </div>
           </div>
 
-          <div v-if="taxPerItem ? 'NO' : null">
+          <div v-if="false">
             <tax
               v-for="(tax, index) in newInvoice.taxes"
               :index="index"
@@ -359,7 +379,7 @@
           </div>
 
           <sw-popup
-            v-if="taxPerItem === 'NO' || taxPerItem === null"
+            v-if="false"
             ref="taxModal"
             class="my-3 text-sm font-semibold leading-5 text-primary-400"
           >
@@ -375,7 +395,7 @@
             <label
               class="text-sm font-semibold leading-5 text-gray-500 uppercase"
             >
-              {{ $t('invoices.total') }} {{ $t('invoices.amount') }}:
+              Total a cobrar:
             </label>
             <label
               class="flex items-center justify-center text-lg uppercase text-primary-400"
@@ -393,7 +413,6 @@
 <script>
 import draggable from 'vuedraggable'
 import InvoiceItem from './Item'
-import CustomerSelect from './CustomerSelect'
 import InvoiceStub from '../../stub/invoice'
 import { mapActions, mapGetters } from 'vuex'
 import moment from 'moment'
@@ -420,7 +439,6 @@ const {
 export default {
   components: {
     InvoiceItem,
-    CustomerSelect,
     Tax,
     draggable,
     PlusSmIcon,
@@ -438,6 +456,9 @@ export default {
         due_date: null,
         invoice_number: null,
         user_id: null,
+        student_id: null,
+        enrollment_id: null,
+        family_member_id: null,
         invoice_template_id: 1,
         sub_total: null,
         total: null,
@@ -473,6 +494,7 @@ export default {
         'invoiceCustom',
       ],
       customerId: null,
+      billingStudents: [],
     }
   },
 
@@ -491,9 +513,8 @@ export default {
         reference_number: {
           maxLength: maxLength(255),
         },
-      },
-      selectedCustomer: {
-        required,
+        student_id: { required },
+        family_member_id: { required },
       },
       invoiceNumAttribute: {
         required,
@@ -511,7 +532,6 @@ export default {
 
     ...mapGetters('invoice', [
       'getTemplateName',
-      'selectedCustomer',
       'selectedNote',
     ]),
 
@@ -521,11 +541,19 @@ export default {
       return this.selectedCurrency
     },
 
+    selectedBillingStudent() {
+      return this.billingStudents.find((student) => Number(student.id) === Number(this.newInvoice.student_id)) || null
+    },
+
+    billingResponsibles() {
+      return this.selectedBillingStudent ? (this.selectedBillingStudent.financial_responsibles || []) : []
+    },
+
     pageTitle() {
       if (this.isEdit) {
-        return this.$t('invoices.edit_invoice')
+        return 'Editar cuota/comprobante'
       }
-      return this.$t('invoices.new_invoice')
+      return 'Nueva cuota/comprobante'
     },
 
     isEdit() {
@@ -669,14 +697,6 @@ export default {
   },
 
   watch: {
-    selectedCustomer(newVal) {
-      if (newVal && newVal.currency) {
-        this.selectedCurrency = newVal.currency
-      } else {
-        this.selectedCurrency = this.defaultCurrency
-      }
-    },
-
     selectedNote() {
       if (this.selectedNote) {
         this.newInvoice.notes = this.selectedNote
@@ -694,6 +714,7 @@ export default {
   created() {
     this.loadData()
     this.fetchInitialData()
+    this.fetchSchoolBillingOptions()
     window.hub.$on('newTax', this.onSelectTax)
     if (this.$route.query.customer) {
       this.customerId = parseInt(this.$route.query.customer)
@@ -707,7 +728,6 @@ export default {
       'addInvoice',
       'fetchInvoice',
       'getInvoiceNumber',
-      'selectCustomer',
       'updateInvoice',
       'resetSelectedNote',
       'setTemplate',
@@ -724,6 +744,23 @@ export default {
     ...mapActions('customFields', ['fetchCustomFields']),
 
     ...mapActions('notification', ['showNotification']),
+
+    async fetchSchoolBillingOptions() {
+      const response = await window.axios.get('/api/v1/school-billing/options')
+      this.billingStudents = response.data.students || []
+    },
+
+    onBillingStudentChange() {
+      const student = this.selectedBillingStudent
+      this.newInvoice.enrollment_id = student ? student.enrollment_id : null
+      this.newInvoice.family_member_id = null
+      this.newInvoice.user_id = null
+      if (student && student.financial_responsibles && student.financial_responsibles.length === 1) {
+        const member = student.financial_responsibles[0]
+        this.newInvoice.family_member_id = member.id
+        this.newInvoice.user_id = member.user_id || null
+      }
+    },
 
     selectFixed() {
       if (this.newInvoice.discount_type === 'fixed') {
@@ -900,13 +937,13 @@ export default {
         sub_total: this.subtotal,
         total: this.total,
         tax: this.totalTax,
-        user_id: null,
+        user_id: this.newInvoice.user_id || null,
+        student_id: this.newInvoice.student_id,
+        enrollment_id: this.newInvoice.enrollment_id || null,
+        family_member_id: this.newInvoice.family_member_id,
         template_name: this.getTemplateName,
       }
 
-      if (this.selectedCustomer != null) {
-        data.user_id = this.selectedCustomer.id
-      }
 
       if (this.$route.name === 'invoices.edit') {
         this.submitUpdate(data)
@@ -998,7 +1035,6 @@ export default {
 
     checkValid() {
       this.$v.newInvoice.$touch()
-      this.$v.selectedCustomer.$touch()
       this.$v.invoiceNumAttribute.$touch()
 
       window.hub.$emit('checkItems')
@@ -1009,7 +1045,6 @@ export default {
         }
       })
       if (
-        !this.$v.selectedCustomer.$invalid &&
         !this.$v.invoiceNumAttribute.$invalid &&
         this.$v.newInvoice.$invalid === false &&
         isValid === true
@@ -1030,13 +1065,16 @@ export default {
 .invoice-create-page {
   .invoice-foot {
     .invoice-total {
-      min-width: 390px;
+      width: 100%;
+      min-width: 0;
     }
   }
-  @media (max-width: 480px) {
+
+  @media (min-width: 1024px) {
     .invoice-foot {
       .invoice-total {
-        min-width: 384px;
+        width: auto;
+        min-width: 390px;
       }
     }
   }

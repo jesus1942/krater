@@ -3,6 +3,7 @@
 namespace Crater\Models;
 
 use Carbon\Carbon;
+use Crater\Traits\BelongsToSchoolLevel;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Auth;
@@ -10,6 +11,7 @@ use Illuminate\Support\Facades\Auth;
 class Item extends Model
 {
     use HasFactory;
+    use BelongsToSchoolLevel;
 
     protected $guarded = ['id'];
 

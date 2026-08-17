@@ -8,6 +8,7 @@ use Carbon\Carbon;
 use Crater\Mail\SendInvoiceMail;
 use Crater\Traits\GeneratesPdfTrait;
 use Crater\Traits\HasCustomFieldsTrait;
+use Crater\Traits\BelongsToSchoolLevel;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Auth;
@@ -21,6 +22,7 @@ class Invoice extends Model implements HasMedia
     use InteractsWithMedia;
     use GeneratesPdfTrait;
     use HasCustomFieldsTrait;
+    use BelongsToSchoolLevel;
 
     public const STATUS_DRAFT = 'DRAFT';
     public const STATUS_SENT = 'SENT';
@@ -75,7 +77,9 @@ class Invoice extends Model implements HasMedia
     public static function getNextInvoiceNumber($value)
     {
         // Get the last created order
-        $lastOrder = Invoice::where('invoice_number', 'LIKE', $value.'-%')
+        $lastOrder = Invoice::acrossLevels()
+            ->where('invoices.company_id', request()->header('company'))
+            ->where('invoice_number', 'LIKE', $value.'-%')
             ->orderBy('invoice_number', 'desc')
             ->first();
 
@@ -134,6 +138,21 @@ class Invoice extends Model implements HasMedia
     public function user()
     {
         return $this->belongsTo('Crater\Models\User', 'user_id');
+    }
+
+    public function student()
+    {
+        return $this->belongsTo(Student::class);
+    }
+
+    public function enrollment()
+    {
+        return $this->belongsTo(Enrollment::class);
+    }
+
+    public function familyMember()
+    {
+        return $this->belongsTo(FamilyMember::class);
     }
 
     public function creator()

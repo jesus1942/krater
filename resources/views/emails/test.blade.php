@@ -1,5 +1,5 @@
 @component('mail::message')
-# Test Email from Crater
+# Correo de prueba de la Suite ENA
 
 {{ $my_message }}
 

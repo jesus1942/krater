@@ -50,7 +50,7 @@
             /* position: absolute; */
             height: 50px;
             text-transform: capitalize;
-            color: #817AE3;
+            color: #A5121C;
             padding-top: 0px;
         }
 
@@ -268,7 +268,7 @@
             font-size: 14px;
             line-height: 21px;
             text-align: right;
-            color: #5851D8;
+            color: #102340;
         }
     </style>
 </head>

@@ -201,7 +201,7 @@ export default {
   },
   watch: {
     country(newCountry) {
-      this.formData.country_id = newCountry.id
+      this.formData.country_id = newCountry ? newCountry.id : null
       if (this.isFetchingData) {
         return true
       }
@@ -290,16 +290,15 @@ export default {
       let response = await this.fetchCurrentUser()
       this.isFetchingData = true
       if (response.data.user) {
+        const address = response.data.user.company.address || {}
         this.formData.name = response.data.user.company.name
-        this.formData.address_street_1 =
-          response.data.user.company.address.address_street_1
-        this.formData.address_street_2 =
-          response.data.user.company.address.address_street_2
-        this.formData.zip = response.data.user.company.address.zip
-        this.formData.phone = response.data.user.company.address.phone
-        this.formData.state = response.data.user.company.address.state
-        this.formData.city = response.data.user.company.address.city
-        this.country = response.data.user.company.address.country
+        this.formData.address_street_1 = address.address_street_1
+        this.formData.address_street_2 = address.address_street_2
+        this.formData.zip = address.zip
+        this.formData.phone = address.phone
+        this.formData.state = address.state
+        this.formData.city = address.city
+        this.country = address.country
         this.previewLogo = response.data.user.company.logo
       }
       this.isRequestOnGoing = false

@@ -12,7 +12,7 @@ return [
     | any other location as required by the application or its packages.
     */
 
-    'name' => 'Crater',
+    'name' => 'ENA srl',
 
     /*
     |--------------------------------------------------------------------------
@@ -167,7 +167,6 @@ return [
         Crater\Providers\EventServiceProvider::class,
         Crater\Providers\RouteServiceProvider::class,
         Crater\Providers\DropboxServiceProvider::class,
-        Barryvdh\LaravelIdeHelper\IdeHelperServiceProvider::class,
     ],
 
     /*

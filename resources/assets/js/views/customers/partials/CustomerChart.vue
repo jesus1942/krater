@@ -73,7 +73,7 @@
           <br />
           <span
             class="block mt-1 text-xl font-semibold leading-8"
-            style="color: #5851d8"
+            style="color: #102340"
           >
             <div v-html="getFormattedTotalNetProfit" />
           </span>

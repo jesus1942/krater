@@ -8,6 +8,7 @@ use Carbon\Carbon;
 use Crater\Mail\SendEstimateMail;
 use Crater\Traits\GeneratesPdfTrait;
 use Crater\Traits\HasCustomFieldsTrait;
+use Crater\Traits\BelongsToSchoolLevel;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Auth;
@@ -21,6 +22,7 @@ class Estimate extends Model implements HasMedia
     use InteractsWithMedia;
     use GeneratesPdfTrait;
     use HasCustomFieldsTrait;
+    use BelongsToSchoolLevel;
 
     public const STATUS_DRAFT = 'DRAFT';
     public const STATUS_SENT = 'SENT';
@@ -73,7 +75,9 @@ class Estimate extends Model implements HasMedia
     public static function getNextEstimateNumber($value)
     {
         // Get the last created order
-        $lastOrder = Estimate::where('estimate_number', 'LIKE', $value.'-%')
+        $lastOrder = Estimate::acrossLevels()
+            ->where('estimates.company_id', request()->header('company'))
+            ->where('estimate_number', 'LIKE', $value.'-%')
             ->orderBy('estimate_number', 'desc')
             ->first();
 

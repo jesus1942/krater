@@ -1,0 +1,337 @@
+<?php
+
+namespace Crater\Http\Controllers\V1\Student;
+
+use Crater\Http\Controllers\Controller;
+use Crater\Http\Requests\StudentRequest;
+use Crater\Models\AcademicYear;
+use Crater\Models\Division;
+use Crater\Models\FamilyMember;
+use Crater\Models\GradeLevel;
+use Crater\Models\SchoolLevel;
+use Crater\Models\Student;
+use Crater\Services\Access\AccessManager;
+use Crater\Support\TenantContext;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+
+class StudentsController extends Controller
+{
+    public function __construct()
+    {
+        $this->middleware('tenant');
+    }
+
+    public function index(Request $request)
+    {
+        $companyId = (int) $request->header('company');
+        $limit = $request->get('limit', 15);
+        $user = $request->user();
+        $canViewAllLevels = $user && app(AccessManager::class)->isTotalAdmin($user);
+        $allLevels = $canViewAllLevels && $request->boolean('all_levels');
+
+        if (! $allLevels && ! TenantContext::schoolLevelId()) {
+            abort(422, 'Seleccioná un nivel institucional o usa la vista Todos los niveles si sos administrador total.');
+        }
+
+        $query = $allLevels ? Student::acrossLevels() : Student::query();
+        $query->with([
+            'guardian:id,name,email,phone',
+            'familyMembers',
+        ])
+            ->where('company_id', $companyId)
+            ->when($request->search, function ($query, $search) {
+                $query->where(function ($query) use ($search) {
+                    $query->where('first_name', 'like', '%'.$search.'%')
+                        ->orWhere('last_name', 'like', '%'.$search.'%')
+                        ->orWhere('dni', 'like', '%'.$search.'%');
+                });
+            })
+            ->when($request->status, function ($query, $status) {
+                $query->where('status', $status);
+            })
+            ->when($request->school_year, function ($query, $schoolYear) {
+                $query->where('school_year', $schoolYear);
+            })
+            ->orderBy('last_name')
+            ->orderBy('first_name');
+
+        $students = $limit === 'all' ? $query->get() : $query->paginate((int) $limit);
+        $summaryBase = function () use ($allLevels) {
+            return $allLevels ? Student::acrossLevels() : Student::query();
+        };
+
+        return response()->json([
+            'students' => $students,
+            'summary' => [
+                'total' => $summaryBase()->where('company_id', $companyId)->count(),
+                'active' => $summaryBase()->where('company_id', $companyId)->where('status', 'active')->count(),
+                'pending' => $summaryBase()->where('company_id', $companyId)->where('status', 'pending')->count(),
+            ],
+            'can_view_all_levels' => (bool) $canViewAllLevels,
+            'view_mode' => $allLevels ? 'all_levels' : 'active_level',
+        ]);
+    }
+
+    public function placementOptions(Request $request)
+    {
+        $companyId = (int) $request->header('company');
+        $schoolLevelId = (int) TenantContext::schoolLevelId();
+
+        abort_unless($schoolLevelId, 422, 'Seleccioná un nivel institucional antes de cargar un alumno.');
+
+        $academicYears = AcademicYear::where('company_id', $companyId)
+            ->where('school_level_id', $schoolLevelId)
+            ->orderByDesc('year')
+            ->get(['id', 'year', 'name', 'status']);
+
+        $gradeLevels = GradeLevel::where('company_id', $companyId)
+            ->where('school_level_id', $schoolLevelId)
+            ->enabled()
+            ->ordered()
+            ->get(['id', 'school_level_id', 'name', 'position']);
+
+        $divisions = Division::where('company_id', $companyId)
+            ->where('school_level_id', $schoolLevelId)
+            ->where('enabled', true)
+            ->orderBy('grade_level_id')
+            ->orderBy('name')
+            ->get(['id', 'academic_year_id', 'grade_level_id', 'school_level_id', 'name', 'shift', 'capacity']);
+
+        return response()->json([
+            'academic_years' => $academicYears,
+            'grade_levels' => $gradeLevels,
+            'divisions' => $divisions,
+        ]);
+    }
+
+    public function store(StudentRequest $request)
+    {
+        $companyId = (int) $request->header('company');
+        $validated = $request->validated();
+        $familyMembers = $validated['family_members'] ?? [];
+        unset($validated['family_members']);
+        $validated = $this->applyCanonicalPlacement($validated, $companyId);
+
+        $student = DB::transaction(function () use ($validated, $familyMembers, $companyId) {
+            $student = Student::create(array_merge($validated, [
+                'company_id' => $companyId,
+            ]));
+            $this->syncFamilyMembers($student, $familyMembers, $companyId);
+
+            return $student;
+        });
+
+        return response()->json([
+            'student' => $this->loadStudentRelations($student),
+            'success' => true,
+        ], 201);
+    }
+
+    public function show(Request $request, Student $student)
+    {
+        $this->ensureCompany($request, $student);
+
+        return response()->json(['student' => $this->loadStudentRelations($student)]);
+    }
+
+    public function update(StudentRequest $request, Student $student)
+    {
+        $this->ensureCompany($request, $student);
+        $companyId = (int) $request->header('company');
+        $validated = $request->validated();
+        $hasFamilyPayload = array_key_exists('family_members', $validated);
+        $familyMembers = $validated['family_members'] ?? [];
+        unset($validated['family_members']);
+        $validated = $this->applyCanonicalPlacement($validated, $companyId);
+
+        DB::transaction(function () use ($student, $validated, $familyMembers, $hasFamilyPayload, $companyId) {
+            $student->update($validated);
+            if ($hasFamilyPayload) {
+                $this->syncFamilyMembers($student, $familyMembers, $companyId);
+            }
+        });
+
+        return response()->json([
+            'student' => $this->loadStudentRelations($student),
+            'success' => true,
+        ]);
+    }
+
+    public function destroy(Request $request, Student $student)
+    {
+        $this->ensureCompany($request, $student);
+
+        abort(409, 'Los legajos de alumnos no se eliminan físicamente. Cambiá su estado o reubicación para preservar el historial.');
+    }
+
+    private function applyCanonicalPlacement(array $validated, int $companyId): array
+    {
+        $schoolLevelId = (int) TenantContext::schoolLevelId();
+
+        abort_unless($schoolLevelId, 422, 'Seleccioná un nivel institucional antes de guardar un alumno.');
+
+        $academicYear = AcademicYear::where('company_id', $companyId)
+            ->where('school_level_id', $schoolLevelId)
+            ->find($validated['academic_year_id']);
+        $gradeLevel = GradeLevel::where('company_id', $companyId)
+            ->where('school_level_id', $schoolLevelId)
+            ->where('enabled', true)
+            ->find($validated['grade_level_id']);
+        $division = Division::where('company_id', $companyId)
+            ->where('school_level_id', $schoolLevelId)
+            ->where('academic_year_id', optional($academicYear)->id)
+            ->where('grade_level_id', optional($gradeLevel)->id)
+            ->where('enabled', true)
+            ->find($validated['division_id']);
+
+        abort_unless($academicYear && $gradeLevel && $division, 422, 'El curso, la división y el ciclo deben pertenecer al nivel institucional activo.');
+
+        $schoolLevel = SchoolLevel::where('company_id', $companyId)->findOrFail($gradeLevel->school_level_id);
+        $levelLabels = [
+            'primary' => 'Primario',
+            'secondary' => 'Secundario',
+            'tertiary' => 'Terciario',
+        ];
+
+        unset($validated['academic_year_id'], $validated['grade_level_id'], $validated['division_id']);
+        $validated['school_level_id'] = $gradeLevel->school_level_id;
+        $validated['level'] = $levelLabels[$schoolLevel->code] ?? $schoolLevel->name;
+        $validated['grade'] = $gradeLevel->name;
+        $validated['division'] = $division->name;
+        $validated['school_year'] = $academicYear->year;
+
+        return $validated;
+    }
+
+    private function syncFamilyMembers(Student $student, array $items, $companyId)
+    {
+        $sync = [];
+        $legacyGuardianId = null;
+
+        foreach ($items as $item) {
+            $familyMember = $this->resolveFamilyMember($item, $companyId);
+            if (isset($sync[$familyMember->id])) {
+                continue;
+            }
+
+            $isResponsible = ! empty($item['is_responsible']);
+            $isFinancial = ! empty($item['is_financial_responsible']);
+            $isPrimary = ! empty($item['is_primary_contact']);
+
+            $sync[$familyMember->id] = [
+                'company_id' => $companyId,
+                'relationship' => $item['relationship'] ?? null,
+                'is_responsible' => $isResponsible,
+                'is_financial_responsible' => $isFinancial,
+                'is_primary_contact' => $isPrimary,
+            ];
+
+            if (! $legacyGuardianId && $familyMember->user_id && ($isFinancial || $isResponsible || $isPrimary)) {
+                $legacyGuardianId = $familyMember->user_id;
+            }
+        }
+
+        $student->familyMembers()->sync($sync);
+
+        $student->guardian_id = $legacyGuardianId;
+        $student->save();
+    }
+
+    private function resolveFamilyMember(array $item, $companyId)
+    {
+        $dni = $this->normalizeDni($item['dni'] ?? null);
+
+        if ($dni !== '') {
+            $byDni = FamilyMember::where('company_id', $companyId)
+                ->where('dni', $dni)
+                ->first();
+            if ($byDni) {
+                $this->updateFamilyMember($byDni, $item, $dni);
+
+                return $byDni;
+            }
+        }
+
+        if (! empty($item['id'])) {
+            $familyMember = FamilyMember::where('company_id', $companyId)->findOrFail($item['id']);
+            $this->updateFamilyMember($familyMember, $item, $dni ?: null);
+
+            return $familyMember;
+        }
+
+        if (! empty($item['user_id'])) {
+            $familyMember = FamilyMember::where('company_id', $companyId)
+                ->where('user_id', $item['user_id'])
+                ->first();
+            if ($familyMember) {
+                $this->updateFamilyMember($familyMember, $item, $dni ?: null);
+
+                return $familyMember;
+            }
+        }
+
+        return FamilyMember::create([
+            'company_id' => $companyId,
+            'user_id' => $item['user_id'] ?? null,
+            'name' => trim($item['name']),
+            'dni' => $dni ?: null,
+            'email' => $item['email'] ?? null,
+            'phone' => $item['phone'] ?? null,
+        ]);
+    }
+
+    private function updateFamilyMember(FamilyMember $familyMember, array $item, $normalizedDni = null)
+    {
+        $data = [
+            'name' => trim($item['name']),
+            'email' => $item['email'] ?? null,
+            'phone' => $item['phone'] ?? null,
+        ];
+
+        if (array_key_exists('user_id', $item) && ! $familyMember->user_id) {
+            $data['user_id'] = $item['user_id'];
+        }
+        if (array_key_exists('dni', $item)) {
+            $data['dni'] = $normalizedDni !== null
+                ? $normalizedDni
+                : ($this->normalizeDni($item['dni']) ?: null);
+        }
+
+        $familyMember->update($data);
+    }
+
+    private function loadStudentRelations(Student $student)
+    {
+        $student->load(['guardian:id,name,email,phone', 'familyMembers']);
+
+        if ($student->familyMembers->isEmpty() && $student->guardian) {
+            $student->setAttribute('legacy_family_member', [
+                'user_id' => $student->guardian->id,
+                'name' => $student->guardian->name,
+                'email' => $student->guardian->email,
+                'phone' => $student->guardian->phone,
+                'relationship' => 'Responsable',
+                'is_responsible' => true,
+                'is_financial_responsible' => true,
+                'is_primary_contact' => true,
+            ]);
+        }
+
+        return $student;
+    }
+
+    private function normalizeDni($dni)
+    {
+        if ($dni === null) {
+            return '';
+        }
+
+        return strtoupper(preg_replace('/[^A-Za-z0-9]/', '', trim((string) $dni)));
+    }
+
+    private function ensureCompany(Request $request, Student $student)
+    {
+        abort_unless((int) $student->company_id === (int) $request->header('company'), 404);
+    }
+}

@@ -28,7 +28,7 @@
     {{-- Footer --}}
     @slot('footer')
         @component('mail::footer')
-            Powered by <a class="footer-link" href="https://craterapp.com">Crater</a>
+            Impulsado por <a class="footer-link" href="{{ config('app.url') }}">Escuela Nueva Austral</a>
         @endcomponent
     @endslot
 @endcomponent

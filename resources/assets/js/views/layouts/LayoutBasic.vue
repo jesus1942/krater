@@ -3,7 +3,7 @@
     <base-modal />
     <base-notification />
     <site-header />
-    <div class="flex h-screen pt-16 pb-10 overflow-hidden">
+    <div class="flex h-screen pt-16 pb-14 overflow-hidden">
       <site-sidebar />
       <router-view />
     </div>

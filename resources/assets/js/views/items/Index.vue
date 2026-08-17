@@ -1,9 +1,9 @@
 <template>
   <base-page>
-    <sw-page-header :title="$t('items.title')">
+    <sw-page-header title="Conceptos y aranceles">
       <sw-breadcrumb slot="breadcrumbs">
         <sw-breadcrumb-item :title="$t('general.home')" to="dashboard" />
-        <sw-breadcrumb-item :title="$tc('items.item', 2)" to="#" active />
+        <sw-breadcrumb-item title="Conceptos y aranceles" to="#" active />
       </sw-breadcrumb>
 
       <template slot="actions">
@@ -25,7 +25,7 @@
           class="ml-4"
         >
           <plus-icon class="w-6 h-6 mr-1 -ml-2" />
-          {{ $t('items.add_item') }}
+          Nuevo concepto
         </sw-button>
       </template>
     </sw-page-header>
@@ -83,8 +83,8 @@
 
     <sw-empty-table-placeholder
       v-show="showEmptyScreen"
-      :title="$t('items.no_items')"
-      :description="$t('items.list_of_items')"
+      title="Aún no hay conceptos ni aranceles"
+      description="Creá cuotas, matrículas, materiales u otros conceptos cobrables para este nivel."
     >
       <satellite-icon class="mt-5 mb-4" />
 
@@ -96,7 +96,7 @@
         variant="primary-outline"
       >
         <plus-icon class="w-6 h-6 mr-1 -ml-2" />
-        {{ $t('items.add_new_item') }}
+        Agregar concepto o arancel
       </sw-button>
     </sw-empty-table-placeholder>
 
@@ -168,7 +168,7 @@
           </div>
         </sw-table-column>
 
-        <sw-table-column :sortable="true" :label="$t('items.name')" show="name">
+        <sw-table-column :sortable="true" label="Concepto" show="name">
           <template slot-scope="row">
             <span>{{ $t('items.name') }}</span>
             <router-link
@@ -196,7 +196,7 @@
 
         <sw-table-column
           :sortable="true"
-          :label="$t('items.price')"
+          label="Importe"
           show="price"
         >
           <template slot-scope="row">

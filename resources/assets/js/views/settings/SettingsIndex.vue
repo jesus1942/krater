@@ -18,7 +18,7 @@
 
     <div class="w-full mb-6 select-wrapper xl:hidden">
       <sw-select
-        :options="menuItems"
+        :options="visibleMenuItems"
         v-model="currentSetting"
         :searchable="true"
         :show-labels="false"
@@ -32,7 +32,7 @@
       <div class="hidden col-span-3 mt-1 xl:block">
         <sw-list>
           <sw-list-item
-            v-for="(menuItem, index) in menuItems"
+            v-for="(menuItem, index) in visibleMenuItems"
             :title="$t(menuItem.title)"
             :key="index"
             :to="menuItem.link"
@@ -58,6 +58,10 @@
 import {
   UserIcon,
   OfficeBuildingIcon,
+  AcademicCapIcon,
+  CalendarIcon,
+  TemplateIcon,
+  UserAddIcon,
   BellIcon,
   CheckCircleIcon,
   ClipboardListIcon,
@@ -80,6 +84,10 @@ export default {
   components: {
     UserIcon,
     OfficeBuildingIcon,
+    AcademicCapIcon,
+    CalendarIcon,
+    TemplateIcon,
+    UserAddIcon,
     PencilAltIcon,
     CogIcon,
     CheckCircleIcon,
@@ -112,6 +120,32 @@ export default {
           link: '/admin/settings/company-info',
           title: 'settings.menu_title.company_information',
           icon: 'office-building-icon',
+        },
+        {
+          link: '/admin/settings/school-levels',
+          title: 'settings.menu_title.school_levels',
+          icon: 'academic-cap-icon',
+          totalAdminOnly: true,
+        },
+        {
+          link: '/admin/settings/academic-years',
+          title: 'settings.menu_title.academic_years',
+          icon: 'calendar-icon',
+        },
+        {
+          link: '/admin/settings/academic-structure',
+          title: 'Estructura académica',
+          icon: 'template-icon',
+        },
+        {
+          link: '/admin/settings/enrollments',
+          title: 'settings.menu_title.enrollments',
+          icon: 'user-add-icon',
+        },
+        {
+          link: '/admin/settings/audit-logs',
+          title: 'settings.menu_title.audit_logs',
+          icon: 'clipboard-list-icon',
         },
         {
           link: '/admin/settings/preferences',
@@ -153,7 +187,6 @@ export default {
           title: 'settings.menu_title.expense_category',
           icon: 'clipboard-list-icon',
         },
-
         {
           link: '/admin/settings/mail-configuration',
           title: 'settings.mail.mail_config',
@@ -178,18 +211,45 @@ export default {
     }
   },
 
+  computed: {
+    isTotalAdmin() {
+      const currentUser = this.$store.state.user.currentUser
+      return Boolean(
+        currentUser &&
+          (currentUser.is_total_admin === true ||
+            currentUser.rbac_role === 'total_admin' ||
+            currentUser.role === 'super admin')
+      )
+    },
+    isWholeInstitutionContext() {
+      return !window.Ls.get('selectedSchoolLevel')
+    },
+    visibleMenuItems() {
+      return this.menuItems.filter(
+        (item) =>
+          !item.totalAdminOnly ||
+          (this.isTotalAdmin && this.isWholeInstitutionContext)
+      )
+    },
+  },
+
   watch: {
     '$route.path'(newValue) {
       if (newValue === '/admin/settings') {
         this.$router.push('/admin/settings/user-profile')
+        return
       }
+
+      this.currentSetting = this.visibleMenuItems.find(
+        (item) => item.link === newValue
+      ) || this.currentSetting
     },
   },
 
   mounted() {
-    this.currentSetting = this.menuItems.find(
+    this.currentSetting = this.visibleMenuItems.find(
       (item) => item.link == this.$route.path
-    )
+    ) || this.currentSetting
   },
 
   created() {

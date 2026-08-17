@@ -21,10 +21,14 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
-Route::post('login', [LoginController::class, 'login']);
+// Limite de intentos: 5 cada 15 minutos por IP y usuario. Sin esto, la ruta
+// admite fuerza bruta ilimitada, y desde que la landing es publica el
+// formulario esta a un clic de cualquiera que encuentre el sitio.
+Route::post('login', [LoginController::class, 'login'])
+    ->middleware('throttle:5,15');
 
 
-Route::prefix('reports')->group(function () {
+Route::prefix('reports')->middleware(['redirect-if-unauthenticated', 'report-tenant'])->group(function () {
 
     // sales report by customer
     //----------------------------------
@@ -91,6 +95,17 @@ Route::get('auth/logout', function () {
 Route::get('/on-boarding', function () {
     return view('app');
 })->name('install')->middleware('redirect-if-installed');
+
+
+// Landing page publica de Escuela Nueva Austral
+// -------------------------------------------------
+// Se declara antes del catch-all del SPA para quedarse con la raiz del sitio.
+// Es publica: se ve con la sesion iniciada o sin ella, y el boton de la
+// cabecera lleva a /login, que sigue montando la aplicacion Vue.
+
+Route::get('/', function () {
+    return view('landing');
+})->name('landing');
 
 
 // Move other http requests to the Vue App

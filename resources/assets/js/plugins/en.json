@@ -608,6 +608,8 @@
   "settings": {
     "menu_title": {
       "account_settings": "Account Settings",
+      "school_levels": "School levels",
+      "academic_years": "Academic years",
       "company_information": "Company Information",
       "customization": "Customization",
       "preferences": "Preferences",
@@ -619,7 +621,8 @@
       "file_disk": "File Disk",
       "custom_fields": "Custom Fields",
       "payment_modes": "Payment Modes",
-      "notes": "Notes"
+      "notes": "Notes",
+      "audit_logs": "Audit log"
     },
     "title": "Settings",
     "setting": "Settings | Settings",
@@ -1119,7 +1122,7 @@
     }
   },
   "layout_login": {
-    "copyright_crater": "Copyright @ Crater - 2020",
+    "copyright_crater": "ENA srl - Escuela Nueva Austral",
     "super_simple_invoicing": "Super Simple Invoicing",
     "for_freelancer": "for Freelancers &",
     "small_businesses": "Small Businesses ",
