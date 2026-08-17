@@ -1,0 +1,79 @@
+name: Reparar facturación escolar móvil una vez
+
+on:
+  push:
+    branches:
+      - chatgpt/school-billing-canonical-20260816
+
+permissions:
+  contents: write
+
+jobs:
+  repair:
+    if: ${{ !contains(github.event.head_commit.message, '[mobile-fix-done]') }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: chatgpt/school-billing-canonical-20260816
+          fetch-depth: 0
+
+      - name: Reparar formulario escolar y responsive real
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          def replace_once(text, old, new, label):
+              if old not in text:
+                  raise SystemExit(f'No se encontró bloque esperado: {label}')
+              return text.replace(old, new, 1)
+
+          create = Path('resources/assets/js/views/invoices/Create.vue')
+          s = create.read_text()
+          s = replace_once(s, '<div class="w-full overflow-x-auto pb-2">\n        <table class="w-full text-center item-table" style="min-width: 720px">', '<div class="w-full pb-2">\n        <table class="block w-full text-center item-table md:table">', 'tabla móvil')
+          s = replace_once(s, '<thead class="bg-white border border-gray-200 border-solid">', '<thead class="hidden bg-white border border-gray-200 border-solid md:table-header-group">', 'thead')
+          s = replace_once(s, 'class="item-body"\n          tag="tbody"', 'class="block item-body md:table-row-group"\n          tag="tbody"', 'tbody')
+          s = replace_once(s, "        reference_number: {\n          maxLength: maxLength(255),\n        },\n      },\n      'newInvoice.student_id': { required },\n      'newInvoice.family_member_id': { required },", "        reference_number: {\n          maxLength: maxLength(255),\n        },\n        student_id: { required },\n        family_member_id: { required },\n      },", 'validación escolar')
+          s = replace_once(s, "        user_id: null,\n        student_id: null,\n        enrollment_id: null,\n        family_member_id: null,", "        user_id: this.newInvoice.user_id || null,\n        student_id: this.newInvoice.student_id,\n        enrollment_id: this.newInvoice.enrollment_id || null,\n        family_member_id: this.newInvoice.family_member_id,", 'preservar IDs')
+          s = replace_once(s, "\n      if (this.selectedCustomer != null) {\n        data.user_id = this.selectedCustomer.id\n      }\n", "\n", 'customer legado submit')
+          s = replace_once(s, "      this.$v.newInvoice.$touch()\n      this.$v.selectedCustomer.$touch()\n      this.$v.invoiceNumAttribute.$touch()", "      this.$v.newInvoice.$touch()\n      this.$v.invoiceNumAttribute.$touch()", 'customer legado validación')
+          s = replace_once(s, "      if (\n        !this.$v.selectedCustomer.$invalid &&\n        !this.$v.invoiceNumAttribute.$invalid &&", "      if (\n        !this.$v.invoiceNumAttribute.$invalid &&", 'condición validación')
+          s = replace_once(s, ".invoice-create-page {\n  .invoice-foot {\n    .invoice-total {\n      min-width: 390px;\n    }\n  }\n  @media (max-width: 480px) {\n    .invoice-foot {\n      .invoice-total {\n        min-width: 384px;\n      }\n    }\n  }\n}", ".invoice-create-page {\n  .invoice-foot {\n    .invoice-total {\n      width: 100%;\n      min-width: 0;\n    }\n  }\n\n  @media (min-width: 1024px) {\n    .invoice-foot {\n      .invoice-total {\n        width: auto;\n        min-width: 390px;\n      }\n    }\n  }\n}", 'total responsive')
+          create.write_text(s)
+
+          item = Path('resources/assets/js/views/invoices/Item.vue')
+          s = item.read_text()
+          s = replace_once(s, '<tr class="box-border bg-white border border-gray-200 border-solid rounded-b">', '<tr class="block box-border mb-4 bg-white border border-gray-200 border-solid rounded md:table-row md:mb-0">', 'fila item')
+          s = replace_once(s, '<td colspan="5" class="p-0 text-left align-top">\n      <table class="w-full">\n        <colgroup>', '<td colspan="5" class="block p-0 text-left align-top md:table-cell">\n      <table class="block w-full md:table">\n        <colgroup class="hidden md:table-column-group">', 'contenedor item')
+          s = replace_once(s, '<tbody>\n          <tr>', '<tbody class="block md:table-row-group">\n          <tr class="block md:table-row">', 'tbody item')
+          s = replace_once(s, '<td class="px-5 py-4 text-left align-top">\n              <div class="flex justify-start">', '<td class="block px-4 py-4 text-left align-top border-b border-gray-100 md:table-cell md:px-5">\n              <div class="mb-2 text-xs font-semibold tracking-wide text-gray-500 uppercase md:hidden">Concepto o arancel</div>\n              <div class="flex justify-start">', 'concepto móvil')
+          s = replace_once(s, '<td class="px-5 py-4 text-right align-top">\n              <sw-input', '<td class="block px-4 py-4 text-left align-top border-b border-gray-100 md:table-cell md:px-5 md:text-right">\n              <div class="mb-2 text-xs font-semibold tracking-wide text-gray-500 uppercase md:hidden">Cantidad</div>\n              <sw-input', 'cantidad móvil')
+          s = replace_once(s, '<td class="px-5 py-4 text-left align-top">\n              <div class="flex flex-col">\n                <div class="flex-auto flex-fill bd-highlight">', '<td class="block px-4 py-4 text-left align-top border-b border-gray-100 md:table-cell md:px-5">\n              <div class="mb-2 text-xs font-semibold tracking-wide text-gray-500 uppercase md:hidden">Importe unitario</div>\n              <div class="flex flex-col">\n                <div class="flex-auto flex-fill bd-highlight">', 'importe móvil')
+          s = replace_once(s, 'class="px-5 py-4 text-left align-top"\n            >\n              <div class="flex flex-col">', 'class="block px-4 py-4 text-left align-top border-b border-gray-100 md:table-cell md:px-5"\n            >\n              <div class="mb-2 text-xs font-semibold tracking-wide text-gray-500 uppercase md:hidden">Descuento</div>\n              <div class="flex flex-col">', 'descuento móvil')
+          s = replace_once(s, '<td class="px-5 py-4 text-right align-top">\n              <div class="flex items-center justify-end text-sm">', '<td class="block px-4 py-4 text-left align-top md:table-cell md:px-5 md:text-right">\n              <div class="mb-2 text-xs font-semibold tracking-wide text-gray-500 uppercase md:hidden">Subtotal</div>\n              <div class="flex items-center justify-between text-sm md:justify-end">', 'subtotal móvil')
+          s = replace_once(s, '<tr v-if="taxPerItem === \'YES\'" class="tax-tr">\n            <td class="px-5 py-4 text-left align-top" />\n            <td colspan="4" class="px-5 py-4 text-left align-top">', '<tr v-if="taxPerItem === \'YES\'" class="block tax-tr md:table-row">\n            <td class="hidden px-5 py-4 text-left align-top md:table-cell" />\n            <td colspan="4" class="block px-4 py-4 text-left align-top md:table-cell md:px-5">', 'impuestos móvil')
+          item.write_text(s)
+
+          test = Path('tests/Isolation/MobileFirstBillingTest.php')
+          t = test.read_text()
+          t = t.replace("    $payment = file_get_contents($root.'/resources/assets/js/views/payments/Create.vue');\n", "    $payment = file_get_contents($root.'/resources/assets/js/views/payments/Create.vue');\n    $item = file_get_contents($root.'/resources/assets/js/views/invoices/Item.vue');\n")
+          t = t.replace("    expect($invoice)->toContain('overflow-x-auto');\n    expect($invoice)->toContain('style=\"min-width: 720px\"');\n    expect($invoice)->toContain('lg:grid');", "    expect($invoice)->not->toContain('style=\"min-width: 720px\"');\n    expect($invoice)->not->toContain('min-width: 384px');\n    expect($invoice)->toContain('md:table');\n    expect($item)->toContain('md:hidden\">Concepto o arancel');\n    expect($item)->toContain('md:hidden\">Subtotal');\n    expect($invoice)->toContain('student_id: { required }');\n    expect($invoice)->toContain('family_member_id: { required }');\n    expect($invoice)->toContain('student_id: this.newInvoice.student_id');\n    expect($invoice)->not->toContain('$v.selectedCustomer');")
+          test.write_text(t)
+
+          invoice = create.read_text()
+          assert 'style="min-width: 720px"' not in invoice
+          assert 'min-width: 384px' not in invoice
+          assert '$v.selectedCustomer' not in invoice
+          assert 'student_id: this.newInvoice.student_id' in invoice
+          assert 'family_member_id: this.newInvoice.family_member_id' in invoice
+          assert 'md:hidden">Concepto o arancel' in item.read_text()
+          PY
+
+      - name: Guardar reparación
+        run: |
+          rm .github/workflows/fix-mobile-school-billing-once.yml
+          git config user.name "Jesús Olguín"
+          git config user.email "47510848+jesus1942@users.noreply.github.com"
+          git add resources/assets/js/views/invoices/Create.vue resources/assets/js/views/invoices/Item.vue tests/Isolation/MobileFirstBillingTest.php .github/workflows/fix-mobile-school-billing-once.yml
+          git commit -m "Reparar facturación escolar mobile-first [mobile-fix-done]"
+          git push origin HEAD:chatgpt/school-billing-canonical-20260816
