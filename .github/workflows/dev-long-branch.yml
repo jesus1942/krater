@@ -6,7 +6,7 @@ on:
       - chatgpt/school-billing-canonical-20260816
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   validate-build:
@@ -60,7 +60,7 @@ jobs:
           NODE_OPTIONS: --openssl-legacy-provider
         run: npm run production
 
-      - name: Verificar bundle reproducible para Railway
+      - name: Regenerar bundle reproducible para Railway
         run: |
           rm -f build/frontend/app.js.gz.part.*
           gzip -c public/assets/js/app.js | split -d -a 2 -b 450K - build/frontend/app.js.gz.part.
@@ -68,3 +68,15 @@ jobs:
           cp public/mix-manifest.json build/frontend/mix-manifest.json
           test -s build/frontend/app.js.gz.part.00
           test -s build/frontend/mix-manifest.json
+
+      - name: Guardar bundle compilado
+        run: |
+          if git diff --quiet -- build/frontend; then
+            echo "Bundle sin cambios"
+            exit 0
+          fi
+          git config user.name "Jesús Olguín"
+          git config user.email "47510848+jesus1942@users.noreply.github.com"
+          git add build/frontend
+          git commit -m "build: actualizar frontend SuiteEna [skip ci]"
+          git push origin HEAD:chatgpt/school-billing-canonical-20260816
