@@ -21,15 +21,15 @@
             <label class="field"><span>Número de documento</span><input v-model.trim="form.document_number" class="input" /></label>
             <label class="field"><span>Correo</span><input v-model.trim="form.email" type="email" class="input" /></label>
             <label class="field"><span>Teléfono</span><input v-model.trim="form.phone" class="input" /></label>
-            <label class="field"><span>Categoría *</span><select v-model="form.staff_category" required class="input"><option v-for="o in categories" :key="o.value" :value="o.value">{{ o.label }}</option></select></label>
             <label class="field"><span>Estado *</span><select v-model="form.employment_status" required class="input"><option value="active">Activo</option><option value="leave">Licencia</option><option value="inactive">Inactivo</option><option value="terminated">Baja</option></select></label>
-            <label class="field"><span>Fecha de ingreso</span><input v-model="form.hire_date" type="date" class="input" /></label>
+            <label class="field"><span>Ingreso a la institución</span><input v-model="form.hire_date" type="date" class="input" /></label>
             <label class="field"><span>Fecha de baja</span><input v-model="form.termination_date" type="date" class="input" /></label>
           </div>
           <label class="field"><span>Notas</span><textarea v-model.trim="form.notes" rows="3" class="input"></textarea></label>
 
           <div v-if="!form.id" class="p-4 border rounded-lg bg-gray-50">
-            <h3 class="mb-3 font-semibold">Primer cargo / función</h3>
+            <h3 class="mb-1 font-semibold">Primer cargo / función</h3>
+            <p class="mb-3 text-xs text-gray-500">La función se define en el cargo y es la que utiliza Liquidaciones. No hace falta cargar una categoría separada.</p>
             <assignment-fields :value="assignmentForm" :levels="levels" :categories="categories" @input="assignmentForm = $event" />
           </div>
 
@@ -48,7 +48,7 @@
             <div><h3 class="text-lg font-semibold">{{ member.full_name }}</h3><p class="text-sm text-gray-500">{{ member.document_type || 'Documento' }} {{ member.document_number || 'sin cargar' }}</p></div>
             <sw-button size="sm" variant="gray" @click="editMember(member)">Editar</sw-button>
           </div>
-          <div class="flex flex-wrap gap-2 mt-3 text-xs"><span class="badge">{{ categoryLabel(member.staff_category) }}</span><span class="badge">{{ statusLabel(member.employment_status) }}</span></div>
+          <div class="flex flex-wrap gap-2 mt-3 text-xs"><span v-if="memberFunction(member)" class="badge">{{ categoryLabel(memberFunction(member)) }}</span><span class="badge">{{ statusLabel(member.employment_status) }}</span></div>
           <div class="mt-4 space-y-2">
             <div v-for="a in member.assignments" :key="a.id" class="p-3 border rounded-md">
               <div class="flex items-center justify-between gap-3"><strong>{{ a.position_title }}</strong><span class="text-xs" :class="a.active ? 'text-green-600' : 'text-gray-400'">{{ a.active ? 'Activo' : 'Inactivo' }}</span></div>
@@ -70,13 +70,16 @@
 <script>
 const AssignmentFields = {
   props: ['value', 'levels', 'categories'],
-  methods: { set(key, val) { this.$emit('input', { ...this.value, [key]: val }) } },
+  methods: {
+    // Emite siempre un objeto nuevo para mantener el formulario padre reactivo.
+    set(key, val) { this.$emit('input', { ...this.value, [key]: val }) },
+  },
   template: `<div class="grid gap-4 md:grid-cols-2">
     <label class="field"><span>Nivel</span><select :value="value.school_level_id" class="input" @input="set('school_level_id', $event.target.value ? Number($event.target.value) : null)"><option :value="null">Institucional / todos</option><option v-for="l in levels" :key="l.id" :value="l.id">{{ l.name }}</option></select></label>
     <label class="field"><span>Cargo *</span><input :value="value.position_title" required class="input" @input="set('position_title', $event.target.value)" /></label>
     <label class="field"><span>Función *</span><select :value="value.function_category" required class="input" @input="set('function_category', $event.target.value)"><option v-for="o in categories" :key="o.value" :value="o.value">{{ o.label }}</option></select></label>
     <label class="field"><span>Horas semanales</span><input :value="value.weekly_hours" type="number" min="0" max="168" step="0.5" class="input" @input="set('weekly_hours', $event.target.value || null)" /></label>
-    <label class="field"><span>Desde</span><input :value="value.start_date" type="date" class="input" @input="set('start_date', $event.target.value || null)" /></label>
+    <label class="field"><span>Inicio del cargo</span><input :value="value.start_date" type="date" class="input" @input="set('start_date', $event.target.value || null)" /></label>
   </div>`,
 }
 
@@ -87,17 +90,20 @@ export default {
   ] } },
   async created() { await this.load() },
   methods: {
-    blankMember() { return { id: null, user_id: null, document_type: 'DNI', document_number: '', first_name: '', last_name: '', email: '', phone: '', staff_category: 'teaching', employment_status: 'active', hire_date: '', termination_date: '', notes: '' } },
+    // Datos personales: la función ya no se duplica acá, vive en StaffAssignment.
+    blankMember() { return { id: null, user_id: null, document_type: 'DNI', document_number: '', first_name: '', last_name: '', email: '', phone: '', employment_status: 'active', hire_date: '', termination_date: '', notes: '' } },
     blankAssignment() { return { school_level_id: this.levels.length === 1 ? this.levels[0].id : null, position_code: null, position_title: '', function_category: 'teaching', start_date: '', end_date: null, active: true, weekly_hours: null, notes: null } },
     async load() { this.loading = true; try { const r = await window.axios.get('/api/v1/staff'); this.members = r.data.data; this.levels = r.data.levels } finally { this.loading = false } },
     startNew() { this.form = this.blankMember(); this.assignmentForm = this.blankAssignment(); this.editing = true; window.scrollTo(0, 0) },
-    editMember(m) { this.form = { ...this.blankMember(), ...m }; this.editing = true; window.scrollTo(0, 0) },
+    editMember(m) { this.form = { ...this.blankMember(), ...m }; delete this.form.staff_category; delete this.form.assignments; delete this.form.full_name; this.editing = true; window.scrollTo(0, 0) },
     cancelEdit() { this.editing = false; this.form = {} },
     payload(obj) { const p = { ...obj }; Object.keys(p).forEach(k => { if (p[k] === '') p[k] = null }); return p },
     async saveMember() { this.saving = true; try { const data = this.payload(this.form); if (this.form.id) await window.axios.put(`/api/v1/staff/${this.form.id}`, data); else await window.axios.post('/api/v1/staff', { ...data, ...this.payload(this.assignmentForm) }); this.editing = false; await this.load() } finally { this.saving = false } },
     openAssignment(m) { this.assignmentMemberId = m.id; this.assignmentForm = this.blankAssignment() },
     async saveAssignment(m) { if (!this.assignmentForm.position_title) return; this.savingAssignment = true; try { await window.axios.post(`/api/v1/staff/${m.id}/assignments`, this.payload(this.assignmentForm)); this.assignmentMemberId = null; await this.load() } finally { this.savingAssignment = false } },
     async toggleAssignment(m, a) { await window.axios.put(`/api/v1/staff/${m.id}/assignments/${a.id}`, { active: !a.active }); await this.load() },
+    // La insignia principal se deriva del cargo activo más reciente, nunca del campo legado staff_category.
+    memberFunction(member) { const assignments = member.assignments || []; const active = assignments.find(a => a.active); return (active || assignments[0] || {}).function_category || null },
     categoryLabel(v) { const o = this.categories.find(x => x.value === v); return o ? o.label : v },
     statusLabel(v) { return { active: 'Activo', leave: 'Licencia', inactive: 'Inactivo', terminated: 'Baja' }[v] || v },
   },
