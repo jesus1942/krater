@@ -56,6 +56,7 @@ use Crater\Http\Controllers\V1\Settings\TaxTypesController;
 use Crater\Http\Controllers\V1\Settings\UpdateCompanySettingsController;
 use Crater\Http\Controllers\V1\Settings\UpdateUserSettingsController;
 use Crater\Http\Controllers\V1\Student\StudentsController;
+use Crater\Http\Controllers\V1\Student\StudentRelocationController;
 use Crater\Http\Controllers\V1\Update\CheckVersionController;
 use Crater\Http\Controllers\V1\Update\CopyFilesController;
 use Crater\Http\Controllers\V1\Update\DeleteFilesController;
@@ -313,6 +314,8 @@ Route::prefix('/v1')->group(function () {
         //----------------------------------
 
         Route::get('/students/placement-options', [StudentsController::class, 'placementOptions']);
+        Route::get('/students/{student}/relocation-options', [StudentRelocationController::class, 'options']);
+        Route::put('/students/{student}/relocate', [StudentRelocationController::class, 'relocate']);
         Route::apiResource('students', StudentsController::class);
 
 

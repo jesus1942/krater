@@ -30,10 +30,11 @@
     <div class="p-4 mb-5 bg-white rounded shadow">
       <div class="grid gap-3 md:grid-cols-4">
         <sw-input v-model="filters.search" placeholder="Buscar por nombre o DNI" @input="debouncedFetch" />
-        <select v-model="filters.level" class="h-10 px-3 bg-white border border-gray-300 rounded" @change="fetchStudents">
-          <option value="">Todos los niveles</option>
-          <option v-for="level in levels" :key="level" :value="level">{{ level }}</option>
+        <select v-if="canViewAllLevels" v-model="filters.all_levels" class="h-10 px-3 bg-white border border-gray-300 rounded" @change="fetchStudents">
+          <option :value="false">Nivel activo</option>
+          <option :value="true">Todos los niveles · administración</option>
         </select>
+        <div v-else class="flex items-center h-10 px-3 text-sm text-gray-600 bg-gray-50 border border-gray-200 rounded">{{ activeLevelName }}</div>
         <select v-model="filters.status" class="h-10 px-3 bg-white border border-gray-300 rounded" @change="fetchStudents">
           <option value="">Todos los estados</option>
           <option value="active">Activo</option>
@@ -71,8 +72,8 @@
           </div>
         </div>
         <div class="flex justify-end gap-3 mt-4">
-          <button class="text-sm font-medium text-primary-500" @click="openEdit(student)">Editar</button>
-          <button class="text-sm font-medium text-red-500" @click="remove(student)">Eliminar</button>
+          <button v-if="!filters.all_levels" class="text-sm font-medium text-primary-500" @click="openEdit(student)">Editar</button>
+          <button v-if="canViewAllLevels" class="text-sm font-medium text-indigo-600" @click="openRelocate(student)">Reubicar</button>
         </div>
       </article>
     </div>
@@ -178,6 +179,52 @@
         </div>
       </form>
     </div>
+
+    <div v-if="showRelocation" class="fixed inset-0 z-50 flex items-start justify-center p-4 overflow-y-auto bg-black bg-opacity-50">
+      <form class="w-full max-w-2xl p-6 my-8 bg-white rounded shadow-xl" @submit.prevent="saveRelocation">
+        <div class="flex items-center justify-between mb-5">
+          <div>
+            <h2 class="text-xl font-semibold">Reubicar alumno</h2>
+            <p class="mt-1 text-sm text-gray-500">{{ relocationStudent ? relocationStudent.full_name : '' }}</p>
+          </div>
+          <button type="button" class="text-2xl text-gray-400" @click="closeRelocation">×</button>
+        </div>
+        <p class="p-3 mb-4 text-sm text-blue-800 bg-blue-50 rounded">
+          Corrige nivel, ciclo, curso y división sin borrar el legajo, la familia ni el historial.
+        </p>
+        <div class="grid gap-4 md:grid-cols-2">
+          <label class="text-sm">Nivel *
+            <select v-model="relocationForm.school_level_id" required class="w-full h-10 px-3 mt-1 bg-white border border-gray-300 rounded" @change="onRelocationLevelChange">
+              <option value="">Seleccionar nivel</option>
+              <option v-for="level in relocationOptions.levels" :key="level.id" :value="level.id">{{ level.name }}</option>
+            </select>
+          </label>
+          <label class="text-sm">Ciclo lectivo *
+            <select v-model="relocationForm.academic_year_id" required class="w-full h-10 px-3 mt-1 bg-white border border-gray-300 rounded" @change="relocationForm.division_id = ''">
+              <option value="">Seleccionar ciclo</option>
+              <option v-for="year in relocationYears" :key="year.id" :value="year.id">{{ year.name || year.year }}</option>
+            </select>
+          </label>
+          <label class="text-sm">Curso/Año *
+            <select v-model="relocationForm.grade_level_id" required class="w-full h-10 px-3 mt-1 bg-white border border-gray-300 rounded" @change="relocationForm.division_id = ''">
+              <option value="">Seleccionar curso</option>
+              <option v-for="grade in relocationGrades" :key="grade.id" :value="grade.id">{{ grade.name }}</option>
+            </select>
+          </label>
+          <label class="text-sm">División *
+            <select v-model="relocationForm.division_id" required class="w-full h-10 px-3 mt-1 bg-white border border-gray-300 rounded">
+              <option value="">Seleccionar división</option>
+              <option v-for="division in relocationDivisions" :key="division.id" :value="division.id">{{ division.name }}</option>
+            </select>
+          </label>
+        </div>
+        <p v-if="relocationError" class="mt-4 text-sm text-red-600">{{ relocationError }}</p>
+        <div class="flex justify-end gap-3 mt-6">
+          <sw-button type="button" variant="primary-outline" @click="closeRelocation">Cancelar</sw-button>
+          <sw-button :loading="relocating" :disabled="relocating" variant="primary">Guardar ubicación</sw-button>
+        </div>
+      </form>
+    </div>
   </base-page>
 </template>
 
@@ -229,13 +276,19 @@ export default {
       gradeLevels: [],
       divisions: [],
       summary: { total: 0, active: 0, pending: 0 },
-      filters: { search: '', level: '', status: '', school_year: new Date().getFullYear() },
-      levels: ['Primario', 'Secundario', 'Terciario'],
+      filters: { search: '', all_levels: !window.Ls.get('selectedSchoolLevel'), status: '', school_year: new Date().getFullYear() },
+      canViewAllLevels: false,
       form: emptyForm(),
       showForm: false,
       loading: false,
       saving: false,
       error: '',
+      showRelocation: false,
+      relocationStudent: null,
+      relocationOptions: { levels: [], academic_years: [], grade_levels: [], divisions: [] },
+      relocationForm: { school_level_id: '', academic_year_id: '', grade_level_id: '', division_id: '' },
+      relocationError: '',
+      relocating: false,
       timer: null,
     }
   },
@@ -254,7 +307,20 @@ export default {
     activeLevelName() {
       const selectedId = window.Ls.get('selectedSchoolLevel')
       const level = this.schoolLevels.find((item) => String(item.id) === String(selectedId))
-      return level ? level.name : 'Nivel activo'
+      return level ? level.name : 'Sin nivel seleccionado'
+    },
+    relocationYears() {
+      return this.relocationOptions.academic_years.filter((item) => String(item.school_level_id) === String(this.relocationForm.school_level_id))
+    },
+    relocationGrades() {
+      return this.relocationOptions.grade_levels.filter((item) => String(item.school_level_id) === String(this.relocationForm.school_level_id))
+    },
+    relocationDivisions() {
+      return this.relocationOptions.divisions.filter((item) =>
+        String(item.school_level_id) === String(this.relocationForm.school_level_id) &&
+        String(item.academic_year_id) === String(this.relocationForm.academic_year_id) &&
+        String(item.grade_level_id) === String(this.relocationForm.grade_level_id)
+      )
     },
   },
   methods: {
@@ -275,9 +341,11 @@ export default {
     async fetchStudents() {
       this.loading = true
       try {
-        const response = await window.axios.get('/api/v1/students', { params: this.filters })
+        const response = await window.axios.get('/api/v1/students', { params: { ...this.filters, all_levels: this.filters.all_levels ? 1 : 0 } })
         this.students = response.data.students.data || response.data.students
         this.summary = response.data.summary
+        this.canViewAllLevels = Boolean(response.data.can_view_all_levels)
+        if (!this.canViewAllLevels) this.filters.all_levels = false
       } finally {
         this.loading = false
       }
@@ -378,16 +446,47 @@ export default {
         this.saving = false
       }
     },
+    async openRelocate(student) {
+      this.relocationStudent = student
+      this.relocationError = ''
+      this.relocationForm = { school_level_id: student.school_level_id || '', academic_year_id: '', grade_level_id: '', division_id: '' }
+      const response = await window.axios.get(`/api/v1/students/${student.id}/relocation-options`)
+      this.relocationOptions = response.data
+      this.showRelocation = true
+    },
+    closeRelocation() {
+      this.showRelocation = false
+      this.relocationStudent = null
+    },
+    onRelocationLevelChange() {
+      this.relocationForm.academic_year_id = ''
+      this.relocationForm.grade_level_id = ''
+      this.relocationForm.division_id = ''
+    },
+    async saveRelocation() {
+      this.relocating = true
+      this.relocationError = ''
+      try {
+        await window.axios.put(`/api/v1/students/${this.relocationStudent.id}/relocate`, this.relocationForm)
+        this.closeRelocation()
+        await this.fetchStudents()
+      } catch (error) {
+        const response = error.response && error.response.data
+        if (response && response.errors) {
+          const first = Object.values(response.errors)[0]
+          this.relocationError = Array.isArray(first) ? first[0] : first
+        } else {
+          this.relocationError = (response && response.message) || 'No se pudo reubicar el alumno.'
+        }
+      } finally {
+        this.relocating = false
+      }
+    },
     onAcademicYearChange() {
       this.form.division_id = ''
     },
     onGradeLevelChange() {
       this.form.division_id = ''
-    },
-    async remove(student) {
-      if (!window.confirm(`¿Eliminar el legajo de ${student.full_name}?`)) return
-      await window.axios.delete(`/api/v1/students/${student.id}`)
-      await this.fetchStudents()
     },
     familySummary(student) {
       const members = student.family_members || []
