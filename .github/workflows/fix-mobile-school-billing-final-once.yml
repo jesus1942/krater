@@ -1,0 +1,160 @@
+name: Corregir y validar facturación escolar móvil
+
+on:
+  push:
+    branches:
+      - chatgpt/school-billing-canonical-20260816
+
+permissions:
+  contents: write
+
+jobs:
+  repair-and-validate:
+    if: ${{ !contains(github.event.head_commit.message, '[mobile-final-done]') }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: chatgpt/school-billing-canonical-20260816
+          fetch-depth: 0
+
+      - name: Corregir submit y contrato mobile-first
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          def replace_once(text, old, new, label):
+              if old not in text:
+                  raise SystemExit(f'No se encontró bloque esperado: {label}')
+              return text.replace(old, new, 1)
+
+          path = Path('resources/assets/js/views/invoices/Create.vue')
+          s = path.read_text()
+
+          # Reparar el bloque data() que el parche anterior tocó por error.
+          s = replace_once(
+              s,
+              "        user_id: this.newInvoice.user_id || null,\n        student_id: this.newInvoice.student_id,\n        enrollment_id: this.newInvoice.enrollment_id || null,\n        family_member_id: this.newInvoice.family_member_id,\n        invoice_template_id: 1,",
+              "        user_id: null,\n        student_id: null,\n        enrollment_id: null,\n        family_member_id: null,\n        invoice_template_id: 1,",
+              'data inicial escolar'
+          )
+
+          # Reparar específicamente el payload dentro de submitForm.
+          old_submit = """      let data = {
+        ...this.formData,
+        ...this.newInvoice,
+        sub_total: this.subtotal,
+        total: this.total,
+        tax: this.totalTax,
+        user_id: null,
+        student_id: null,
+        enrollment_id: null,
+        family_member_id: null,
+        template_name: this.getTemplateName,
+      }
+"""
+          new_submit = """      let data = {
+        ...this.formData,
+        ...this.newInvoice,
+        sub_total: this.subtotal,
+        total: this.total,
+        tax: this.totalTax,
+        user_id: this.newInvoice.user_id || null,
+        student_id: this.newInvoice.student_id,
+        enrollment_id: this.newInvoice.enrollment_id || null,
+        family_member_id: this.newInvoice.family_member_id,
+        template_name: this.getTemplateName,
+      }
+"""
+          s = replace_once(s, old_submit, new_submit, 'payload submitForm')
+          s = replace_once(s, '<colgroup>\n          <col style="width: 40%" />', '<colgroup class="hidden md:table-column-group">\n          <col style="width: 40%" />', 'colgroup exterior responsive')
+          path.write_text(s)
+
+          # Endurecer la regresión: revisar el cuerpo real de submitForm.
+          test = Path('tests/Isolation/MobileFirstBillingTest.php')
+          t = test.read_text()
+          anchor = "    expect($invoice)->not->toContain('$v.selectedCustomer');\n"
+          addition = """    expect($invoice)->toContain('colgroup class=\"hidden md:table-column-group\"');
+
+    $submitStart = strpos($invoice, 'async submitForm()');
+    $submitEnd = strpos($invoice, 'submitCreate(data)', $submitStart);
+    $submit = substr($invoice, $submitStart, $submitEnd - $submitStart);
+
+    expect($submit)->toContain('student_id: this.newInvoice.student_id');
+    expect($submit)->toContain('family_member_id: this.newInvoice.family_member_id');
+    expect($submit)->not->toContain('student_id: null');
+    expect($submit)->not->toContain('family_member_id: null');
+"""
+          if addition not in t:
+              if anchor not in t:
+                  raise SystemExit('No se encontró ancla de prueba mobile')
+              t = t.replace(anchor, anchor + addition, 1)
+          test.write_text(t)
+
+          # Chequeo inmediato del archivo ya corregido.
+          invoice = path.read_text()
+          data_start = invoice.index('data() {')
+          validations_start = invoice.index('validations()', data_start)
+          data_block = invoice[data_start:validations_start]
+          submit_start = invoice.index('async submitForm()')
+          submit_end = invoice.index('submitCreate(data)', submit_start)
+          submit_block = invoice[submit_start:submit_end]
+          assert 'student_id: null' in data_block
+          assert 'family_member_id: null' in data_block
+          assert 'student_id: this.newInvoice.student_id' in submit_block
+          assert 'family_member_id: this.newInvoice.family_member_id' in submit_block
+          assert 'student_id: null' not in submit_block
+          assert '$v.selectedCustomer' not in invoice
+          assert 'style="min-width: 720px"' not in invoice
+          assert 'min-width: 384px' not in invoice
+          PY
+
+      - name: PHP 7.4
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '7.4'
+          extensions: mbstring, pdo, sqlite, pdo_sqlite
+          coverage: none
+
+      - name: Instalar dependencias PHP
+        run: composer install --no-interaction --prefer-dist --no-progress
+
+      - name: Regresiones relevantes
+        run: |
+          vendor/bin/pest \
+            tests/Isolation/MobileFirstBillingTest.php \
+            tests/Isolation/ItemSchoolLevelIsolationTest.php \
+            tests/Isolation/FamilyMembersCanonicalTest.php \
+            tests/Isolation/StaffAndSchoolLevelSecurityTest.php
+
+      - name: Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+
+      - name: Instalar frontend
+        run: npm ci --legacy-peer-deps
+
+      - name: Compilar Vue producción
+        env:
+          NODE_OPTIONS: --openssl-legacy-provider
+        run: npm run production
+
+      - name: Regenerar bundle Railway
+        run: |
+          rm -f build/frontend/app.js.gz.part.*
+          gzip -c public/assets/js/app.js | split -d -a 2 -b 450K - build/frontend/app.js.gz.part.
+          cp public/assets/css/crater.css build/frontend/crater.css
+          cp public/mix-manifest.json build/frontend/mix-manifest.json
+          test -s build/frontend/app.js.gz.part.00
+          test -s build/frontend/mix-manifest.json
+
+      - name: Guardar sólo si todo pasó
+        run: |
+          rm .github/workflows/fix-mobile-school-billing-final-once.yml
+          git config user.name "Jesús Olguín"
+          git config user.email "47510848+jesus1942@users.noreply.github.com"
+          git add resources/assets/js/views/invoices/Create.vue resources/assets/js/views/invoices/Item.vue tests/Isolation/MobileFirstBillingTest.php build/frontend .github/workflows/fix-mobile-school-billing-final-once.yml
+          git commit -m "Corregir facturación escolar y mobile-first [mobile-final-done]"
+          git push origin HEAD:chatgpt/school-billing-canonical-20260816
