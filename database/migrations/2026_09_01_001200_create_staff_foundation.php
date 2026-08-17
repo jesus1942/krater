@@ -9,9 +9,12 @@ class CreateStaffFoundation extends Migration
     public function up()
     {
         Schema::create('staff_members', function (Blueprint $table) {
-            $table->bigIncrements('id');
-            $table->unsignedBigInteger('company_id');
-            $table->unsignedBigInteger('user_id')->nullable();
+            // SuiteEna hereda IDs INTEGER de Crater (`increments()`), por lo que
+            // las FK hacia companies/users/school_levels deben conservar el
+            // mismo tipo. BIGINT rompe la creación de FK en PostgreSQL.
+            $table->increments('id');
+            $table->unsignedInteger('company_id');
+            $table->unsignedInteger('user_id')->nullable();
             $table->string('document_type', 30)->nullable();
             $table->string('document_number', 50)->nullable();
             $table->string('document_number_normalized', 50)->nullable();
@@ -33,10 +36,10 @@ class CreateStaffFoundation extends Migration
         });
 
         Schema::create('staff_assignments', function (Blueprint $table) {
-            $table->bigIncrements('id');
-            $table->unsignedBigInteger('company_id');
-            $table->unsignedBigInteger('staff_member_id');
-            $table->unsignedBigInteger('school_level_id')->nullable();
+            $table->increments('id');
+            $table->unsignedInteger('company_id');
+            $table->unsignedInteger('staff_member_id');
+            $table->unsignedInteger('school_level_id')->nullable();
             $table->string('position_code', 60)->nullable();
             $table->string('position_title', 150);
             $table->string('function_category', 40);
