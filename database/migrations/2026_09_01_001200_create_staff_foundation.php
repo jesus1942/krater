@@ -2,16 +2,20 @@
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 class CreateStaffFoundation extends Migration
 {
     public function up()
     {
+        $this->recoverEmptyPartialInstall();
+
         Schema::create('staff_members', function (Blueprint $table) {
             // SuiteEna hereda IDs INTEGER de Crater (`increments()`), por lo que
             // las FK hacia companies/users/school_levels deben conservar el
-            // mismo tipo. BIGINT rompe la creación de FK en PostgreSQL.
+            // mismo tipo. La imagen productiva usa PDO MySQL/MariaDB y exige
+            // tipos compatibles al crear las claves foraneas.
             $table->increments('id');
             $table->unsignedInteger('company_id');
             $table->unsignedInteger('user_id')->nullable();
@@ -55,6 +59,39 @@ class CreateStaffFoundation extends Migration
             $table->foreign('school_level_id')->references('id')->on('school_levels')->onDelete('restrict');
             $table->index(['company_id', 'school_level_id', 'active'], 'staff_assignment_level_active_idx');
         });
+    }
+
+    /**
+     * Un DDL fallido de MySQL/MariaDB puede dejar creada la tabla aunque Laravel
+     * no haya registrado la migracion. Como este modulo aun no era operativo,
+     * recuperamos automaticamente SOLO tablas parciales vacias. Si aparece una
+     * sola fila, abortamos: nunca borramos datos para reparar un deploy.
+     */
+    protected function recoverEmptyPartialInstall()
+    {
+        $existing = array_values(array_filter(
+            ['staff_assignments', 'staff_members'],
+            function ($table) {
+                return Schema::hasTable($table);
+            }
+        ));
+
+        if (empty($existing)) {
+            return;
+        }
+
+        foreach ($existing as $table) {
+            if (DB::table($table)->limit(1)->exists()) {
+                throw new RuntimeException(
+                    "La migracion de Personal encontro la tabla parcial {$table} con datos. ".
+                    'Se aborta para preservar la informacion y requiere reconciliacion manual.'
+                );
+            }
+        }
+
+        // Orden inverso por dependencia. Solo llegamos aca si ambas estan vacias.
+        Schema::dropIfExists('staff_assignments');
+        Schema::dropIfExists('staff_members');
     }
 
     public function down()
