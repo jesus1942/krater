@@ -111,6 +111,16 @@ class Payment extends Model implements HasMedia
         return $this->belongsTo(User::class, 'user_id');
     }
 
+    public function student()
+    {
+        return $this->belongsTo(Student::class);
+    }
+
+    public function familyMember()
+    {
+        return $this->belongsTo(FamilyMember::class);
+    }
+
     public function creator()
     {
         return $this->belongsTo('Crater\Models\User', 'creator_id');

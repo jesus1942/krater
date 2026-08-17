@@ -29,9 +29,9 @@ class PaymentRequest extends FormRequest
             'payment_date' => [
                 'required',
             ],
-            'user_id' => [
-                'required',
-            ],
+            'user_id' => ['nullable', 'integer'],
+            'student_id' => ['nullable', 'integer'],
+            'family_member_id' => ['nullable', 'integer'],
             'amount' => [
                 'required',
             ],

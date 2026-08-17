@@ -77,38 +77,31 @@
             />
           </sw-input-group>
 
-          <sw-input-group
-            :label="$t('payments.customer')"
-            :error="customerError"
-            required
-          >
-            <sw-select
-              v-model="customer"
-              :options="customers"
-              :searchable="true"
-              :show-labels="false"
-              :allow-empty="false"
-              :disabled="isEdit"
-              :placeholder="$t('customers.select_a_customer')"
-              label="name"
-              class="mt-1"
-              track-by="id"
-            />
+          <sw-input-group label="Alumno" required>
+            <select v-model="formData.student_id" required class="w-full h-10 px-3 mt-1 bg-white border border-gray-300 rounded" :disabled="isEdit" @change="onStudentChange">
+              <option :value="null">Seleccionar alumno</option>
+              <option v-for="student in billingStudents" :key="student.id" :value="student.id">
+                {{ student.full_name }} · {{ student.course || 'Sin curso' }}
+              </option>
+            </select>
           </sw-input-group>
 
-          <sw-input-group :label="$t('payments.invoice')">
-            <sw-select
-              v-model="invoice"
-              :options="invoiceList"
-              :searchable="true"
-              :show-labels="false"
-              :allow-empty="false"
-              :disabled="isEdit"
-              :placeholder="$t('invoices.select_invoice')"
-              :custom-label="invoiceWithAmount"
-              class="mt-1"
-              track-by="invoice_number"
-            />
+          <sw-input-group label="Cuota o comprobante">
+            <select v-model="formData.invoice_id" class="w-full h-10 px-3 mt-1 bg-white border border-gray-300 rounded" :disabled="isEdit" @change="onInvoiceChange">
+              <option :value="null">Cobro sin comprobante previo</option>
+              <option v-for="row in studentInvoices" :key="row.id" :value="row.id">
+                {{ row.invoice_number }} · {{ row.items && row.items.length ? row.items[0].name : 'Cuota' }} · saldo {{ formatDue(row.due_amount) }}
+              </option>
+            </select>
+          </sw-input-group>
+
+          <sw-input-group label="Pagador / responsable financiero" required>
+            <select v-model="formData.family_member_id" required class="w-full h-10 px-3 mt-1 bg-white border border-gray-300 rounded" :disabled="isEdit" @change="onResponsibleChange">
+              <option :value="null">Seleccionar responsable</option>
+              <option v-for="member in billingResponsibles" :key="member.id" :value="member.id">
+                {{ member.name }}{{ member.relationship ? ` · ${member.relationship}` : '' }}
+              </option>
+            </select>
           </sw-input-group>
 
           <sw-input-group
@@ -240,6 +233,8 @@ export default {
     return {
       formData: {
         user_id: null,
+        student_id: null,
+        family_member_id: null,
         payment_number: null,
         payment_date: new Date(),
         amount: 100,
@@ -258,6 +253,7 @@ export default {
       customer: null,
       invoice: null,
       invoiceList: [],
+      billingStudents: [],
       isLoading: false,
       isRequestOnGoing: false,
       maxPayableAmount: Number.MAX_SAFE_INTEGER,
@@ -275,14 +271,20 @@ export default {
   },
   validations() {
     return {
-      customer: {
-        required,
-      },
       formData: {
         payment_date: {
           required,
         },
-        amount: {
+        selectedBillingStudent() {
+      return this.billingStudents.find((student) => Number(student.id) === Number(this.formData.student_id)) || null
+    },
+    billingResponsibles() {
+      return this.selectedBillingStudent ? (this.selectedBillingStudent.financial_responsibles || []) : []
+    },
+    studentInvoices() {
+      return this.invoiceList.filter((row) => Number(row.student_id) === Number(this.formData.student_id))
+    },
+    amount: {
           required,
           between: between(1, this.maxPayableAmount + 1),
         },
@@ -296,7 +298,6 @@ export default {
   computed: {
     ...mapGetters('company', ['defaultCurrencyForInput']),
     ...mapGetters('payment', ['paymentModes', 'selectedNote']),
-    ...mapGetters('customer', ['customers']),
     amount: {
       get: function () {
         return this.formData.amount / 100
@@ -318,26 +319,7 @@ export default {
       return false
     },
     customerCurrency() {
-      if (this.customer && this.customer.currency) {
-        return {
-          decimal: this.customer.currency.decimal_separator,
-          thousands: this.customer.currency.thousand_separator,
-          prefix: this.customer.currency.symbol + ' ',
-          precision: this.customer.currency.precision,
-          masked: false,
-        }
-      } else {
-        return this.defaultCurrencyForInput
-      }
-    },
-    customerError() {
-      if (!this.$v.customer.$error) {
-        return ''
-      }
-
-      if (!this.$v.customer.required) {
-        return this.$tc('validation.required')
-      }
+      return this.defaultCurrencyForInput
     },
     DateError() {
       if (!this.$v.formData.payment_date.$error) {
@@ -383,33 +365,12 @@ export default {
     },
   },
   watch: {
-    customer(newValue) {
-      this.formData.user_id = newValue.id
-      if (!this.isEdit) {
-        if (this.isSettingInitialData) {
-          this.isSettingInitialData = false
-        } else {
-          this.invoice = null
-          this.formData.invoice_id = null
-        }
-        this.formData.amount = 0
-        this.invoiceList = []
-        this.fetchCustomerInvoices(newValue.id)
-      }
-    },
     selectedNote() {
       if (this.selectedNote) {
         this.formData.notes = this.selectedNote
       }
     },
-    invoice(newValue) {
-      if (newValue) {
-        this.formData.invoice_id = newValue.id
-        if (!this.isEdit) {
-          this.setPaymentAmountByInvoiceData(newValue.id)
-        }
-      }
-    },
+
   },
   async mounted() {
     this.$v.formData.$reset()
@@ -436,15 +397,13 @@ export default {
 
     ...mapActions('modal', ['openModal']),
 
-    ...mapActions('customer', ['fetchCustomers']),
-
     ...mapActions('notification', ['showNotification']),
 
     invoiceWithAmount({ invoice_number, due_amount }) {
-      return `${invoice_number} (${this.$utils.formatGraphMoney(
-        due_amount,
-        this.customer.currency
-      )})`
+      return `${invoice_number} (${due_amount})`
+    },
+    formatDue(amount) {
+      return this.$utils.formatGraphMoney(amount, this.defaultCurrencyForInput)
     },
 
     async addPaymentMode() {
@@ -475,7 +434,6 @@ export default {
         this.isRequestOnGoing = true
         let response = await this.fetchPayment(this.$route.params.id)
         this.formData = { ...this.formData, ...response.data.payment }
-        this.customer = response.data.payment.user
         this.formData.payment_date = moment(
           response.data.payment.payment_date,
           'YYYY-MM-DD'
@@ -504,7 +462,8 @@ export default {
         }
 
         if (this.formData.user_id) {
-          await this.fetchCustomers({ limit: 'all' })
+          await this.fetchSchoolBillingOptions()
+        await this.fetchLevelInvoices()
         }
         this.isRequestOnGoing = false
       } else {
@@ -513,40 +472,64 @@ export default {
         this.setInitialCustomFields('Payment')
         this.formData.payment_date = moment().toString()
         this.fetchPaymentModes({ limit: 'all' })
-        await this.fetchCustomers({ limit: 'all' })
-        if (this.$route.query.customer) {
-          this.setPaymentCustomer(parseInt(this.$route.query.customer))
-        }
+        await this.fetchSchoolBillingOptions()
+        await this.fetchLevelInvoices()
         this.isRequestOnGoing = false
       }
       return true
     },
-    setPaymentCustomer(id) {
-      this.customer = this.customers.find((c) => {
-        return c.id === id
-      })
+    async fetchSchoolBillingOptions() {
+      const response = await window.axios.get('/api/v1/school-billing/options')
+      this.billingStudents = response.data.students || []
+    },
+    async fetchLevelInvoices() {
+      const response = await this.fetchInvoices({ status: 'DUE', limit: 'all' })
+      this.invoiceList = response.data.invoices.data || []
+    },
+    onStudentChange() {
+      this.formData.invoice_id = null
+      this.formData.family_member_id = null
+      this.formData.user_id = null
+      this.invoice = null
+      this.formData.amount = 0
+      this.maxPayableAmount = Number.MAX_SAFE_INTEGER
+      if (this.billingResponsibles.length === 1) {
+        this.formData.family_member_id = this.billingResponsibles[0].id
+        this.formData.user_id = this.billingResponsibles[0].user_id || null
+      }
+    },
+    onResponsibleChange() {
+      const member = this.billingResponsibles.find((row) => Number(row.id) === Number(this.formData.family_member_id))
+      this.formData.user_id = member ? (member.user_id || null) : null
+    },
+    async onInvoiceChange() {
+      if (!this.formData.invoice_id) return
+      const row = this.invoiceList.find((item) => Number(item.id) === Number(this.formData.invoice_id))
+      if (!row) return
+      this.formData.student_id = row.student_id
+      this.formData.family_member_id = row.family_member_id
+      this.formData.user_id = row.user_id || null
+      this.formData.amount = row.due_amount
+      this.maxPayableAmount = row.due_amount
     },
     async setInvoicePaymentData() {
-      let data = await this.fetchInvoice(this.$route.params.id)
-      this.customer = data.data.invoice.user
-      this.invoice = data.data.invoice
+      const data = await this.fetchInvoice(this.$route.params.id)
+      const row = data.data.invoice
+      this.formData.invoice_id = row.id
+      this.formData.student_id = row.student_id
+      this.formData.family_member_id = row.family_member_id
+      this.formData.user_id = row.user_id || null
+      this.invoice = row
+      this.formData.amount = row.due_amount
+      this.maxPayableAmount = row.due_amount
     },
     async setPaymentAmountByInvoiceData(id) {
-      let data = await this.fetchInvoice(id)
+      const data = await this.fetchInvoice(id)
       this.formData.amount = data.data.invoice.due_amount
       this.maxPayableAmount = data.data.invoice.due_amount
     },
-    async fetchCustomerInvoices(userId) {
-      let data = {
-        customer_id: userId,
-        status: 'DUE',
-      }
-      let response = await this.fetchInvoices(data)
-      this.invoiceList = response.data.invoices.data
-    },
     async submitPaymentData() {
       let validate = await this.touchCustomField()
-      this.$v.customer.$touch()
       this.$v.formData.$touch()
       if (this.$v.$invalid || validate.error) {
         return true

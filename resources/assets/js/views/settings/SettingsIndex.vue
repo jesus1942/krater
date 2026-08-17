@@ -18,7 +18,7 @@
 
     <div class="w-full mb-6 select-wrapper xl:hidden">
       <sw-select
-        :options="menuItems"
+        :options="visibleMenuItems"
         v-model="currentSetting"
         :searchable="true"
         :show-labels="false"
@@ -32,7 +32,7 @@
       <div class="hidden col-span-3 mt-1 xl:block">
         <sw-list>
           <sw-list-item
-            v-for="(menuItem, index) in menuItems"
+            v-for="(menuItem, index) in visibleMenuItems"
             :title="$t(menuItem.title)"
             :key="index"
             :to="menuItem.link"
@@ -125,6 +125,7 @@ export default {
           link: '/admin/settings/school-levels',
           title: 'settings.menu_title.school_levels',
           icon: 'academic-cap-icon',
+          totalAdminOnly: true,
         },
         {
           link: '/admin/settings/academic-years',
@@ -210,6 +211,23 @@ export default {
     }
   },
 
+  computed: {
+    isTotalAdmin() {
+      const currentUser = this.$store.state.user.currentUser
+      return Boolean(
+        currentUser &&
+          (currentUser.is_total_admin === true ||
+            currentUser.rbac_role === 'total_admin' ||
+            currentUser.role === 'super admin')
+      )
+    },
+    visibleMenuItems() {
+      return this.menuItems.filter(
+        (item) => !item.totalAdminOnly || this.isTotalAdmin
+      )
+    },
+  },
+
   watch: {
     '$route.path'(newValue) {
       if (newValue === '/admin/settings') {
@@ -217,16 +235,16 @@ export default {
         return
       }
 
-      this.currentSetting = this.menuItems.find(
+      this.currentSetting = this.visibleMenuItems.find(
         (item) => item.link === newValue
       ) || this.currentSetting
     },
   },
 
   mounted() {
-    this.currentSetting = this.menuItems.find(
+    this.currentSetting = this.visibleMenuItems.find(
       (item) => item.link == this.$route.path
-    )
+    ) || this.currentSetting
   },
 
   created() {

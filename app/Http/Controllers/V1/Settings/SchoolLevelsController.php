@@ -2,14 +2,33 @@
 
 namespace Crater\Http\Controllers\V1\Settings;
 
+use Crater\Enums\Permission;
 use Crater\Http\Controllers\Controller;
 use Crater\Models\SchoolLevel;
+use Crater\Services\Access\AccessManager;
 use Illuminate\Http\Request;
 
 class SchoolLevelsController extends Controller
 {
+    protected $access;
+
+    public function __construct(AccessManager $access)
+    {
+        $this->access = $access;
+    }
+
+    protected function authorizeTotalAdmin(Request $request): void
+    {
+        abort_unless(
+            $this->access->allows($request->user(), Permission::SCHOOL_LEVEL_MANAGE),
+            403
+        );
+    }
+
     public function index(Request $request)
     {
+        $this->authorizeTotalAdmin($request);
+
         $levels = SchoolLevel::where('company_id', $request->header('company'))
             ->orderByRaw("CASE code WHEN 'primary' THEN 1 WHEN 'secondary' THEN 2 WHEN 'tertiary' THEN 3 ELSE 4 END")
             ->get();
@@ -19,6 +38,8 @@ class SchoolLevelsController extends Controller
 
     public function update(Request $request, SchoolLevel $schoolLevel)
     {
+        $this->authorizeTotalAdmin($request);
+
         abort_unless((int) $schoolLevel->company_id === (int) $request->header('company'), 404);
 
         $data = $request->validate([
