@@ -1,0 +1,113 @@
+name: Ajuste mobile-first antes de produccion
+
+on:
+  push:
+    branches:
+      - chatgpt/school-billing-canonical-20260816
+
+permissions:
+  contents: write
+
+jobs:
+  mobile-first-cut:
+    if: github.event.head_commit.message == 'Preparar ajuste mobile-first para produccion'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout rama larga
+        uses: actions/checkout@v4
+        with:
+          ref: chatgpt/school-billing-canonical-20260816
+          fetch-depth: 0
+
+      - name: PHP 7.4
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '7.4'
+          extensions: mbstring, pdo_sqlite
+          coverage: none
+
+      - name: Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+
+      - name: Ajustar formulario de cuota para pantallas chicas
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          path = Path('resources/assets/js/views/invoices/Create.vue')
+          text = path.read_text()
+          old = '<table class="w-full text-center item-table">'
+          new = '<div class="w-full overflow-x-auto pb-2">\n        <table class="w-full text-center item-table" style="min-width: 720px">'
+          if old not in text:
+              raise SystemExit('No se encontro la tabla de conceptos esperada')
+          text = text.replace(old, new, 1)
+          marker = '      </table>\n\n      <div\n        class="flex items-center justify-center w-full px-6 py-3'
+          replacement = '        </table>\n      </div>\n\n      <div\n        class="flex items-center justify-center w-full px-6 py-3'
+          if marker not in text:
+              raise SystemExit('No se encontro el cierre de la tabla de conceptos')
+          text = text.replace(marker, replacement, 1)
+          path.write_text(text)
+          PY
+
+          cat > tests/Isolation/MobileFirstBillingTest.php <<'PHP'
+          <?php
+
+          $root = dirname(__DIR__, 2);
+
+          it('keeps school billing usable on narrow mobile screens', function () use ($root) {
+              $invoice = file_get_contents($root.'/resources/assets/js/views/invoices/Create.vue');
+              $payment = file_get_contents($root.'/resources/assets/js/views/payments/Create.vue');
+              $settings = file_get_contents($root.'/resources/assets/js/views/settings/SettingsIndex.vue');
+
+              expect($invoice)->toContain('overflow-x-auto');
+              expect($invoice)->toContain('style="min-width: 720px"');
+              expect($invoice)->toContain('lg:grid');
+              expect($payment)->toContain('grid-col-1 md:grid-cols-2');
+              expect($payment)->toContain('sm:hidden');
+              expect($settings)->toContain('xl:hidden');
+          });
+          PHP
+
+      - name: Validar sintaxis PHP
+        run: |
+          php -l tests/Isolation/MobileFirstBillingTest.php
+          php -l app/Http/Controllers/V1/Settings/SchoolLevelsController.php
+          php -l app/Models/StaffMember.php
+          php -l app/Models/StaffAssignment.php
+
+      - name: Instalar dependencias PHP
+        run: composer install --no-interaction --prefer-dist
+
+      - name: Regresiones dirigidas
+        run: |
+          ./vendor/bin/pest tests/Isolation/MobileFirstBillingTest.php tests/Isolation/StaffAndSchoolLevelSecurityTest.php
+
+      - name: Instalar frontend
+        run: npm ci --legacy-peer-deps
+
+      - name: Compilar Vue de produccion
+        env:
+          NODE_OPTIONS: --openssl-legacy-provider
+        run: npm run production
+
+      - name: Regenerar bundle de Railway
+        run: |
+          rm -f build/frontend/app.js.gz.part.*
+          gzip -c public/assets/js/app.js | split -d -a 2 -b 450K - build/frontend/app.js.gz.part.
+          cp public/assets/css/crater.css build/frontend/crater.css
+          cp public/mix-manifest.json build/frontend/mix-manifest.json
+
+      - name: Guardar corte mobile-first
+        run: |
+          rm -f .github/workflows/mobile-first-prod-cut.yml
+          git config user.name 'Jesús Olguín'
+          git config user.email '47510848+jesus1942@users.noreply.github.com'
+          git add -A
+          if git diff --cached --quiet; then
+            echo 'No hay cambios para guardar'
+            exit 0
+          fi
+          git commit -m 'Asegurar first mobile en cobros escolares [skip ci]'
+          git push origin HEAD:chatgpt/school-billing-canonical-20260816
