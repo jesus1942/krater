@@ -7,6 +7,7 @@ use Crater\Http\Requests;
 use Crater\Http\Requests\DeleteInvoiceRequest;
 use Crater\Jobs\GenerateInvoicePdfJob;
 use Crater\Models\Invoice;
+use Crater\Services\Billing\SchoolBillingAssignment;
 use Illuminate\Http\Request;
 
 class InvoicesController extends Controller
@@ -25,8 +26,8 @@ class InvoicesController extends Controller
     {
         $limit = $request->has('limit') ? $request->limit : 10;
 
-        $invoices = Invoice::with(['items', 'user', 'creator', 'taxes'])
-            ->join('users', 'users.id', '=', 'invoices.user_id')
+        $invoices = Invoice::with(['items', 'user', 'student', 'familyMember', 'creator', 'taxes'])
+            ->leftJoin('users', 'users.id', '=', 'invoices.user_id')
             ->applyFilters($request->only([
                 'status',
                 'paid_status',
@@ -56,8 +57,9 @@ class InvoicesController extends Controller
      * @param  \Illuminate\Http\Request $request
      * @return \Illuminate\Http\JsonResponse
      */
-    public function store(Requests\InvoicesRequest $request)
+    public function store(Requests\InvoicesRequest $request, SchoolBillingAssignment $billing)
     {
+        $request->merge($billing->resolveInvoice($request));
         $invoice = Invoice::createInvoice($request);
 
         if ($request->has('invoiceSend')) {
@@ -83,6 +85,9 @@ class InvoicesController extends Controller
             'items',
             'items.taxes',
             'user',
+            'student',
+            'enrollment',
+            'familyMember',
             'taxes.taxType',
             'fields.customField',
         ]);
@@ -103,8 +108,9 @@ class InvoicesController extends Controller
      * @param  Invoice $invoice
      * @return \Illuminate\Http\JsonResponse
      */
-    public function update(Requests\InvoicesRequest $request, Invoice $invoice)
+    public function update(Requests\InvoicesRequest $request, Invoice $invoice, SchoolBillingAssignment $billing)
     {
+        $request->merge($billing->resolveInvoice($request));
         $invoice = $invoice->updateInvoice($request);
 
         GenerateInvoicePdfJob::dispatch($invoice, true);

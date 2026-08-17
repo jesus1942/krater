@@ -7,6 +7,7 @@ use Crater\Http\Controllers\V1\Backup\BackupsController;
 use Crater\Http\Controllers\V1\Backup\DownloadBackupController;
 use Crater\Http\Controllers\V1\Customer\CustomersController;
 use Crater\Http\Controllers\V1\Customer\CustomerStatsController;
+use Crater\Http\Controllers\V1\Billing\SchoolBillingOptionsController;
 use Crater\Http\Controllers\V1\CustomField\CustomFieldsController;
 use Crater\Http\Controllers\V1\Dashboard\DashboardController;
 use Crater\Http\Controllers\V1\Estimate\ChangeEstimateStatusController;
@@ -337,6 +338,10 @@ Route::prefix('/v1')->group(function () {
 
         Route::resource('units', UnitsController::class);
 
+
+        // School billing options
+        //----------------------------------
+        Route::get('/school-billing/options', SchoolBillingOptionsController::class)->middleware('tenant');
 
         // Invoices
         //-------------------------------------------------
