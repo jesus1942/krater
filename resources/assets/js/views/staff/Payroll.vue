@@ -40,7 +40,13 @@
 
         <div v-if="slipPeriodId === period.id" class="p-4 mt-4 border rounded-lg bg-gray-50">
           <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-            <label class="field lg:col-span-2"><span>Personal *</span><select v-model.number="slipForm.staff_member_id" class="input"><option disabled :value="null">Seleccionar</option><option v-for="s in staff" :key="s.id" :value="s.id">{{ s.last_name }}, {{ s.first_name }} · {{ categoryLabel(s.staff_category) }}</option></select></label>
+            <label class="field lg:col-span-2">
+              <span>Personal *</span>
+              <select v-model.number="slipForm.staff_member_id" class="input">
+                <option disabled :value="null">Seleccionar</option>
+                <option v-for="s in eligibleStaff(period)" :key="s.id" :value="s.id">{{ s.last_name }}, {{ s.first_name }} · {{ assignmentLabel(s, period.school_level_id) }}</option>
+              </select>
+            </label>
             <label class="field"><span>Bruto *</span><input v-model="slipForm.gross" type="number" min="0" step="0.01" class="input" /></label>
             <label class="field"><span>Descuentos *</span><input v-model="slipForm.deductions" type="number" min="0" step="0.01" class="input" /></label>
           </div>
@@ -55,7 +61,7 @@
             <tbody>
               <template v-for="slip in period.slips">
                 <tr :key="`slip-${slip.id}`" class="border-b align-top">
-                  <td class="py-3"><strong>{{ slip.staff_member ? slip.staff_member.last_name + ', ' + slip.staff_member.first_name : 'Personal' }}</strong><div class="text-xs text-gray-500">{{ slip.staff_member ? categoryLabel(slip.staff_member.staff_category) : '' }}</div></td>
+                  <td class="py-3"><strong>{{ slip.staff_member ? slip.staff_member.last_name + ', ' + slip.staff_member.first_name : 'Personal' }}</strong><div class="text-xs text-gray-500">{{ slip.staff_member ? assignmentLabel(slip.staff_member, period.school_level_id) : '' }}</div></td>
                   <td>{{ money(slip.gross_amount) }}</td><td>{{ money(slip.deductions_amount) }}</td><td>{{ money(slip.net_amount) }}</td><td>{{ money(activePaid(slip)) }}</td><td>{{ statusLabel(slip.status) }}</td>
                   <td class="text-right whitespace-nowrap"><button v-if="slip.status === 'draft'" class="action" @click="approveSlip(slip)">Aprobar</button><button v-if="['approved','partially_paid'].includes(slip.status)" class="action ml-3" @click="openPayment(slip)">Registrar pago</button></td>
                 </tr>
@@ -93,6 +99,11 @@ export default {
     categoryLabel(v) { return { teaching:'Docente', administrative:'Administrativo', management:'Dirección / gestión', maintenance:'Mantenimiento', cleaning:'Limpieza', support:'Apoyo', other:'Otro' }[v] || v },
     paymentMethodLabel(v) { return { transfer:'Transferencia', cash:'Efectivo', check:'Cheque', other:'Otro' }[v] || v },
     activePaid(slip) { return (slip.payments || []).filter(p => !p.reversed_at).reduce((s,p) => s + Number(p.amount || 0), 0) },
+    // Devuelve sólo personal con un cargo activo en el nivel del período.
+    eligibleStaff(period) { return (this.staff || []).filter(s => this.assignmentForLevel(s, period.school_level_id)) },
+    // La función se toma del cargo activo del nivel, no de StaffMember.staff_category.
+    assignmentForLevel(member, levelId) { return (member.assignments || []).find(a => a.active && Number(a.school_level_id) === Number(levelId)) || null },
+    assignmentLabel(member, levelId) { const a = this.assignmentForLevel(member, levelId); if (!a) return 'Sin cargo activo'; const category = this.categoryLabel(a.function_category); return a.position_title ? `${a.position_title} · ${category}` : category },
     async createPeriod() { if (!this.periodForm.school_level_id) return; this.saving = true; try { await window.axios.post('/api/v1/payroll/periods', this.periodForm); this.showPeriodForm = false; await this.load() } finally { this.saving = false } },
     openSlip(period) { this.slipPeriodId = period.id; this.paymentSlipId = null; this.slipForm = { staff_member_id: null, gross: '', deductions: '0' } },
     async saveSlip(period) { if (!this.slipForm.staff_member_id) return; this.saving = true; try { await window.axios.post(`/api/v1/payroll/periods/${period.id}/slips`, { staff_member_id: this.slipForm.staff_member_id, gross_amount: this.toMinor(this.slipForm.gross), deductions_amount: this.toMinor(this.slipForm.deductions) }); this.slipPeriodId = null; await this.load() } finally { this.saving = false } },
