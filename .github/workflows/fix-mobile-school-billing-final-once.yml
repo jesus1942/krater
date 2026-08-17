@@ -30,68 +30,26 @@ jobs:
 
           path = Path('resources/assets/js/views/invoices/Create.vue')
           s = path.read_text()
+          bad_data = "        user_id: this.newInvoice.user_id || null,\n        student_id: this.newInvoice.student_id,\n        enrollment_id: this.newInvoice.enrollment_id || null,\n        family_member_id: this.newInvoice.family_member_id,\n        invoice_template_id: 1,"
+          good_data = "        user_id: null,\n        student_id: null,\n        enrollment_id: null,\n        family_member_id: null,\n        invoice_template_id: 1,"
+          s = replace_once(s, bad_data, good_data, 'data inicial escolar')
 
-          # Reparar el bloque data() que el parche anterior tocó por error.
-          s = replace_once(
-              s,
-              "        user_id: this.newInvoice.user_id || null,\n        student_id: this.newInvoice.student_id,\n        enrollment_id: this.newInvoice.enrollment_id || null,\n        family_member_id: this.newInvoice.family_member_id,\n        invoice_template_id: 1,",
-              "        user_id: null,\n        student_id: null,\n        enrollment_id: null,\n        family_member_id: null,\n        invoice_template_id: 1,",
-              'data inicial escolar'
-          )
-
-          # Reparar específicamente el payload dentro de submitForm.
-          old_submit = """      let data = {
-        ...this.formData,
-        ...this.newInvoice,
-        sub_total: this.subtotal,
-        total: this.total,
-        tax: this.totalTax,
-        user_id: null,
-        student_id: null,
-        enrollment_id: null,
-        family_member_id: null,
-        template_name: this.getTemplateName,
-      }
-"""
-          new_submit = """      let data = {
-        ...this.formData,
-        ...this.newInvoice,
-        sub_total: this.subtotal,
-        total: this.total,
-        tax: this.totalTax,
-        user_id: this.newInvoice.user_id || null,
-        student_id: this.newInvoice.student_id,
-        enrollment_id: this.newInvoice.enrollment_id || null,
-        family_member_id: this.newInvoice.family_member_id,
-        template_name: this.getTemplateName,
-      }
-"""
+          old_submit = "      let data = {\n        ...this.formData,\n        ...this.newInvoice,\n        sub_total: this.subtotal,\n        total: this.total,\n        tax: this.totalTax,\n        user_id: null,\n        student_id: null,\n        enrollment_id: null,\n        family_member_id: null,\n        template_name: this.getTemplateName,\n      }\n"
+          new_submit = "      let data = {\n        ...this.formData,\n        ...this.newInvoice,\n        sub_total: this.subtotal,\n        total: this.total,\n        tax: this.totalTax,\n        user_id: this.newInvoice.user_id || null,\n        student_id: this.newInvoice.student_id,\n        enrollment_id: this.newInvoice.enrollment_id || null,\n        family_member_id: this.newInvoice.family_member_id,\n        template_name: this.getTemplateName,\n      }\n"
           s = replace_once(s, old_submit, new_submit, 'payload submitForm')
           s = replace_once(s, '<colgroup>\n          <col style="width: 40%" />', '<colgroup class="hidden md:table-column-group">\n          <col style="width: 40%" />', 'colgroup exterior responsive')
           path.write_text(s)
 
-          # Endurecer la regresión: revisar el cuerpo real de submitForm.
           test = Path('tests/Isolation/MobileFirstBillingTest.php')
           t = test.read_text()
           anchor = "    expect($invoice)->not->toContain('$v.selectedCustomer');\n"
-          addition = """    expect($invoice)->toContain('colgroup class=\"hidden md:table-column-group\"');
-
-    $submitStart = strpos($invoice, 'async submitForm()');
-    $submitEnd = strpos($invoice, 'submitCreate(data)', $submitStart);
-    $submit = substr($invoice, $submitStart, $submitEnd - $submitStart);
-
-    expect($submit)->toContain('student_id: this.newInvoice.student_id');
-    expect($submit)->toContain('family_member_id: this.newInvoice.family_member_id');
-    expect($submit)->not->toContain('student_id: null');
-    expect($submit)->not->toContain('family_member_id: null');
-"""
+          addition = "    expect($invoice)->toContain('colgroup class=\\\"hidden md:table-column-group\\\"');\n\n    $submitStart = strpos($invoice, 'async submitForm()');\n    $submitEnd = strpos($invoice, 'submitCreate(data)', $submitStart);\n    $submit = substr($invoice, $submitStart, $submitEnd - $submitStart);\n\n    expect($submit)->toContain('student_id: this.newInvoice.student_id');\n    expect($submit)->toContain('family_member_id: this.newInvoice.family_member_id');\n    expect($submit)->not->toContain('student_id: null');\n    expect($submit)->not->toContain('family_member_id: null');\n"
           if addition not in t:
               if anchor not in t:
                   raise SystemExit('No se encontró ancla de prueba mobile')
               t = t.replace(anchor, anchor + addition, 1)
           test.write_text(t)
 
-          # Chequeo inmediato del archivo ya corregido.
           invoice = path.read_text()
           data_start = invoice.index('data() {')
           validations_start = invoice.index('validations()', data_start)
