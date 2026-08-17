@@ -17,9 +17,19 @@ it('keeps staff identity separate from optional login accounts', function () use
     $staff = file_get_contents($root.'/app/Models/StaffMember.php');
 
     expect($migration)->toContain("Schema::create('staff_members'");
-    expect($migration)->toContain("\$table->unsignedBigInteger('user_id')->nullable()");
+    expect($migration)->toContain("\$table->unsignedInteger('user_id')->nullable()");
     expect($staff)->toContain("'user_id'");
     expect($staff)->toContain('function assignments()');
+});
+
+it('uses legacy-compatible integer foreign keys for staff', function () use ($root) {
+    $migration = file_get_contents($root.'/database/migrations/2026_09_01_001200_create_staff_foundation.php');
+
+    expect($migration)->toContain("\$table->increments('id')");
+    expect($migration)->toContain("\$table->unsignedInteger('company_id')");
+    expect($migration)->toContain("\$table->unsignedInteger('school_level_id')->nullable()");
+    expect($migration)->not->toContain('unsignedBigInteger');
+    expect($migration)->not->toContain('bigIncrements');
 });
 
 it('models staff assignments by institutional level without forcing one level on the person', function () use ($root) {
@@ -27,7 +37,7 @@ it('models staff assignments by institutional level without forcing one level on
     $assignment = file_get_contents($root.'/app/Models/StaffAssignment.php');
 
     expect($migration)->toContain("Schema::create('staff_assignments'");
-    expect($migration)->toContain("\$table->unsignedBigInteger('school_level_id')->nullable()");
+    expect($migration)->toContain("\$table->unsignedInteger('school_level_id')->nullable()");
     expect($assignment)->toContain('function schoolLevel()');
     expect($assignment)->toContain("'position_title'");
     expect($assignment)->toContain("'weekly_hours'");
