@@ -147,16 +147,16 @@
       </div>
 
       <!-- Items -->
-      <div class="w-full overflow-x-auto pb-2">
-        <table class="w-full text-center item-table" style="min-width: 720px">
-        <colgroup>
+      <div class="w-full pb-2">
+        <table class="block w-full text-center item-table md:table">
+        <colgroup class="hidden md:table-column-group">
           <col style="width: 40%" />
           <col style="width: 10%" />
           <col style="width: 15%" />
           <col v-if="discountPerItem === 'YES'" style="width: 15%" />
           <col style="width: 15%" />
         </colgroup>
-        <thead class="bg-white border border-gray-200 border-solid">
+        <thead class="hidden bg-white border border-gray-200 border-solid md:table-header-group">
           <tr>
             <th
               class="px-5 py-3 text-sm not-italic font-medium leading-5 text-left text-gray-700 border-t border-b border-gray-200 border-solid"
@@ -193,7 +193,7 @@
 
         <draggable
           v-model="newInvoice.items"
-          class="item-body"
+          class="block item-body md:table-row-group"
           tag="tbody"
           handle=".handle"
         >
@@ -513,9 +513,9 @@ export default {
         reference_number: {
           maxLength: maxLength(255),
         },
+        student_id: { required },
+        family_member_id: { required },
       },
-      'newInvoice.student_id': { required },
-      'newInvoice.family_member_id': { required },
       invoiceNumAttribute: {
         required,
         numeric,
@@ -937,16 +937,13 @@ export default {
         sub_total: this.subtotal,
         total: this.total,
         tax: this.totalTax,
-        user_id: null,
-        student_id: null,
-        enrollment_id: null,
-        family_member_id: null,
+        user_id: this.newInvoice.user_id || null,
+        student_id: this.newInvoice.student_id,
+        enrollment_id: this.newInvoice.enrollment_id || null,
+        family_member_id: this.newInvoice.family_member_id,
         template_name: this.getTemplateName,
       }
 
-      if (this.selectedCustomer != null) {
-        data.user_id = this.selectedCustomer.id
-      }
 
       if (this.$route.name === 'invoices.edit') {
         this.submitUpdate(data)
@@ -1038,7 +1035,6 @@ export default {
 
     checkValid() {
       this.$v.newInvoice.$touch()
-      this.$v.selectedCustomer.$touch()
       this.$v.invoiceNumAttribute.$touch()
 
       window.hub.$emit('checkItems')
@@ -1049,7 +1045,6 @@ export default {
         }
       })
       if (
-        !this.$v.selectedCustomer.$invalid &&
         !this.$v.invoiceNumAttribute.$invalid &&
         this.$v.newInvoice.$invalid === false &&
         isValid === true
@@ -1070,13 +1065,16 @@ export default {
 .invoice-create-page {
   .invoice-foot {
     .invoice-total {
-      min-width: 390px;
+      width: 100%;
+      min-width: 0;
     }
   }
-  @media (max-width: 480px) {
+
+  @media (min-width: 1024px) {
     .invoice-foot {
       .invoice-total {
-        min-width: 384px;
+        width: auto;
+        min-width: 390px;
       }
     }
   }

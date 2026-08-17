@@ -6,7 +6,7 @@ on:
       - chatgpt/school-billing-canonical-20260816
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
   validate-build:
@@ -33,12 +33,18 @@ jobs:
           php -l app/Models/StaffAssignment.php
           php -l database/migrations/2026_09_01_001200_create_staff_foundation.php
           php -l tests/Isolation/StaffAndSchoolLevelSecurityTest.php
+          php -l tests/Isolation/MobileFirstBillingTest.php
 
       - name: Instalar dependencias PHP
         run: composer install --no-interaction --prefer-dist --no-progress
 
-      - name: Regresiones dirigidas
-        run: vendor/bin/pest tests/Isolation/StaffAndSchoolLevelSecurityTest.php
+      - name: Regresiones de corte
+        run: |
+          vendor/bin/pest \
+            tests/Isolation/MobileFirstBillingTest.php \
+            tests/Isolation/ItemSchoolLevelIsolationTest.php \
+            tests/Isolation/FamilyMembersCanonicalTest.php \
+            tests/Isolation/StaffAndSchoolLevelSecurityTest.php
 
       - name: Node 20
         uses: actions/setup-node@v4
@@ -49,12 +55,12 @@ jobs:
       - name: Instalar frontend
         run: npm ci --legacy-peer-deps
 
-      - name: Compilar Vue de produccion
+      - name: Compilar Vue de producción
         env:
           NODE_OPTIONS: --openssl-legacy-provider
         run: npm run production
 
-      - name: Regenerar bundle que consume Railway
+      - name: Verificar bundle reproducible para Railway
         run: |
           rm -f build/frontend/app.js.gz.part.*
           gzip -c public/assets/js/app.js | split -d -a 2 -b 450K - build/frontend/app.js.gz.part.
@@ -62,15 +68,3 @@ jobs:
           cp public/mix-manifest.json build/frontend/mix-manifest.json
           test -s build/frontend/app.js.gz.part.00
           test -s build/frontend/mix-manifest.json
-
-      - name: Guardar bundle compilado
-        run: |
-          git config user.name "Jesús Olguín"
-          git config user.email "47510848+jesus1942@users.noreply.github.com"
-          git add build/frontend
-          if git diff --cached --quiet; then
-            echo "Bundle sin cambios"
-            exit 0
-          fi
-          git commit -m "Actualizar bundle de desarrollo [skip ci]"
-          git push origin HEAD:chatgpt/school-billing-canonical-20260816
