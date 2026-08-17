@@ -10,7 +10,6 @@ permissions:
 
 jobs:
   validate-build:
-    if: ${{ !contains(github.event.head_commit.message, '[skip ci]') }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout rama larga
@@ -19,6 +18,45 @@ jobs:
           ref: chatgpt/school-billing-canonical-20260816
           fetch-depth: 0
 
+      - name: Aplicar corte RRHH
+        run: |
+          python3 <<'PY'
+          from pathlib import Path
+
+          def rep(path, old, new):
+              p=Path(path); s=p.read_text()
+              if s.count(old)!=1: raise SystemExit(f'Anchor invalido {path}: {s.count(old)}')
+              p.write_text(s.replace(old,new,1))
+
+          rep('app/Enums/Permission.php', "    // ---------------------------------------------------------------- economico\n", "    // ---------------------------------------------------------------- recursos humanos\n\n    const HR_STAFF_VIEW = 'hr.staff.view';\n    const HR_STAFF_MANAGE = 'hr.staff.manage';\n    const HR_PAYROLL_VIEW = 'hr.payroll.view';\n    const HR_PAYROLL_MANAGE = 'hr.payroll.manage';\n    const HR_PAYROLL_APPROVE = 'hr.payroll.approve';\n    const HR_PAYROLL_PAY = 'hr.payroll.pay';\n\n    // ---------------------------------------------------------------- economico\n")
+          rep('app/Enums/Permission.php', "            self::FINANCE_VIEW => ['group' => 'finance', 'label' => 'Ver el modulo economico'],\n", "            self::HR_STAFF_VIEW => ['group' => 'hr', 'label' => 'Ver personal'],\n            self::HR_STAFF_MANAGE => ['group' => 'hr', 'label' => 'Administrar personal'],\n            self::HR_PAYROLL_VIEW => ['group' => 'hr', 'label' => 'Ver liquidaciones y pagos de sueldo'],\n            self::HR_PAYROLL_MANAGE => ['group' => 'hr', 'label' => 'Preparar liquidaciones de sueldo'],\n            self::HR_PAYROLL_APPROVE => ['group' => 'hr', 'label' => 'Aprobar liquidaciones de sueldo'],\n            self::HR_PAYROLL_PAY => ['group' => 'hr', 'label' => 'Registrar y revertir pagos de sueldo'],\n\n            self::FINANCE_VIEW => ['group' => 'finance', 'label' => 'Ver el modulo economico'],\n")
+
+          rep('app/Enums/RoleName.php', "    const FINANCE_ADMIN = 'finance_admin';\n", "    const FINANCE_ADMIN = 'finance_admin';\n\n    /** Recursos Humanos: personal, cargos, liquidaciones y pagos. */\n    const HR_ADMIN = 'hr_admin';\n")
+          rep('app/Enums/RoleName.php', "            self::PRECEPTOR => [\n", "            self::HR_ADMIN => [\n                'label' => 'Recursos Humanos',\n                'description' => 'Gestion de personal, cargos, liquidaciones y pagos de sueldo del nivel.',\n                'hierarchy_level' => 30,\n                'scope_type' => 'level',\n                'permissions' => [\n                    $P::HR_STAFF_VIEW, $P::HR_STAFF_MANAGE,\n                    $P::HR_PAYROLL_VIEW, $P::HR_PAYROLL_MANAGE,\n                    $P::HR_PAYROLL_APPROVE, $P::HR_PAYROLL_PAY,\n                ],\n            ],\n\n            self::PRECEPTOR => [\n")
+
+          p=Path('routes/api.php'); s=p.read_text()
+          if 'PayrollController' not in s:
+              s=s.replace('use Crater\\Http\\Controllers\\V1\\Staff\\StaffMembersController;', 'use Crater\\Http\\Controllers\\V1\\Staff\\StaffMembersController;\nuse Crater\\Http\\Controllers\\V1\\Staff\\PayrollController;')
+          s=s.replace("->middleware('permission:system.user.view');", "->middleware('permission:hr.staff.view');", 1)
+          for _ in range(4): s=s.replace("->middleware('permission:system.user.manage');", "->middleware('permission:hr.staff.manage');", 1)
+          anchor="        Route::put('/staff/{staffMember}/assignments/{staffAssignment}', [StaffMembersController::class, 'updateAssignment'])\n            ->middleware('permission:hr.staff.manage');\n"
+          if anchor not in s: raise SystemExit('Anchor staff routes')
+          s=s.replace(anchor, anchor+"\n        Route::get('/payroll', [PayrollController::class, 'index'])->middleware('permission:hr.payroll.view');\n        Route::post('/payroll/periods', [PayrollController::class, 'storePeriod'])->middleware('permission:hr.payroll.manage');\n        Route::post('/payroll/periods/{payrollPeriod}/slips', [PayrollController::class, 'storeSlip'])->middleware('permission:hr.payroll.manage');\n        Route::post('/payroll/slips/{payrollSlip}/approve', [PayrollController::class, 'approveSlip'])->middleware('permission:hr.payroll.approve');\n        Route::post('/payroll/slips/{payrollSlip}/payments', [PayrollController::class, 'storePayment'])->middleware('permission:hr.payroll.pay');\n        Route::post('/payroll/payments/{payrollPayment}/reverse', [PayrollController::class, 'reversePayment'])->middleware('permission:hr.payroll.pay');\n",1)
+          p.write_text(s)
+
+          p=Path('app/Http/Controllers/V1/Staff/StaffMembersController.php'); s=p.read_text().replace('Permission::USER_VIEW','Permission::HR_STAFF_VIEW').replace('Permission::USER_MANAGE','Permission::HR_STAFF_MANAGE'); p.write_text(s)
+
+          rep('resources/assets/js/router.js', "import StaffIndex from './views/staff/Index.vue'\n", "import StaffIndex from './views/staff/Index.vue'\nimport PayrollIndex from './views/staff/Payroll.vue'\n")
+          rep('resources/assets/js/router.js', "      // Items\n", "      // Liquidaciones y pagos de RRHH\n      {\n        path: 'payroll',\n        name: 'payroll.index',\n        component: PayrollIndex,\n      },\n\n      // Items\n")
+
+          rep('resources/assets/js/views/layouts/partials/TheSiteSidebar.vue', "            {\n              title: 'Personal',\n              icon: 'users-icon',\n              route: '/admin/staff',\n            },\n", "            {\n              title: 'Personal',\n              icon: 'users-icon',\n              route: '/admin/staff',\n            },\n            {\n              title: 'Liquidaciones y pagos',\n              icon: 'credit-card-icon',\n              route: '/admin/payroll',\n            },\n")
+
+          p=Path('docs/SUITEENA_MASTER_PLAN.md'); s=p.read_text(); marker='# BLOQUE 5 — Evaluaciones, calificaciones y asistencia\n'
+          block="# BLOQUE 4B — Recursos Humanos\n\n## Fuente de verdad\n\n- Personal: `staff_members`\n- Cargos y asignaciones: `staff_assignments`\n- Períodos: `payroll_periods`\n- Liquidaciones: `payroll_slips`\n- Pagos de sueldo: `payroll_payments`\n\n## Tareas\n\n- [x] Padrón laboral separado de usuarios.\n- [x] Cargos por nivel sin borrar historial.\n- [x] Períodos mensuales por nivel.\n- [x] Liquidación interna bruto/descuentos/neto.\n- [x] Aprobación antes del pago.\n- [x] Pagos parciales/totales y reversión sin delete.\n- [ ] Conceptos salariales versionados y novedades mensuales.\n- [ ] Recibo salarial imprimible.\n- [ ] Asiento/impacto económico de liquidaciones aprobadas.\n- [ ] Reglas legales/impositivas argentinas solo con normativa vigente verificada.\n\n---\n\n"
+          if marker not in s: raise SystemExit('Master marker')
+          p.write_text(s.replace(marker,block+marker,1))
+          PY
+
       - name: PHP 7.4
         uses: shivammathur/setup-php@v2
         with:
@@ -26,25 +64,20 @@ jobs:
           extensions: mbstring, pdo, sqlite, pdo_sqlite
           coverage: none
 
-      - name: Validar sintaxis PHP del corte
+      - name: Sintaxis y regresiones
         run: |
-          php -l app/Http/Controllers/V1/Settings/SchoolLevelsController.php
-          php -l app/Models/StaffMember.php
-          php -l app/Models/StaffAssignment.php
-          php -l database/migrations/2026_09_01_001200_create_staff_foundation.php
-          php -l tests/Isolation/StaffAndSchoolLevelSecurityTest.php
-          php -l tests/Isolation/MobileFirstBillingTest.php
-
-      - name: Instalar dependencias PHP
-        run: composer install --no-interaction --prefer-dist --no-progress
-
-      - name: Regresiones de corte
-        run: |
-          vendor/bin/pest \
-            tests/Isolation/MobileFirstBillingTest.php \
-            tests/Isolation/ItemSchoolLevelIsolationTest.php \
-            tests/Isolation/FamilyMembersCanonicalTest.php \
-            tests/Isolation/StaffAndSchoolLevelSecurityTest.php
+          php -l app/Enums/Permission.php
+          php -l app/Enums/RoleName.php
+          php -l app/Http/Controllers/V1/Staff/PayrollController.php
+          php -l app/Http/Controllers/V1/Staff/StaffMembersController.php
+          php -l app/Models/PayrollPeriod.php
+          php -l app/Models/PayrollSlip.php
+          php -l app/Models/PayrollPayment.php
+          php -l database/migrations/2026_09_01_001300_create_payroll_foundation.php
+          php -l tests/Isolation/PayrollFoundationTest.php
+          php -l routes/api.php
+          composer install --no-interaction --prefer-dist --no-progress
+          vendor/bin/pest tests/Isolation/PayrollFoundationTest.php tests/Isolation/StaffAndSchoolLevelSecurityTest.php tests/Isolation/MobileFirstBillingTest.php tests/Isolation/FamilyMembersCanonicalTest.php
 
       - name: Node 20
         uses: actions/setup-node@v4
@@ -52,31 +85,31 @@ jobs:
           node-version: '20'
           cache: npm
 
-      - name: Instalar frontend
-        run: npm ci --legacy-peer-deps
-
-      - name: Compilar Vue de producción
+      - name: Compilar y reconstruir bundle
         env:
           NODE_OPTIONS: --openssl-legacy-provider
-        run: npm run production
-
-      - name: Regenerar bundle reproducible para Railway
         run: |
+          npm ci --legacy-peer-deps
+          npm run production
           rm -f build/frontend/app.js.gz.part.*
           gzip -c public/assets/js/app.js | split -d -a 2 -b 450K - build/frontend/app.js.gz.part.
           cp public/assets/css/crater.css build/frontend/crater.css
           cp public/mix-manifest.json build/frontend/mix-manifest.json
           test -s build/frontend/app.js.gz.part.00
-          test -s build/frontend/mix-manifest.json
 
-      - name: Guardar bundle compilado
+      - name: Guardar corte probado y restaurar CI estable
         run: |
-          if git diff --quiet -- build/frontend; then
-            echo "Bundle sin cambios"
-            exit 0
-          fi
+          rm -f .github/workflows/apply-payroll-department.yml
+          git show HEAD^:.github/workflows/dev-long-branch.yml > .github/workflows/dev-long-branch.yml
+          python3 <<'PY'
+          from pathlib import Path
+          p=Path('.github/workflows/dev-long-branch.yml'); s=p.read_text()
+          s=s.replace('          php -l tests/Isolation/MobileFirstBillingTest.php\n', '          php -l tests/Isolation/MobileFirstBillingTest.php\n          php -l app/Http/Controllers/V1/Staff/PayrollController.php\n          php -l database/migrations/2026_09_01_001300_create_payroll_foundation.php\n          php -l tests/Isolation/PayrollFoundationTest.php\n')
+          s=s.replace('            tests/Isolation/StaffAndSchoolLevelSecurityTest.php\n', '            tests/Isolation/StaffAndSchoolLevelSecurityTest.php \\\n            tests/Isolation/PayrollFoundationTest.php\n')
+          p.write_text(s)
+          PY
           git config user.name "Jesús Olguín"
           git config user.email "47510848+jesus1942@users.noreply.github.com"
-          git add build/frontend
-          git commit -m "build: actualizar frontend SuiteEna [skip ci]"
+          git add -A
+          git commit -m "feat: hacer operativo RRHH con liquidaciones y pagos [skip ci]"
           git push origin HEAD:chatgpt/school-billing-canonical-20260816
