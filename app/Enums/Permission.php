@@ -108,6 +108,15 @@ final class Permission
     const RECORDING_MANAGE = 'campus.recording.manage';
     const MOODLE_SYNC_RUN = 'campus.moodle.sync';
 
+    // ---------------------------------------------------------------- recursos humanos
+
+    const HR_STAFF_VIEW = 'hr.staff.view';
+    const HR_STAFF_MANAGE = 'hr.staff.manage';
+    const HR_PAYROLL_VIEW = 'hr.payroll.view';
+    const HR_PAYROLL_MANAGE = 'hr.payroll.manage';
+    const HR_PAYROLL_APPROVE = 'hr.payroll.approve';
+    const HR_PAYROLL_PAY = 'hr.payroll.pay';
+
     // ---------------------------------------------------------------- economico
     // Lo que ya existe hoy en la app, ahora detras de permisos.
 
@@ -272,6 +281,13 @@ final class Permission
             self::RECORDING_VIEW => ['group' => 'campus', 'label' => 'Ver grabaciones'],
             self::RECORDING_MANAGE => ['group' => 'campus', 'label' => 'Administrar y borrar grabaciones'],
             self::MOODLE_SYNC_RUN => ['group' => 'campus', 'label' => 'Ejecutar la sincronizacion con Moodle'],
+
+            self::HR_STAFF_VIEW => ['group' => 'hr', 'label' => 'Ver personal'],
+            self::HR_STAFF_MANAGE => ['group' => 'hr', 'label' => 'Administrar personal'],
+            self::HR_PAYROLL_VIEW => ['group' => 'hr', 'label' => 'Ver liquidaciones y pagos de sueldo'],
+            self::HR_PAYROLL_MANAGE => ['group' => 'hr', 'label' => 'Preparar liquidaciones de sueldo'],
+            self::HR_PAYROLL_APPROVE => ['group' => 'hr', 'label' => 'Aprobar liquidaciones de sueldo'],
+            self::HR_PAYROLL_PAY => ['group' => 'hr', 'label' => 'Registrar y revertir pagos de sueldo'],
 
             self::FINANCE_VIEW => ['group' => 'finance', 'label' => 'Ver el modulo economico'],
             self::FINANCE_INVOICE_MANAGE => ['group' => 'finance', 'label' => 'Administrar facturas'],

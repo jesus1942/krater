@@ -192,6 +192,11 @@ export default {
               icon: 'users-icon',
               route: '/admin/staff',
             },
+            {
+              title: 'Liquidaciones y pagos',
+              icon: 'credit-card-icon',
+              route: '/admin/payroll',
+            },
           ],
         })
       }
