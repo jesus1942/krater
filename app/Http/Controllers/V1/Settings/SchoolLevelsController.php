@@ -7,6 +7,7 @@ use Crater\Http\Controllers\Controller;
 use Crater\Models\SchoolLevel;
 use Crater\Services\Access\AccessManager;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class SchoolLevelsController extends Controller
 {
@@ -27,13 +28,65 @@ class SchoolLevelsController extends Controller
 
     public function index(Request $request)
     {
-        $this->authorizeTotalAdmin($request);
+        $user = $request->user();
+        $companyId = (int) ($request->header('company') ?: $user->company_id);
 
-        $levels = SchoolLevel::where('company_id', $request->header('company'))
-            ->orderByRaw("CASE code WHEN 'primary' THEN 1 WHEN 'secondary' THEN 2 WHEN 'tertiary' THEN 3 ELSE 4 END")
-            ->get();
+        abort_unless(
+            $this->access->isTotalAdmin($user) || $companyId === (int) $user->company_id,
+            403
+        );
 
-        return response()->json(['levels' => $levels]);
+        $query = SchoolLevel::where('company_id', $companyId)
+            ->where('enabled', true)
+            ->orderByRaw("CASE code WHEN 'primary' THEN 1 WHEN 'secondary' THEN 2 WHEN 'tertiary' THEN 3 ELSE 4 END");
+
+        if (! $this->access->isTotalAdmin($user) && ! $this->hasInstitutionWideRole($user->id, $companyId)) {
+            $levelIds = DB::table('school_level_user')
+                ->where('user_id', $user->id)
+                ->pluck('school_level_id')
+                ->merge(
+                    DB::table('role_user')
+                        ->where('user_id', $user->id)
+                        ->where('company_id', $companyId)
+                        ->whereNotNull('school_level_id')
+                        ->where(function ($q) {
+                            $q->whereNull('starts_on')->orWhere('starts_on', '<=', now()->toDateString());
+                        })
+                        ->where(function ($q) {
+                            $q->whereNull('ends_on')->orWhere('ends_on', '>=', now()->toDateString());
+                        })
+                        ->pluck('school_level_id')
+                )
+                ->unique()
+                ->values();
+
+            $query->whereIn('id', $levelIds);
+        }
+
+        return response()->json([
+            'levels' => $query->get(),
+            'can_view_whole_institution' => $this->access->isTotalAdmin($user),
+        ]);
+    }
+
+    protected function hasInstitutionWideRole($userId, $companyId): bool
+    {
+        $today = now()->toDateString();
+
+        return DB::table('role_user')
+            ->join('roles', 'roles.id', '=', 'role_user.role_id')
+            ->where('role_user.user_id', $userId)
+            ->where('role_user.company_id', $companyId)
+            ->where('roles.company_id', $companyId)
+            ->where('roles.scope_type', 'global')
+            ->whereNull('role_user.school_level_id')
+            ->where(function ($query) use ($today) {
+                $query->whereNull('role_user.starts_on')->orWhere('role_user.starts_on', '<=', $today);
+            })
+            ->where(function ($query) use ($today) {
+                $query->whereNull('role_user.ends_on')->orWhere('role_user.ends_on', '>=', $today);
+            })
+            ->exists();
     }
 
     public function update(Request $request, SchoolLevel $schoolLevel)
