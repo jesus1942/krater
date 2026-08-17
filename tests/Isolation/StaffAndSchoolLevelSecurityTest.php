@@ -32,6 +32,17 @@ it('uses legacy-compatible integer foreign keys for staff', function () use ($ro
     expect($migration)->not->toContain('bigIncrements');
 });
 
+it('recovers only empty partial staff tables after a failed ddl', function () use ($root) {
+    $migration = file_get_contents($root.'/database/migrations/2026_09_01_001200_create_staff_foundation.php');
+
+    expect($migration)->toContain('recoverEmptyPartialInstall');
+    expect($migration)->toContain('Schema::hasTable($table)');
+    expect($migration)->toContain('DB::table($table)->limit(1)->exists()');
+    expect($migration)->toContain("Schema::dropIfExists('staff_assignments')");
+    expect($migration)->toContain("Schema::dropIfExists('staff_members')");
+    expect($migration)->toContain('Se aborta para preservar la informacion');
+});
+
 it('models staff assignments by institutional level without forcing one level on the person', function () use ($root) {
     $migration = file_get_contents($root.'/database/migrations/2026_09_01_001200_create_staff_foundation.php');
     $assignment = file_get_contents($root.'/app/Models/StaffAssignment.php');
