@@ -41,6 +41,9 @@ final class RoleName
     /** Administracion economica: facturacion, cobros, gastos. */
     const FINANCE_ADMIN = 'finance_admin';
 
+    /** Recursos Humanos: personal, cargos, liquidaciones y pagos. */
+    const HR_ADMIN = 'hr_admin';
+
     /** Preceptor o tutor de division: asistencia y seguimiento. */
     const PRECEPTOR = 'preceptor';
 
@@ -166,6 +169,18 @@ final class RoleName
                     $P::FINANCE_EXPENSE_MANAGE, $P::FINANCE_REPORT_VIEW,
                     // Solo lo minimo para poder facturar a la familia correcta.
                     $P::STUDENT_VIEW_BASIC, $P::ENROLLMENT_VIEW,
+                ],
+            ],
+
+            self::HR_ADMIN => [
+                'label' => 'Recursos Humanos',
+                'description' => 'Gestion de personal, cargos, liquidaciones y pagos de sueldo del nivel.',
+                'hierarchy_level' => 30,
+                'scope_type' => 'level',
+                'permissions' => [
+                    $P::HR_STAFF_VIEW, $P::HR_STAFF_MANAGE,
+                    $P::HR_PAYROLL_VIEW, $P::HR_PAYROLL_MANAGE,
+                    $P::HR_PAYROLL_APPROVE, $P::HR_PAYROLL_PAY,
                 ],
             ],
 

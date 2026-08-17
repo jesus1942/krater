@@ -33,6 +33,7 @@ import StudentIndex from './views/students/Index.vue'
 
 // Personal
 import StaffIndex from './views/staff/Index.vue'
+import PayrollIndex from './views/staff/Payroll.vue'
 
 // Items
 import ItemsIndex from './views/items/Index.vue'
@@ -205,6 +206,13 @@ const routes = [
         path: 'staff',
         name: 'staff.index',
         component: StaffIndex,
+      },
+
+      // Liquidaciones y pagos de RRHH
+      {
+        path: 'payroll',
+        name: 'payroll.index',
+        component: PayrollIndex,
       },
 
       // Items

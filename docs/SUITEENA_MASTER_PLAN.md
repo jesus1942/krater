@@ -161,6 +161,31 @@ Solo **Operativo** equivale a DONE.
 
 ---
 
+# BLOQUE 4B — Recursos Humanos
+
+## Fuente de verdad
+
+- Personal: `staff_members`
+- Cargos y asignaciones: `staff_assignments`
+- Períodos: `payroll_periods`
+- Liquidaciones: `payroll_slips`
+- Pagos de sueldo: `payroll_payments`
+
+## Tareas
+
+- [x] Padrón laboral separado de usuarios.
+- [x] Cargos por nivel sin borrar historial.
+- [x] Períodos mensuales por nivel.
+- [x] Liquidación interna bruto/descuentos/neto.
+- [x] Aprobación antes del pago.
+- [x] Pagos parciales/totales y reversión sin delete.
+- [ ] Conceptos salariales versionados y novedades mensuales.
+- [ ] Recibo salarial imprimible.
+- [ ] Asiento/impacto económico de liquidaciones aprobadas.
+- [ ] Reglas legales/impositivas argentinas solo con normativa vigente verificada.
+
+---
+
 # BLOQUE 5 — Evaluaciones, calificaciones y asistencia
 
 La base de datos existe parcialmente; falta convertirla en producto.

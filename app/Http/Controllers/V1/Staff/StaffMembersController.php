@@ -27,10 +27,10 @@ class StaffMembersController extends Controller
     public function index(Request $request)
     {
         $user = $request->user();
-        $global = $this->access->allows($user, Permission::USER_VIEW, null);
+        $global = $this->access->allows($user, Permission::HR_STAFF_VIEW, null);
         $levelId = TenantContext::schoolLevelId();
 
-        if (! $global && ! $this->access->allows($user, Permission::USER_VIEW, $levelId)) {
+        if (! $global && ! $this->access->allows($user, Permission::HR_STAFF_VIEW, $levelId)) {
             abort(403);
         }
 
@@ -115,10 +115,10 @@ class StaffMembersController extends Controller
     protected function assertCanManage(Request $request): void
     {
         $user = $request->user();
-        if ($this->access->allows($user, Permission::USER_MANAGE, null)) {
+        if ($this->access->allows($user, Permission::HR_STAFF_MANAGE, null)) {
             return;
         }
-        if (! $this->access->allows($user, Permission::USER_MANAGE, TenantContext::schoolLevelId())) {
+        if (! $this->access->allows($user, Permission::HR_STAFF_MANAGE, TenantContext::schoolLevelId())) {
             abort(403);
         }
     }
@@ -126,14 +126,14 @@ class StaffMembersController extends Controller
     protected function assertLevelAllowed(Request $request, ?int $levelId): void
     {
         if ($levelId === null) {
-            if (! $this->access->allows($request->user(), Permission::USER_MANAGE, null)) {
+            if (! $this->access->allows($request->user(), Permission::HR_STAFF_MANAGE, null)) {
                 throw ValidationException::withMessages(['school_level_id' => ['Solo la administración global puede crear cargos institucionales sin nivel.']]);
             }
             return;
         }
 
         $level = SchoolLevel::where('company_id', TenantContext::companyId())->findOrFail($levelId);
-        if ($this->access->allows($request->user(), Permission::USER_MANAGE, null)) {
+        if ($this->access->allows($request->user(), Permission::HR_STAFF_MANAGE, null)) {
             return;
         }
         if ((int) $level->id !== (int) TenantContext::schoolLevelId()) {

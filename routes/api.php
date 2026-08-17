@@ -21,6 +21,7 @@ use Crater\Http\Controllers\V1\Expense\ShowReceiptController;
 use Crater\Http\Controllers\V1\Expense\UploadReceiptController;
 use Crater\Http\Controllers\V1\Family\FamilyMembersController;
 use Crater\Http\Controllers\V1\Staff\StaffMembersController;
+use Crater\Http\Controllers\V1\Staff\PayrollController;
 use Crater\Http\Controllers\V1\General\BootstrapController;
 use Crater\Http\Controllers\V1\General\CountriesController;
 use Crater\Http\Controllers\V1\General\CurrenciesController;
@@ -173,15 +174,22 @@ Route::prefix('/v1')->group(function () {
     Route::middleware(['auth:sanctum', 'tenant'])->group(function () {
         // --- Personal ---
         Route::get('/staff', [StaffMembersController::class, 'index'])
-            ->middleware('permission:system.user.view');
+            ->middleware('permission:hr.staff.view');
         Route::post('/staff', [StaffMembersController::class, 'store'])
-            ->middleware('permission:system.user.manage');
+            ->middleware('permission:hr.staff.manage');
         Route::put('/staff/{staffMember}', [StaffMembersController::class, 'update'])
-            ->middleware('permission:system.user.manage');
+            ->middleware('permission:hr.staff.manage');
         Route::post('/staff/{staffMember}/assignments', [StaffMembersController::class, 'storeAssignment'])
-            ->middleware('permission:system.user.manage');
+            ->middleware('permission:hr.staff.manage');
         Route::put('/staff/{staffMember}/assignments/{staffAssignment}', [StaffMembersController::class, 'updateAssignment'])
-            ->middleware('permission:system.user.manage');
+            ->middleware('permission:hr.staff.manage');
+
+        Route::get('/payroll', [PayrollController::class, 'index'])->middleware('permission:hr.payroll.view');
+        Route::post('/payroll/periods', [PayrollController::class, 'storePeriod'])->middleware('permission:hr.payroll.manage');
+        Route::post('/payroll/periods/{payrollPeriod}/slips', [PayrollController::class, 'storeSlip'])->middleware('permission:hr.payroll.manage');
+        Route::post('/payroll/slips/{payrollSlip}/approve', [PayrollController::class, 'approveSlip'])->middleware('permission:hr.payroll.approve');
+        Route::post('/payroll/slips/{payrollSlip}/payments', [PayrollController::class, 'storePayment'])->middleware('permission:hr.payroll.pay');
+        Route::post('/payroll/payments/{payrollPayment}/reverse', [PayrollController::class, 'reversePayment'])->middleware('permission:hr.payroll.pay');
 
         Route::get('/academic-years', [AcademicYearsController::class, 'index'])
             ->middleware('permission:academic.year.view');
