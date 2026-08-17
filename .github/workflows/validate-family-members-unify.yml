@@ -1,0 +1,76 @@
+name: Validate family members unification
+
+on:
+  push:
+    branches:
+      - chatgpt/family-members-unify-20260816
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: chatgpt/family-members-unify-20260816
+          fetch-depth: 0
+
+      - name: Setup PHP 7.4
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '7.4'
+          tools: composer:v2
+
+      - name: Apply canonical family UI
+        run: python3 scripts/apply_family_members_ui.py
+
+      - name: PHP lint
+        run: |
+          php -l app/Http/Controllers/V1/Family/FamilyMembersController.php
+          php -l routes/api.php
+          php -l tests/Isolation/FamilyMembersCanonicalTest.php
+
+      - name: Install PHP dependencies
+        run: composer install --no-interaction --prefer-dist --no-progress
+
+      - name: Run targeted regression
+        run: ./vendor/bin/pest tests/Isolation/FamilyMembersCanonicalTest.php
+
+      - name: Setup Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Build frontend
+        run: |
+          npm ci --legacy-peer-deps
+          NODE_OPTIONS=--openssl-legacy-provider npm run production
+
+      - name: Refresh Railway frontend bundle
+        run: |
+          rm -f build/frontend/app.js.gz.part.*
+          gzip -c public/assets/js/app.js | split -d -a 2 -b 450K - build/frontend/app.js.gz.part.
+          cp public/assets/css/crater.css build/frontend/crater.css
+          cp public/mix-manifest.json build/frontend/mix-manifest.json
+          test -f build/frontend/app.js.gz.part.00
+          grep -aq "family-members" public/assets/js/app.js
+          grep -aq "Familias y responsables" public/assets/js/app.js
+
+      - name: Commit generated changes
+        run: |
+          git config user.name "ChatGPT"
+          git config user.email "actions@users.noreply.github.com"
+          git add app/Http/Controllers/V1/Family/FamilyMembersController.php routes/api.php resources/assets/js/views/customers/Index.vue tests/Isolation/FamilyMembersCanonicalTest.php build/frontend scripts/apply_family_members_ui.py
+          git commit -m "Unificar familias y responsables sobre family_members" || true
+          git push origin HEAD:chatgpt/family-members-unify-20260816
+
+      - name: Self delete workflow
+        if: always()
+        run: |
+          git pull --rebase origin chatgpt/family-members-unify-20260816 || true
+          git rm -f .github/workflows/validate-family-members-unify.yml || true
+          git config user.name "ChatGPT"
+          git config user.email "actions@users.noreply.github.com"
+          git commit -m "Retirar workflow temporal de familias" || true
+          git push origin HEAD:chatgpt/family-members-unify-20260816 || true
