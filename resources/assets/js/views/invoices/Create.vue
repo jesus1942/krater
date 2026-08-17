@@ -147,7 +147,8 @@
       </div>
 
       <!-- Items -->
-      <table class="w-full text-center item-table">
+      <div class="w-full overflow-x-auto pb-2">
+        <table class="w-full text-center item-table" style="min-width: 720px">
         <colgroup>
           <col style="width: 40%" />
           <col style="width: 10%" />
@@ -210,7 +211,8 @@
             @itemValidate="checkItemsData"
           />
         </draggable>
-      </table>
+        </table>
+      </div>
 
       <div
         class="flex items-center justify-center w-full px-6 py-3 text-base border-b border-gray-200 border-solid cursor-pointer text-primary-400 hover:bg-gray-200"
