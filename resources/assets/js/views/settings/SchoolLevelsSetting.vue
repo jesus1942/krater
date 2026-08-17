@@ -50,7 +50,27 @@ const Field = { props: ['label'], template: '<label class="block text-sm text-gr
 export default {
   components: { Field },
   data() { return { levels: [], openId: null, loading: true, savingId: null } },
-  async created() { await this.load() },
+  computed: {
+    isTotalAdmin() {
+      const currentUser = this.$store.state.user.currentUser
+      return Boolean(
+        currentUser &&
+          (currentUser.is_total_admin === true ||
+            currentUser.rbac_role === 'total_admin' ||
+            currentUser.role === 'super admin')
+      )
+    },
+    isWholeInstitutionContext() {
+      return !window.Ls.get('selectedSchoolLevel')
+    },
+  },
+  async created() {
+    if (!this.isTotalAdmin || !this.isWholeInstitutionContext) {
+      this.$router.replace('/admin/settings/user-profile')
+      return
+    }
+    await this.load()
+  },
   methods: {
     async load() { this.loading = true; const response = await window.axios.get('/api/v1/school-levels'); this.levels = response.data.levels; this.loading = false },
     toggle(id) { this.openId = this.openId === id ? null : id },
