@@ -161,6 +161,14 @@ export default {
         ],
       ]
 
+      if (['super admin', 'admin'].includes(this.currentUser.role)) {
+        menu[0].push({
+          title: 'Personal',
+          icon: 'users-icon',
+          route: '/admin/staff',
+        })
+      }
+
       if (this.currentUser.role == 'super admin') {
         menu[2] = [
           {
