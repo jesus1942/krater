@@ -149,7 +149,7 @@
       <!-- Items -->
       <div class="w-full pb-2">
         <table class="block w-full text-center item-table md:table">
-        <colgroup>
+        <colgroup class="hidden md:table-column-group">
           <col style="width: 40%" />
           <col style="width: 10%" />
           <col style="width: 15%" />
@@ -455,10 +455,10 @@ export default {
         invoice_date: null,
         due_date: null,
         invoice_number: null,
-        user_id: this.newInvoice.user_id || null,
-        student_id: this.newInvoice.student_id,
-        enrollment_id: this.newInvoice.enrollment_id || null,
-        family_member_id: this.newInvoice.family_member_id,
+        user_id: null,
+        student_id: null,
+        enrollment_id: null,
+        family_member_id: null,
         invoice_template_id: 1,
         sub_total: null,
         total: null,
@@ -937,10 +937,10 @@ export default {
         sub_total: this.subtotal,
         total: this.total,
         tax: this.totalTax,
-        user_id: null,
-        student_id: null,
-        enrollment_id: null,
-        family_member_id: null,
+        user_id: this.newInvoice.user_id || null,
+        student_id: this.newInvoice.student_id,
+        enrollment_id: this.newInvoice.enrollment_id || null,
+        family_member_id: this.newInvoice.family_member_id,
         template_name: this.getTemplateName,
       }
 
