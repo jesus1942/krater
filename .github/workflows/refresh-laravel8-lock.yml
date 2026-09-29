@@ -1,0 +1,45 @@
+name: Refresh Laravel 8 lock for PHP 8.2
+
+on:
+  push:
+    branches:
+      - claude/web-app-migration-laf9yy
+    paths:
+      - .github/workflows/refresh-laravel8-lock.yml
+
+permissions:
+  contents: write
+
+jobs:
+  refresh-lock:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout production branch
+        uses: actions/checkout@v4
+        with:
+          ref: claude/web-app-migration-laf9yy
+          fetch-depth: 0
+
+      - name: PHP 8.2
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          extensions: mbstring, pdo_mysql, zip, bcmath, gd
+          coverage: none
+
+      - name: Update Laravel within 8.x
+        run: |
+          composer update laravel/framework --with-all-dependencies --no-interaction --prefer-dist --no-progress
+          php artisan package:discover --ansi
+
+      - name: Commit refreshed lock
+        run: |
+          if git diff --quiet -- composer.lock; then
+            echo "composer.lock already compatible; no changes to commit"
+            exit 0
+          fi
+          git config user.name "Jesús Olguín"
+          git config user.email "47510848+jesus1942@users.noreply.github.com"
+          git add composer.lock
+          git commit -m "chore: refresh Laravel 8 lock for PHP 8.2 [skip ci]"
+          git push origin HEAD:claude/web-app-migration-laf9yy
