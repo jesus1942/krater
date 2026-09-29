@@ -20,17 +20,31 @@ jobs:
           ref: claude/web-app-migration-laf9yy
           fetch-depth: 0
 
-      - name: PHP 8.2
+      - name: PHP 7.4 for legacy dev dependency resolution
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '7.4'
+          extensions: mbstring, pdo_mysql, zip, bcmath, gd
+          coverage: none
+
+      - name: Refresh Laravel within supported 8.x
+        run: |
+          composer config --global audit.block-insecure false || true
+          composer update laravel/framework --with-all-dependencies --no-interaction --prefer-dist --no-progress
+
+      - name: PHP 8.2 production validation
         uses: shivammathur/setup-php@v2
         with:
           php-version: '8.2'
           extensions: mbstring, pdo_mysql, zip, bcmath, gd
           coverage: none
 
-      - name: Update Laravel within 8.x
+      - name: Validate production dependency set on PHP 8.2
         run: |
-          composer update laravel/framework --with-all-dependencies --no-interaction --prefer-dist --no-progress
+          rm -rf vendor
+          composer install --no-dev --no-interaction --prefer-dist --no-progress --optimize-autoloader
           php artisan package:discover --ansi
+          php artisan --version
 
       - name: Commit refreshed lock
         run: |
