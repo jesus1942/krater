@@ -40,6 +40,13 @@ RUN cat build/frontend/app.js.gz.part.* | gzip -dc > public/assets/js/app.js \
     && cp build/frontend/crater.css public/assets/css/crater.css \
     && cp build/frontend/mix-manifest.json public/mix-manifest.json
 
+# Compatibilidad temporal con Laravel 8.48 sobre PHP 8.2:
+# conserva errores reales, pero evita que deprecaciones del framework legado
+# aborten package:discover durante build y runtime.
+RUN printf '%s\n' \
+    'error_reporting = E_ALL & ~E_DEPRECATED & ~E_USER_DEPRECATED' \
+    > /usr/local/etc/php/conf.d/99-laravel8-compat.ini
+
 # Instalar dependencias PHP
 ENV COMPOSER_ALLOW_SUPERUSER=1
 RUN composer install --no-dev --optimize-autoloader --no-interaction
