@@ -4,7 +4,7 @@ ARG user=www
 ARG uid=1000
 
 # Dependencias del sistema + nginx
-RUN apt-get update && apt-get install -y --no-install-recommends \
+RUN apt-get -o Acquire::Check-Valid-Until=false update && apt-get install -y --no-install-recommends \
     git \
     curl \
     libpng-dev \
