@@ -185,6 +185,7 @@ class LevelReconciliationTest extends TestCase
             $table->string('estimate_number')->nullable();
             $table->date('estimate_date')->nullable();
             $table->unsignedBigInteger('total')->nullable();
+            $table->timestamps();
         });
 
         Schema::create('students', function (Blueprint $table) {
