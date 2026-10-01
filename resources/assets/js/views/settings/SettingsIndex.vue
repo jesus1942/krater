@@ -148,6 +148,12 @@ export default {
           icon: 'clipboard-list-icon',
         },
         {
+          link: '/admin/settings/data-reconciliation',
+          title: 'Registros sin nivel',
+          icon: 'database-icon',
+          totalAdminOnly: true,
+        },
+        {
           link: '/admin/settings/preferences',
           title: 'settings.menu_title.preferences',
           icon: 'cog-icon',
