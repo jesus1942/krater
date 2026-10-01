@@ -1,0 +1,36 @@
+name: Validar referencia de auditoria
+
+on:
+  push:
+    branches:
+      - chatgpt/auditar-niveles-referencia-20261001
+
+permissions:
+  contents: read
+
+jobs:
+  validar:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: PHP 7.4 para suite legacy
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '7.4'
+          extensions: mbstring, pdo, sqlite, pdo_sqlite, pdo_mysql, zip, bcmath, gd
+          coverage: none
+
+      - name: Instalar dependencias
+        run: |
+          composer config --global audit.block-insecure false || true
+          composer install --no-interaction --prefer-dist --no-progress
+
+      - name: Sintaxis
+        run: |
+          php -l app/Services/Data/LevelAuditService.php
+          php -l tests/Isolation/LevelAuditReadOnlyTest.php
+
+      - name: Test solo lectura y referencia
+        run: vendor/bin/phpunit tests/Isolation/LevelAuditReadOnlyTest.php
