@@ -237,7 +237,7 @@ No crear usuarios de prueba para personal en produccion hasta cerrar R1.
 
 ### Cierre del bloque heredado — fila R1
 
-Estado: implementado y probado localmente; staging y promocion productiva pendientes. La migracion `2026_10_01_180000_harden_user_access` convierte solo al superusuario legacy en una asignacion explicita `total_admin`, conserva revocaciones y registra conteos sin datos personales. Si produccion tenia un superusuario y no queda un total admin vigente, bloquea el predeploy. `RbacSeeder` deja de conceder roles segun etiquetas legacy.
+Estado: operativo en staging y produccion, SHA `a40f866`, 01/10/2026. La migracion `2026_10_01_180000_harden_user_access` convierte solo al superusuario legacy en una asignacion explicita `total_admin`, conserva revocaciones y registra conteos sin datos personales. Si produccion tenia un superusuario y no queda un total admin vigente, bloquea el predeploy. `RbacSeeder` deja de conceder roles segun etiquetas legacy.
 
 Usuarios exige permisos de lectura/gestion, alcance y jerarquia de `canManageUser`; nadie se edita a si mismo por `/users` (usar `/me`). Las altas son `staff` sin asignaciones; las bajas desactivan y revocan tokens. R2 sigue pendiente: no hay aun UI para asignar roles.
 
@@ -246,6 +246,12 @@ Clientes y busqueda toman empresa de `TenantContext` y filtran responsables lega
 Los enlaces PDF/recibos se firman con vencimiento: un dia en API/UI, siete dias en correo. Los enlaces viejos sin firma dejan de funcionar. Los PDF nuevos se guardan en `finance_private`, fuera de `public`; nginx bloquea las carpetas locales legacy y PDF bajo `/storage` y `/media`. Copias historicas en buckets publicos externos requieren revision del administrador del bucket; la app no cambia ACL de archivos antiguos.
 
 Para la matriz real usar solo staging: `ena:preparar-staging --matriz` prepara preceptor/administrativo de Primario, dos familias y alumnos ficticios. Mantiene el doble corte entorno/base y no cambia claves, bajas o revocaciones existentes. Nunca ejecutar en produccion ni agregar al predeploy productivo.
+
+Staging usa `LOG_CHANNEL=stderr` para observar excepciones y `QUEUE_CONNECTION=sync`: no tiene tabla `jobs` ni worker, por lo que la configuracion `database` provocaba un 500 despues de guardar la factura. No se cambio ninguna variable productiva. El conector no permite leer el valor de la cola productiva; su revision queda registrada para la fila 6.
+
+Validacion R1: 35 tests/258 aserciones, 39 verificaciones HTTP con sesiones reales y recheck sobre el SHA final `a40f866`. Deployment staging `e73c5e4e-d30f-43d5-8d6d-944e10a1df97` en SUCCESS; creacion de factura ficticia 200, PDF real 200, sin firma/firma alterada/vencimiento alterado 403 y archivos publicados iguales al build.
+
+Produccion: deployment `f300eb5c-19df-4c35-9aab-d1f97bbccaf2`, SUCCESS, rama `produccion`, mismo SHA probado. Predeploy: usuarios 2 antes/2 despues, 1 superusuario legacy y 1 total admin vigente. Smoke real de 10 endpoints/archivos aprobado; las sesiones con roles limitados se probaron exclusivamente en staging. No se crearon cuentas productivas de prueba. R2 y filas 5 a 8 siguen pendientes.
 
 **Variables de entorno que configurar en Railway:**
 ```

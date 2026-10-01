@@ -354,7 +354,7 @@ No es prioridad por encima de integridad y producto, pero debe planificarse.
 - [x] Entorno staging separado de producción, con MySQL y volumen propios (01/10/2026). Fila P operativa con excepción autorizada para predeploy; ver bitácora y `CLAUDE.md`.
 - [x] Migraciones, siembra RBAC y marca de instalación verificadas en el predeploy de staging.
 - [x] Fila P2: ramas separadas (`produccion` para production y rama de trabajo para staging), total admin ficticio e ingreso real verificado (01/10/2026). El push P2 desplego solo staging; produccion conservo cc4c3dc.
-- [ ] Fila R1: cerrar bloque heredado con tenant/permisos, cuentas activas y roles vigentes, usuarios sin escalacion, clientes por nivel y PDFs firmados. Implementado y probado localmente; pendiente smoke de staging y promocion productiva.
+- [x] Fila R1: bloque heredado cerrado con tenant/permisos, cuentas activas y roles vigentes, usuarios sin escalacion, clientes por nivel y PDFs firmados. Operativa 01/10/2026, SHA `a40f866`, staging y produccion SUCCESS; 35 tests/258 aserciones y smoke real. Evidencia y limites en bitacora.
 - [ ] Smoke `ena:smoke` automatizado en staging (fila 6); la fila P tiene smoke manual real.
 
 ---
