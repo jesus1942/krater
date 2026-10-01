@@ -82,10 +82,10 @@ class AuditExpansionTest extends TestCase
         $this->assertStringContainsString("'reason' => ['required', 'string', 'max:500']", $controller);
         $this->assertStringContainsString("'student_relocated'", $controller);
         $this->assertStringContainsString('Auth::user()', $controller);
-        $this->assertStringContainsString("'school_level_id' => $student->school_level_id", $controller);
-        $this->assertStringContainsString("'academic_year_id' => $existing ? (int) $existing->academic_year_id : null", $controller);
-        $this->assertStringContainsString("'grade_level_id' => (int) $gradeLevel->id", $controller);
-        $this->assertStringContainsString("'division_id' => (int) $division->id", $controller);
+        $this->assertStringContainsString('\'school_level_id\' => $student->school_level_id', $controller);
+        $this->assertStringContainsString('\'academic_year_id\' => $existing ? (int) $existing->academic_year_id : null', $controller);
+        $this->assertStringContainsString('\'grade_level_id\' => (int) $gradeLevel->id', $controller);
+        $this->assertStringContainsString('\'division_id\' => (int) $division->id', $controller);
         $this->assertStringContainsString('AuditLog::SEVERITY_HIGH', $controller);
 
         $this->assertStringContainsString('Motivo *', $vue);
