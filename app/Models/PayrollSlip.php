@@ -2,10 +2,12 @@
 
 namespace Crater\Models;
 
+use Crater\Traits\Auditable;
 use Illuminate\Database\Eloquent\Model;
 
 class PayrollSlip extends Model
 {
+    use Auditable;
     protected $guarded = ['id'];
 
     public function period()
