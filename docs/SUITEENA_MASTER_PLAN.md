@@ -351,7 +351,7 @@ No es prioridad por encima de integridad y producto, pero debe planificarse.
 - [ ] Modernizar build frontend.
 - [ ] Evaluar separación de servicios realtime TypeScript/Node.
 - [ ] CI reproducible sin workflows temporales.
-- [ ] Staging separado de producción.
+- [x] Entorno staging separado de producción, con MySQL y volumen propios (01/10/2026). Fila P pendiente de cierre por predeploy; ver bitácora y `CLAUDE.md`.
 - [ ] Migraciones y smoke tests automatizados en staging.
 
 ---

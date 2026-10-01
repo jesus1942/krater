@@ -191,6 +191,39 @@ Railway construye el backend con el `Dockerfile`. El flujo operativo es:
 
 No reemplazar este arranque por `php artisan serve` en produccion.
 
+### Staging — fila P (01/10/2026, pendiente de cierre)
+
+El proyecto tiene un entorno real `staging`, separado de `production`:
+
+| Recurso | Identificador |
+| --- | --- |
+| Entorno staging | `5df473d4-f69a-45cb-97f8-61cdf77ed474` |
+| Web `krater-staging` | `2968f192-9763-4ca9-a631-97aa39fd3b3f` |
+| MySQL `MySQL-staging` | `330c15e7-74fe-4836-9420-a1e509d79d0b` |
+| Volumen MySQL, 5000 MB, `/var/lib/mysql` | `fd07f2a6-db8e-41a9-874b-2cf87fcd4d3c` |
+
+- URL: https://krater-staging-staging.up.railway.app.
+- Repositorio y rama: `jesus1942/krater`, `claude/web-app-migration-laf9yy`.
+- Base `krater_staging`, con credenciales y `APP_KEY` propios; no se copiaron datos de produccion.
+- MySQL usa red privada, sin dominio publico ni proxy TCP.
+- `DB_HOST=${{MySQL-staging.RAILWAY_PRIVATE_DOMAIN}}`, `DB_PORT=3306`, `DB_DATABASE=${{MySQL-staging.MYSQL_DATABASE}}`, `DB_USERNAME=${{MySQL-staging.MYSQL_USER}}` y `DB_PASSWORD=${{MySQL-staging.MYSQL_PASSWORD}}`. No usar referencias al servicio `MySQL` de produccion.
+- `APP_ENV=staging`, `APP_DEBUG=false`, `APP_URL` con la URL anterior, `MAIL_DRIVER=log`. No usar SMTP real para pruebas.
+- El arranque web conserva el `CMD` del Dockerfile; nunca usar `start.sh` como predeploy porque queda en foreground.
+
+**Bloqueo comprobado:** Railway rechaza `railwayConfigFile` para servicios nuevos con `INVALID_ARGUMENT`: Config as Code esta deprecado. Su documentacion indica que los servicios nuevos no pueden adoptar `railway.toml`; los servicios legacy lo conservan hasta el 01/12/2026. Fuente: https://docs.railway.com/infrastructure-as-code#migrating-from-config-as-code.
+
+El primer deploy dio `SUCCESS` y `/ping` dio 200, pero `/login` dio 500 por ausencia de `company_settings`: no se ejecutaron las migraciones. El healthcheck basico no certifica el esquema. No declarar la fila P operativa hasta ejecutar migraciones, siembra RBAC y `crater:mark-installed`, verificar `/login` y repetir un deploy que demuestre el predeploy.
+
+La integracion Railway agrego un override pese a la instruccion de no hacerlo; se retiro inmediatamente y la configuracion actual tiene `preDeployCommand=[]`. No reinstalarlo sin resolver la excepcion al prompt. La alternativa inmediata para revision es configurar **solo en staging** el comando terminante equivalente al del repositorio:
+
+```sh
+php artisan migrate --force && php artisan db:seed --class='Database\Seeders\RbacSeeder' --force && php artisan crater:mark-installed
+```
+
+La alternativa de plataforma es migrar a Infrastructure as Code, con plan revisado que conserve todos los recursos y no afecte produccion. No aplicar un plan que proponga borrar servicios o volumenes.
+
+**Validaciones temporales:** nunca subirlas a esta rama mientras produccion tambien la despliegue automaticamente. Usar un despliegue local dirigido exclusivamente a staging o una rama temporal conectada solo a staging; luego volver a la rama compartida. No crear usuarios de prueba para personal en produccion hasta cerrar R1.
+
 **Variables de entorno que configurar en Railway:**
 ```
 APP_KEY=           (generar con: php artisan key:generate --show)

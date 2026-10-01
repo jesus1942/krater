@@ -36,3 +36,18 @@
 - Nueva pantalla `Configuración > Registros sin nivel`, visible únicamente para total-admin en `Toda la institución`.
 - La pantalla permite selección múltiple por tipo, vista previa obligatoria, nivel destino y motivo antes de aplicar.
 - El presupuesto histórico `PRE-000001` aparece en esta herramienta, pero no fue reasignado: sigue requiriendo decisión humana sobre su nivel.
+
+## 2026-10-01 — Fila P: staging aislado, cierre pendiente
+
+- El usuario creó el entorno real `staging` (`5df473d4-f69a-45cb-97f8-61cdf77ed474`). Los servicios de prueba que antes estaban en producción ya fueron retirados.
+- Web `krater-staging`: `2968f192-9763-4ca9-a631-97aa39fd3b3f`, misma rama y código base `ea3619d`, dominio `krater-staging-staging.up.railway.app`.
+- MySQL propio: `330c15e7-74fe-4836-9420-a1e509d79d0b`, base `krater_staging`; volumen `fd07f2a6-db8e-41a9-874b-2cf87fcd4d3c`, 5000 MB, `/var/lib/mysql`. Sólo red privada.
+- Se corrigió el arranque inicial de MySQL para ejecutar `docker-entrypoint.sh` y se comprobó el montaje real del volumen. Deploy MySQL `743703ee-40a5-48df-89d0-715f341cbf09`: `SUCCESS`.
+- Se configuraron referencias `DB_*` únicamente a `MySQL-staging`, clave de aplicación propia y `MAIL_DRIVER=log`. No se copiaron datos ni credenciales de producción.
+- Primer deploy web `66110a12-b0f8-433b-906c-80abe5147b97`: `SUCCESS`; comprobación HTTP real: `/ping` 200 `ok`, `/login` 500. Logs: tabla `krater_staging.company_settings` inexistente. Esto demuestra que el healthcheck no alcanza para verificar migraciones.
+- Railway rechazó habilitar `railwayConfigFile=railway.toml` con `INVALID_ARGUMENT`. La documentación de Infrastructure as Code confirma que los servicios nuevos no pueden adoptar Config as Code y establece corte para servicios legacy el 01/12/2026.
+- La integración Railway agregó un predeploy de servicio pese a la restricción explícita del prompt. Se retiró inmediatamente con `preDeployCommand=[]`; no se acepta como solución ni se declara que las migraciones estén verificadas.
+- Queda para revisión la excepción concreta documentada en `CLAUDE.md`: predeploy terminante sólo en staging, equivalente al comando del repositorio, o migración controlada a Infrastructure as Code. No usar `start.sh` como predeploy.
+- Producción conserva sus servicios originales y despliegues `SUCCESS`; comprobación HTTP real: `/ping` y `/login` 200. No se modificaron datos de la escuela ni `PRE-000001`.
+- R1 y las filas posteriores siguen pendientes. No se crearon usuarios de prueba para personal. No hubo cambios Vue ni regeneración necesaria de `build/frontend`.
+- La rama compartida también despliega producción: las validaciones temporales deben usar un despliegue exclusivamente dirigido a staging o una rama temporal exclusiva, no commits en la rama compartida.
