@@ -2,6 +2,7 @@
 
 namespace Crater\Models;
 
+use Crater\Traits\Auditable;
 use Carbon\Carbon;
 use Crater\Traits\HasCustomFieldsTrait;
 use Crater\Traits\BelongsToSchoolLevel;
@@ -14,6 +15,7 @@ use Spatie\MediaLibrary\InteractsWithMedia;
 
 class Expense extends Model implements HasMedia
 {
+    use Auditable;
     use HasFactory;
     use InteractsWithMedia;
     use HasCustomFieldsTrait;
