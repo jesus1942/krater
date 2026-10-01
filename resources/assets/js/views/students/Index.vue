@@ -218,6 +218,17 @@
             </select>
           </label>
         </div>
+        <label class="block mt-4 text-sm">
+          Motivo *
+          <textarea
+            v-model="relocationForm.reason"
+            required
+            maxlength="500"
+            rows="3"
+            class="w-full px-3 py-2 mt-1 bg-white border border-gray-300 rounded"
+            placeholder="Explicar por qué se corrige la ubicación académica"
+          ></textarea>
+        </label>
         <p v-if="relocationError" class="mt-4 text-sm text-red-600">{{ relocationError }}</p>
         <div class="flex justify-end gap-3 mt-6">
           <sw-button type="button" variant="primary-outline" @click="closeRelocation">Cancelar</sw-button>
@@ -286,7 +297,7 @@ export default {
       showRelocation: false,
       relocationStudent: null,
       relocationOptions: { levels: [], academic_years: [], grade_levels: [], divisions: [] },
-      relocationForm: { school_level_id: '', academic_year_id: '', grade_level_id: '', division_id: '' },
+      relocationForm: { school_level_id: '', academic_year_id: '', grade_level_id: '', division_id: '', reason: '' },
       relocationError: '',
       relocating: false,
       timer: null,
@@ -449,7 +460,7 @@ export default {
     async openRelocate(student) {
       this.relocationStudent = student
       this.relocationError = ''
-      this.relocationForm = { school_level_id: student.school_level_id || '', academic_year_id: '', grade_level_id: '', division_id: '' }
+      this.relocationForm = { school_level_id: student.school_level_id || '', academic_year_id: '', grade_level_id: '', division_id: '', reason: '' }
       const response = await window.axios.get(`/api/v1/students/${student.id}/relocation-options`)
       this.relocationOptions = response.data
       this.showRelocation = true
