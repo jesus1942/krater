@@ -153,6 +153,7 @@ class LevelAuditService
 
             $suggestions[] = [
                 'id' => (int) $record->id,
+                'reference' => $this->referenceFor($name, $record),
                 'current_school_level_id' => $record->school_level_id === null ? null : (int) $record->school_level_id,
                 'status' => $status,
                 'suggested_school_level_id' => $suggested,
@@ -161,6 +162,53 @@ class LevelAuditService
         }
 
         return $suggestions;
+    }
+
+    protected function referenceFor($name, $record)
+    {
+        if ($name === 'Estimate') {
+            return [
+                'number' => isset($record->estimate_number) ? $record->estimate_number : null,
+                'date' => isset($record->estimate_date) ? (string) $record->estimate_date : null,
+                'user_id' => isset($record->user_id) && $record->user_id ? (int) $record->user_id : null,
+                'total' => isset($record->total) ? (int) $record->total : null,
+            ];
+        }
+
+        if ($name === 'Invoice') {
+            return [
+                'number' => isset($record->invoice_number) ? $record->invoice_number : null,
+                'date' => isset($record->invoice_date) ? (string) $record->invoice_date : null,
+                'user_id' => isset($record->user_id) && $record->user_id ? (int) $record->user_id : null,
+                'student_id' => isset($record->student_id) && $record->student_id ? (int) $record->student_id : null,
+                'enrollment_id' => isset($record->enrollment_id) && $record->enrollment_id ? (int) $record->enrollment_id : null,
+                'total' => isset($record->total) ? (int) $record->total : null,
+            ];
+        }
+
+        if ($name === 'Payment') {
+            return [
+                'number' => isset($record->payment_number) ? $record->payment_number : null,
+                'date' => isset($record->payment_date) ? (string) $record->payment_date : null,
+                'user_id' => isset($record->user_id) && $record->user_id ? (int) $record->user_id : null,
+                'student_id' => isset($record->student_id) && $record->student_id ? (int) $record->student_id : null,
+                'invoice_id' => isset($record->invoice_id) && $record->invoice_id ? (int) $record->invoice_id : null,
+                'amount' => isset($record->amount) ? (int) $record->amount : null,
+            ];
+        }
+
+        if ($name === 'Expense') {
+            return [
+                'date' => isset($record->expense_date) ? (string) $record->expense_date : null,
+                'user_id' => isset($record->user_id) && $record->user_id ? (int) $record->user_id : null,
+                'amount' => isset($record->amount) ? (int) $record->amount : null,
+                'expense_category_id' => isset($record->expense_category_id) && $record->expense_category_id
+                    ? (int) $record->expense_category_id
+                    : null,
+            ];
+        }
+
+        return [];
     }
 
     protected function candidatesFor($name, $record, $companyId)
