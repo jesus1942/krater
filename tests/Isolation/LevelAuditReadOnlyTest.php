@@ -52,6 +52,11 @@ class LevelAuditReadOnlyTest extends TestCase
         $this->assertSame(1, $invoice['missing_level']);
         $this->assertSame(1, $invoice['foreign_company_level']);
 
+        $estimateSuggestion = $report['companies'][0]['economic_suggestions']['Estimate'][0];
+        $this->assertSame('PRE-0001', $estimateSuggestion['reference']['number']);
+        $this->assertSame('2026-08-16', $estimateSuggestion['reference']['date']);
+        $this->assertSame(123400, $estimateSuggestion['reference']['total']);
+
         $suggestions = collect($report['companies'][0]['economic_suggestions']['Invoice'])->keyBy('id');
 
         $this->assertSame('unico', $suggestions[1]['status']);
@@ -124,6 +129,9 @@ class LevelAuditReadOnlyTest extends TestCase
             $table->unsignedInteger('company_id');
             $table->unsignedInteger('school_level_id')->nullable();
             $table->unsignedInteger('user_id')->nullable();
+            $table->string('estimate_number')->nullable();
+            $table->date('estimate_date')->nullable();
+            $table->unsignedBigInteger('total')->nullable();
         });
 
         Schema::create('invoices', function (Blueprint $table) {
@@ -170,6 +178,10 @@ class LevelAuditReadOnlyTest extends TestCase
 
         DB::table('enrollments')->insert([
             ['id' => 20, 'company_id' => 1, 'school_level_id' => 1, 'student_id' => 10],
+        ]);
+
+        DB::table('estimates')->insert([
+            ['id' => 30, 'company_id' => 1, 'school_level_id' => null, 'user_id' => 50, 'estimate_number' => 'PRE-0001', 'estimate_date' => '2026-08-16', 'total' => 123400],
         ]);
 
         DB::table('invoices')->insert([
