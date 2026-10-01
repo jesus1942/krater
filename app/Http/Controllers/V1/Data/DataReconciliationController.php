@@ -4,6 +4,7 @@ namespace Crater\Http\Controllers\V1\Data;
 
 use Crater\Http\Controllers\Controller;
 use Crater\Services\Data\LevelReconciliationService;
+use Illuminate\Http\Exceptions\HttpResponseException;
 use Illuminate\Http\Request;
 use InvalidArgumentException;
 
@@ -92,7 +93,7 @@ class DataReconciliationController extends Controller
     protected function ensureWholeInstitution(Request $request): void
     {
         if ($request->header('school-level') !== null && $request->header('school-level') !== '') {
-            abort(response()->json([
+            throw new HttpResponseException(response()->json([
                 'message' => 'La reconciliacion solo esta disponible en Toda la institucion.',
             ], 409));
         }
