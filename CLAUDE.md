@@ -191,7 +191,7 @@ Railway construye el backend con el `Dockerfile`. El flujo operativo es:
 
 No reemplazar este arranque por `php artisan serve` en produccion.
 
-### Staging — fila P (01/10/2026, pendiente de cierre)
+### Staging — fila P operativa (01/10/2026)
 
 El proyecto tiene un entorno real `staging`, separado de `production`:
 
@@ -210,17 +210,17 @@ El proyecto tiene un entorno real `staging`, separado de `production`:
 - `APP_ENV=staging`, `APP_DEBUG=false`, `APP_URL` con la URL anterior, `MAIL_DRIVER=log`. No usar SMTP real para pruebas.
 - El arranque web conserva el `CMD` del Dockerfile; nunca usar `start.sh` como predeploy porque queda en foreground.
 
-**Bloqueo comprobado:** Railway rechaza `railwayConfigFile` para servicios nuevos con `INVALID_ARGUMENT`: Config as Code esta deprecado. Su documentacion indica que los servicios nuevos no pueden adoptar `railway.toml`; los servicios legacy lo conservan hasta el 01/12/2026. Fuente: https://docs.railway.com/infrastructure-as-code#migrating-from-config-as-code.
+**Cambio de plataforma comprobado y resuelto con excepcion autorizada:** Railway rechaza `railwayConfigFile` para servicios nuevos con `INVALID_ARGUMENT`: Config as Code esta deprecado. Su documentacion indica que los servicios nuevos no pueden adoptar `railway.toml`; los servicios legacy lo conservan hasta el 01/12/2026. Fuente: https://docs.railway.com/infrastructure-as-code#migrating-from-config-as-code.
 
-El primer deploy dio `SUCCESS` y `/ping` dio 200, pero `/login` dio 500 por ausencia de `company_settings`: no se ejecutaron las migraciones. El healthcheck basico no certifica el esquema. No declarar la fila P operativa hasta ejecutar migraciones, siembra RBAC y `crater:mark-installed`, verificar `/login` y repetir un deploy que demuestre el predeploy.
+El primer deploy dio `SUCCESS` y `/ping` dio 200, pero `/login` dio 500 por ausencia de `company_settings`. Se corrigio el predeploy y el orden de los catalogos en las migraciones antiguas sin renombrarlas. El deploy `69666d8f-3f39-49cd-a37f-97637d4b3476` migro el esquema; el siguiente `6f87d8d9-f27b-4097-bd76-7e83c67d2f5b` confirmo `Nothing to migrate`, 75 permisos RBAC y `Aplicacion marcada como instalada`. El navegador abre `/login` con el formulario de ingreso. El healthcheck basico no certifica el esquema: verificar tambien el predeploy y la ruta de ingreso.
 
-La integracion Railway agrego un override pese a la instruccion de no hacerlo; se retiro inmediatamente y la configuracion actual tiene `preDeployCommand=[]`. No reinstalarlo sin resolver la excepcion al prompt. La alternativa inmediata para revision es configurar **solo en staging** el comando terminante equivalente al del repositorio:
+El usuario autorizo expresamente la excepcion al prompt el 01/10/2026: configurar **solo en staging** el predeploy terminante equivalente al del repositorio. Al aplicar cambios, verificar el comando efectivo y generar un deploy nuevo con la configuracion actual; no dar por hecho que un redeploy de una revision anterior incorpora el predeploy. Usar el nombre corto del seeder evita que el shell consuma las barras del namespace; Laravel lo resuelve a `Database\Seeders\RbacSeeder`:
 
 ```sh
-php artisan migrate --force && php artisan db:seed --class='Database\Seeders\RbacSeeder' --force && php artisan crater:mark-installed
+/bin/sh -c 'php artisan migrate --force && php artisan db:seed --class=RbacSeeder --force && php artisan crater:mark-installed'
 ```
 
-La alternativa de plataforma es migrar a Infrastructure as Code, con plan revisado que conserve todos los recursos y no afecte produccion. No aplicar un plan que proponga borrar servicios o volumenes.
+Pendiente de plataforma: migrar a Infrastructure as Code antes del corte legacy, con plan revisado que conserve todos los recursos y no afecte produccion. No aplicar un plan que proponga borrar servicios o volumenes.
 
 **Validaciones temporales:** nunca subirlas a esta rama mientras produccion tambien la despliegue automaticamente. Usar un despliegue local dirigido exclusivamente a staging o una rama temporal conectada solo a staging; luego volver a la rama compartida. No crear usuarios de prueba para personal en produccion hasta cerrar R1.
 

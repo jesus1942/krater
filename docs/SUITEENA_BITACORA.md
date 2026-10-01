@@ -51,3 +51,18 @@
 - Producción conserva sus servicios originales y despliegues `SUCCESS`; comprobación HTTP real: `/ping` y `/login` 200. No se modificaron datos de la escuela ni `PRE-000001`.
 - R1 y las filas posteriores siguen pendientes. No se crearon usuarios de prueba para personal. No hubo cambios Vue ni regeneración necesaria de `build/frontend`.
 - La rama compartida también despliega producción: las validaciones temporales deben usar un despliegue exclusivamente dirigido a staging o una rama temporal exclusiva, no commits en la rama compartida.
+
+## 2026-10-01 — Fila P operativa: predeploy y esquema nuevo verificados
+
+- El usuario autorizó expresamente configurar el predeploy del servicio sólo en staging, como excepción a la receta inicial por la deprecación de `railway.toml` para servicios nuevos.
+- Comando efectivo: `/bin/sh -c 'php artisan migrate --force && php artisan db:seed --class=RbacSeeder --force && php artisan crater:mark-installed'`. El shell explícito ejecuta toda la secuencia y detiene el deploy ante un error. No ejecuta servidores ni `start.sh`.
+- La ejecución real detectó una migración legacy fuera de orden: `2014_10_12_000010_seed_base_data` consultaba `payment_methods`, que se crea en 2019. La carga temprana de países tenía el mismo problema.
+- Corrección permanente `15a8e4ae80c5f5762e215ef83631f1eaa4a44a4a`: guardar nombres históricos de las migraciones, omitir tablas aún inexistentes, no insertar métodos/unidades para una empresa #1 inexistente y cargar países después de crear su tabla. No se agregaron migraciones que vuelvan a sembrar catálogos existentes en producción.
+- Pruebas: `FreshInstallationCatalogTest`, PHPUnit 9.6.37 sobre PHP 8.3 local, 3 tests y 12 assertions. Cubren la carga inicial, repetición sin sobrescribir valores personalizados y ausencia de referencias a una empresa inexistente. Sintaxis PHP y `git diff --check` correctos. Railway mantiene PHP 8.2 y MySQL para la prueba real.
+- Deploy staging `69666d8f-3f39-49cd-a37f-97637d4b3476`: esquema completo migrado y `SUCCESS`.
+- Deploy posterior `6f87d8d9-f27b-4097-bd76-7e83c67d2f5b`: predeploy observado en logs: `Nothing to migrate`, `Permisos sembrados: 75`, `Database seeding completed successfully`, `Aplicacion marcada como instalada`.
+- Navegador real: `/login` muestra campos Email, Password y botón Login, sin redirección a `/on-boarding`. Antes de completar el predeploy se comprobó que un 200 podía corresponder al instalador; se verificó la URL final para evitar ese falso positivo.
+- El ensayo negativo de autenticación con email ficticio recibió 422 por credenciales incorrectas, sin token. No se crearon usuarios de prueba para personal ni se copiaron datos de la escuela.
+- Producción conserva MySQL y volumen originales; deploy web de la corrección permanente `SUCCESS`. La excepción de configuración de predeploy se aplicó sólo a staging.
+- Documentación actualizada en `CLAUDE.md`, `README.md` y plan maestro. No se tocó Vue; no corresponde regenerar `build/frontend`.
+- Fila P cerrada para revisión de Claude. R1 y las filas posteriores siguen pendientes. El comando `ena:smoke`, backups y prueba de restauración corresponden a la fila 6 y no se declaran implementados.

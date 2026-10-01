@@ -351,8 +351,9 @@ No es prioridad por encima de integridad y producto, pero debe planificarse.
 - [ ] Modernizar build frontend.
 - [ ] Evaluar separación de servicios realtime TypeScript/Node.
 - [ ] CI reproducible sin workflows temporales.
-- [x] Entorno staging separado de producción, con MySQL y volumen propios (01/10/2026). Fila P pendiente de cierre por predeploy; ver bitácora y `CLAUDE.md`.
-- [ ] Migraciones y smoke tests automatizados en staging.
+- [x] Entorno staging separado de producción, con MySQL y volumen propios (01/10/2026). Fila P operativa con excepción autorizada para predeploy; ver bitácora y `CLAUDE.md`.
+- [x] Migraciones, siembra RBAC y marca de instalación verificadas en el predeploy de staging.
+- [ ] Smoke `ena:smoke` automatizado en staging (fila 6); la fila P tiene smoke manual real.
 
 ---
 

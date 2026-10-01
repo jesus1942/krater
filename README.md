@@ -77,7 +77,7 @@ No usar `php artisan serve` como servidor de produccion.
 
 ### Staging
 
-Railway tiene un entorno `staging` con MySQL y volumen propios, red privada y correo en `MAIL_DRIVER=log`. La web esta en https://krater-staging-staging.up.railway.app. La fila P sigue pendiente: el primer deploy no ejecuto las migraciones porque los servicios nuevos ya no heredan `railway.toml`. Ver diagnostico, configuracion y propuesta de cierre en `CLAUDE.md`.
+Railway tiene un entorno `staging` con MySQL y volumen propios, red privada y correo en `MAIL_DRIVER=log`. La web esta en https://krater-staging-staging.up.railway.app. La fila P esta operativa: esquema migrado, siembra RBAC y marca de instalacion verificadas; el navegador abre `/login`. Los servicios nuevos ya no heredan `railway.toml`, por lo que staging usa el predeploy explicito autorizado y documentado en `CLAUDE.md`.
 
 No subir commits temporales de validacion a una rama que tambien despliegue produccion. El cierre de seguridad R1 sigue siendo requisito antes de crear usuarios de prueba para personal.
 
