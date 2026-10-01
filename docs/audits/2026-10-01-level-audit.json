@@ -1,0 +1,34 @@
+{
+  "generated_at": "2026-10-01T02:57:10+00:00",
+  "read_only": true,
+  "company": {"id": 1, "name": "Escuela Nueva Austral"},
+  "models": {
+    "StudyPlan": {"total": 0, "valid_level": 0, "null_level": 0, "missing_level": 0, "foreign_company_level": 0},
+    "CourseSection": {"total": 0, "valid_level": 0, "null_level": 0, "missing_level": 0, "foreign_company_level": 0},
+    "GradeLevel": {"total": 12, "valid_level": 12, "null_level": 0, "missing_level": 0, "foreign_company_level": 0},
+    "Estimate": {"total": 1, "valid_level": 0, "null_level": 1, "missing_level": 0, "foreign_company_level": 0},
+    "AcademicYear": {"total": 3, "valid_level": 3, "null_level": 0, "missing_level": 0, "foreign_company_level": 0},
+    "Student": {"total": 1, "valid_level": 1, "null_level": 0, "missing_level": 0, "foreign_company_level": 0},
+    "Division": {"total": 12, "valid_level": 12, "null_level": 0, "missing_level": 0, "foreign_company_level": 0},
+    "Item": {"total": 1, "valid_level": 1, "null_level": 0, "missing_level": 0, "foreign_company_level": 0},
+    "Enrollment": {"total": 1, "valid_level": 1, "null_level": 0, "missing_level": 0, "foreign_company_level": 0},
+    "Payment": {"total": 0, "valid_level": 0, "null_level": 0, "missing_level": 0, "foreign_company_level": 0},
+    "Invoice": {"total": 0, "valid_level": 0, "null_level": 0, "missing_level": 0, "foreign_company_level": 0},
+    "Expense": {"total": 0, "valid_level": 0, "null_level": 0, "missing_level": 0, "foreign_company_level": 0},
+    "Subject": {"total": 1, "valid_level": 1, "null_level": 0, "missing_level": 0, "foreign_company_level": 0}
+  },
+  "finding": {
+    "type": "Estimate",
+    "id": 1,
+    "number": "PRE-000001",
+    "date": "2026-08-16",
+    "total": 170608185,
+    "school_level_id": null,
+    "status": "sin_evidencia",
+    "suggested_school_level_id": null
+  },
+  "origin_links": {
+    "payment_to_invoice": true,
+    "invoice_to_estimate": false
+  }
+}
