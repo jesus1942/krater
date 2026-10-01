@@ -355,6 +355,17 @@ class LegacyRoutesSecurityTest extends TestCase
         $this->assertSame(200, $invoice->getGeneratedPDFOrStream('invoice')->getStatusCode());
     }
 
+    public function test_private_pdf_paths_are_unique_even_with_the_same_document_filename(): void
+    {
+        $generator = new \Crater\Generators\CustomPathGenerator();
+        $first = (new \Spatie\MediaLibrary\MediaCollections\Models\Media())->forceFill([
+            'id' => 10, 'disk' => 'finance_private', 'model_type' => Invoice::class, 'file_name' => 'FAC-000001.pdf']);
+        $second = (clone $first)->forceFill(['id' => 11]);
+        $this->assertSame('Invoices/10/', $generator->getPath($first));
+        $this->assertSame('Invoices/11/', $generator->getPath($second));
+        $this->assertSame('Invoices/', $generator->getPath((clone $first)->forceFill(['disk' => 'public'])));
+    }
+
     public function test_pdf_rendering_returns_pdf_bytes_without_wrapping_another_http_response(): void
     {
         DB::table('company_settings')->insert(['company_id' => 1, 'option' => 'language', 'value' => 'es']);
