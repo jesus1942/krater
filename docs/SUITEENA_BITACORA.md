@@ -75,3 +75,11 @@
 - Nuevo `ena:preparar-staging`: doble corte entorno/base, clave solo por variable de staging, institucion ficticia, dos niveles y asignacion explicita total_admin. Transaccion, sin sobreescribir credenciales o revocaciones al repetir. No copia datos de la escuela.
 - Tests locales: `PrepareStagingTest`, 5 tests / 20 assertions, positivos y negativos; produccion y base incorrecta rechazadas antes de cualquier query. PHPUnit 9.6.37 / PHP 8.3 local. Railway conserva PHP 8.2 / MySQL.
 - Siembra real, login y verificacion de que el push no despliega produccion: pendientes de completar antes de declarar P2 operativa. R1 aun no se implemento; no se crean cuentas de personal de prueba en produccion.
+
+### Fila P2 operativa — smoke real
+
+- Commit de la cuenta y circuito: `87723790fd9867db11dda6b33d6f225e08d3126a`. Deployment staging `9f352b8e-fa10-4583-a8e7-8ed82dfdbbf8`: `SUCCESS`, SHA exacto comprobado.
+- Predeploy real: `Nothing to migrate`, 75 permisos, marca de instalacion, 13 roles para la institucion ficticia y `Institucion ficticia y total_admin preparados en staging`. La clave no aparece en logs.
+- Ingreso real con la cuenta ficticia: `POST /api/v1/auth/login` 200 con token; solicitudes autenticadas `GET /api/v1/bootstrap` y `GET /api/v1/school-levels`: 200. `/login` abre con URL final `/login`, 200.
+- Despues del push, el deployment productivo sigue siendo `0f8b1b2b-5b9b-4d0d-97aa-2c0c2db20059`, branch `produccion`, SHA `cc4c3dc4b4c867b64fd9beaf5f098b0fd8c9812a`, `SUCCESS`; `/ping` real 200 `ok`. No hubo auto-deploy del commit de staging en produccion.
+- P2 cerrada. No hubo cambios Vue ni bundle que regenerar. La cuenta es exclusivamente de staging; el bloqueo de R1 sigue vigente para personal de prueba en produccion.
