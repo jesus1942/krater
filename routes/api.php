@@ -6,6 +6,7 @@ use Crater\Http\Controllers\V1\Auth\ResetPasswordController;
 use Crater\Http\Controllers\V1\Backup\BackupsController;
 use Crater\Http\Controllers\V1\Backup\DownloadBackupController;
 use Crater\Http\Controllers\V1\Customer\CustomersController;
+use Crater\Http\Controllers\V1\Data\DataReconciliationController;
 use Crater\Http\Controllers\V1\Customer\CustomerStatsController;
 use Crater\Http\Controllers\V1\Billing\SchoolBillingOptionsController;
 use Crater\Http\Controllers\V1\CustomField\CustomFieldsController;
@@ -259,6 +260,13 @@ Route::prefix('/v1')->group(function () {
 
         Route::get('/audit-logs', [AuditLogsController::class, 'index'])
             ->middleware('permission:system.audit.view');
+
+        Route::get('/data-reconciliation', [DataReconciliationController::class, 'index'])
+            ->middleware('permission:data.reconcile');
+        Route::post('/data-reconciliation/preview', [DataReconciliationController::class, 'preview'])
+            ->middleware('permission:data.reconcile');
+        Route::post('/data-reconciliation/apply', [DataReconciliationController::class, 'apply'])
+            ->middleware('permission:data.reconcile');
 
     });
 
