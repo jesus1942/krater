@@ -2,10 +2,12 @@
 
 namespace Crater\Models;
 
+use Crater\Traits\Auditable;
 use Illuminate\Database\Eloquent\Model;
 
 class PayrollPayment extends Model
 {
+    use Auditable;
     protected $guarded = ['id'];
 
     protected $casts = [
