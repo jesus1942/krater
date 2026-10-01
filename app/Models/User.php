@@ -87,7 +87,7 @@ class User extends Authenticatable implements HasMedia
 
     public function isSuperAdminOrAdmin()
     {
-        return ($this->role == 'super admin') || ($this->role == 'admin');
+        return app(\Crater\Services\Access\AccessManager::class)->hasActiveRole($this);
     }
 
     public static function login($request)

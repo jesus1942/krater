@@ -57,9 +57,14 @@ class HardenUserAccess extends Migration
             ->where(fn ($q) => $q->whereNull('role_user.starts_on')->orWhere('role_user.starts_on', '<=', $today))
             ->where(fn ($q) => $q->whereNull('role_user.ends_on')->orWhere('role_user.ends_on', '>=', $today))
             ->distinct()->count('users.id');
-        Log::info('R1: migracion de acceso verificada', ['users_before' => $userCount,
-            'users_after' => DB::table('users')->count(), 'legacy_super_admins' => $legacyAdmins,
-            'active_total_admins' => $totalAdmins]);
+        $counts = ['users_before' => $userCount, 'users_after' => DB::table('users')->count(),
+            'legacy_super_admins' => $legacyAdmins, 'active_total_admins' => $totalAdmins];
+        Log::info('R1: migracion de acceso verificada', $counts);
+        // El canal habitual es daily (archivo local). Registrar tambien en los
+        // logs del predeploy, sin identidades, para verificar la migracion real.
+        if (app()->runningInConsole() && defined('STDOUT')) {
+            fwrite(STDOUT, 'R1 acceso verificado: '.json_encode($counts).PHP_EOL);
+        }
         if (app()->environment('production') && $legacyAdmins > 0 && $totalAdmins === 0) {
             throw new \RuntimeException('R1: falta un total_admin vigente; se bloquea el deploy para conservar el acceso anterior.');
         }
