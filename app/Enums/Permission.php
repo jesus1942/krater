@@ -126,6 +126,10 @@ final class Permission
     const FINANCE_EXPENSE_MANAGE = 'finance.expense.manage';
     const FINANCE_REPORT_VIEW = 'finance.report.view';
 
+    // ---------------------------------------------------------------- integridad de datos
+
+    const DATA_RECONCILE = 'data.reconcile';
+
     // ---------------------------------------------------------------- sistema
 
     const USER_VIEW = 'system.user.view';
@@ -171,6 +175,7 @@ final class Permission
             self::SETTINGS_MANAGE,
             self::BACKUP_MANAGE,
             self::SCHOOL_LEVEL_MANAGE,
+            self::DATA_RECONCILE,
             self::PROMOTION_REVERT,
         ];
     }
@@ -294,6 +299,8 @@ final class Permission
             self::FINANCE_PAYMENT_MANAGE => ['group' => 'finance', 'label' => 'Administrar cobros'],
             self::FINANCE_EXPENSE_MANAGE => ['group' => 'finance', 'label' => 'Administrar gastos'],
             self::FINANCE_REPORT_VIEW => ['group' => 'finance', 'label' => 'Ver reportes economicos'],
+
+            self::DATA_RECONCILE => ['group' => 'data', 'label' => 'Reconciliar registros sin nivel'],
 
             self::USER_VIEW => ['group' => 'system', 'label' => 'Ver usuarios'],
             self::USER_MANAGE => ['group' => 'system', 'label' => 'Administrar usuarios'],
