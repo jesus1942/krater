@@ -63,14 +63,17 @@ SESSION_DRIVER=database
 QUEUE_CONNECTION=database
 ```
 
-### Primer deploy
+### Deploy
 
-Despues de configurar las variables, Railway corre automaticamente:
+Railway construye el backend con Docker. Antes de levantar la nueva revision ejecuta las migraciones y la siembra RBAC definida en `railway.toml`. El contenedor arranca mediante `start.sh`, que inicia PHP-FPM y Nginx sobre el puerto asignado por Railway.
 
-```bash
-php artisan migrate --force
-php artisan db:seed --class=UsersTableSeeder
+El healthcheck operativo es:
+
+```text
+/ping -> 200 ok
 ```
+
+No usar `php artisan serve` como servidor de produccion.
 
 ---
 
@@ -106,10 +109,10 @@ npm run dev
 
 | Capa | Tecnologia |
 |------|------------|
-| Backend | Laravel 8, PHP 7.4, MySQL |
+| Backend | Laravel 8.83, PHP 8.2, MySQL |
 | Frontend web | Vue 2, Vuex, TailwindCSS |
 | App movil | Ionic Vue 8, Capacitor 6, Vue 3, Pinia |
-| Deploy backend | Railway (Docker + Nixpacks) |
+| Deploy backend | Railway (Docker, Nginx + PHP-FPM) |
 | Deploy PWA | GitHub Pages |
 
 ---

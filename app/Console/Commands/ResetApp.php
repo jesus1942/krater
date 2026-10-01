@@ -37,12 +37,18 @@ class ResetApp extends Command
     /**
      * Execute the console command.
      *
-     * @return mixed
+     * @return int
      */
     public function handle()
     {
+        if (app()->environment('production')) {
+            $this->error('reset:app esta bloqueado en produccion.');
+
+            return self::FAILURE;
+        }
+
         if (! $this->confirmToProceed()) {
-            return;
+            return self::SUCCESS;
         }
 
         $this->info('Running migrate:fresh');
@@ -64,5 +70,7 @@ class ResetApp extends Command
         }
 
         $this->info('App has been reset successfully');
+
+        return self::SUCCESS;
     }
 }

@@ -30,6 +30,7 @@ Solo **Operativo** equivale a DONE.
 
 ## Tareas
 
+- [x] Bloqueo duro de `reset:app` en produccion incluso con `--force`.
 - [ ] Auditoría de datos potencialmente ocultos por `school_level_id` nulo o incorrecto en estimates, invoices, payments, expenses, items y students.
 - [ ] Herramienta de reconciliación para registros globales/huérfanos por nivel.
 - [ ] Backups automáticos y política de retención.
@@ -305,6 +306,11 @@ La base de datos existe parcialmente; falta convertirla en producto.
 
 # BLOQUE 11 — Testing y release engineering
 
+## Estado de plataforma
+
+- [x] Railway usa `Dockerfile` + `start.sh` con Nginx y PHP-FPM; `railway.toml` no pisa el `CMD` con `php artisan serve`.
+- [x] Healthcheck `/ping` definido para validar el proceso web real.
+
 ## Pipeline obligatorio de una feature
 
 **Especificación → threat model → schema → backend → autorización → frontend → tests → build → diff review → PR → migration → deploy → smoke test**
@@ -331,7 +337,7 @@ La base de datos existe parcialmente; falta convertirla en producto.
 ## Deuda conocida
 
 - La suite Feature heredada no levanta limpiamente en SQLite por migraciones antiguas.
-- PHP 7.4 / Laravel 8 / tooling frontend son legacy y deben modernizarse de forma planificada, no mezclado con features críticas.
+- Laravel 8 y el tooling frontend siguen legacy y deben modernizarse de forma planificada. El runtime web ya fue llevado a PHP 8.2 Bookworm.
 
 ---
 

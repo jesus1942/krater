@@ -181,12 +181,15 @@ El router usa `createWebHashHistory` (URLs con `#`) para compatibilidad con Page
 
 ### Backend — Railway
 
-Archivos relevantes: `railway.toml`, `nixpacks.toml`.
+Archivos relevantes: `Dockerfile`, `start.sh`, `nginx.conf` y `railway.toml`.
 
-Railway detecta PHP automaticamente con Nixpacks. El comando de start:
-1. Corre `php artisan migrate --force`
-2. Cachea config, rutas y vistas
-3. Levanta el servidor en `$PORT`
+Railway construye el backend con el `Dockerfile`. El flujo operativo es:
+1. `preDeployCommand` corre migraciones, siembra RBAC y marca Crater como instalado.
+2. No se define `startCommand` en `railway.toml`: el `CMD` del Dockerfile ejecuta `start.sh`.
+3. `start.sh` expande `$PORT`, inicia PHP-FPM y deja Nginx en foreground.
+4. Railway valida `/ping` antes de considerar sano el deploy.
+
+No reemplazar este arranque por `php artisan serve` en produccion.
 
 **Variables de entorno que configurar en Railway:**
 ```
