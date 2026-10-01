@@ -2,12 +2,14 @@
 
 namespace Crater\Models;
 
+use Crater\Traits\Auditable;
 use Crater\Traits\BelongsToSchoolLevel;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class Student extends Model
 {
+    use Auditable;
     use HasFactory;
     use BelongsToSchoolLevel;
 
