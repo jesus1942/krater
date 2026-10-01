@@ -13,3 +13,13 @@
 - Acción sobre datos: ninguna.
 - Evidencia: `docs/audits/2026-10-01-level-audit.json`.
 - Limitación detectada: `payments` conserva `invoice_id`, pero `invoices` no conserva `estimate_id`, por lo que la cadena histórica Estimate → Invoice no siempre puede reconstruirse.
+
+## 2026-10-01 — Auditoría económica, alumnos y RR.HH.
+
+- Deploy operativo: `126691df0d9b47d65b24d10ef1b2fc24a2bf4c82` — Railway `SUCCESS`.
+- Se agregó `Auditable` a Invoice, Estimate, Payment, Expense, Student, StaffMember, PayrollSlip y PayrollPayment.
+- El auditor conserva qué campo cambió, pero redacta valores sensibles como DNI, fecha de nacimiento, documento laboral, nombre, apellido, email y teléfono.
+- La reubicación de alumnos ahora exige un motivo en UI y API.
+- Cada reubicación registra el evento semántico `student_relocated` con IDs de origen/destino, motivo, actor y severidad alta.
+- Se recompiló Vue y se regeneró `build/frontend` antes de producción.
+- El gate específico pasó con PHPUnit puro. El stack Pest heredado mantiene una incompatibilidad conocida de firma en `jasonmccreary/laravel-test-assertions`; no se ocultó ni se modificó esa deuda dentro de esta feature.
