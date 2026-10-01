@@ -325,6 +325,18 @@ class LegacyRoutesSecurityTest extends TestCase
         $this->get('/expenses/1/receipt')->assertStatus(403);
     }
 
+    public function test_financial_payload_cannot_move_data_to_another_tenant_or_reference_its_students(): void
+    {
+        $this->loginAs($this->finance);
+        foreach (['invoices', 'estimates', 'payments', 'expenses', 'items'] as $resource) {
+            $this->postJson('/api/v1/'.$resource, ['company_id' => 2])->assertStatus(403);
+            $this->postJson('/api/v1/'.$resource, ['school_level_id' => 2])->assertStatus(403);
+            $this->postJson('/api/v1/'.$resource, ['school_level_id' => null])->assertStatus(403);
+        }
+        $this->postJson('/api/v1/invoices', ['student_id' => 2])->assertStatus(403);
+        $this->postJson('/api/v1/payments', ['enrollment_id' => 2])->assertStatus(403);
+    }
+
     public function test_saved_pdf_uses_private_storage_even_when_the_default_disk_is_public(): void
     {
         DB::table('company_settings')->insert([

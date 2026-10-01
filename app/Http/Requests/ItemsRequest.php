@@ -6,15 +6,7 @@ use Illuminate\Foundation\Http\FormRequest;
 
 class ItemsRequest extends FormRequest
 {
-    /**
-     * Determine if the user is authorized to make this request.
-     *
-     * @return bool
-     */
-    public function authorize()
-    {
-        return true;
-    }
+    use \Crater\Http\Requests\Concerns\ValidatesFinanceTenant;
 
     /**
      * Get the validation rules that apply to the request.
