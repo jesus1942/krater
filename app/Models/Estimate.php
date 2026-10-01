@@ -2,6 +2,7 @@
 
 namespace Crater\Models;
 
+use Crater\Traits\Auditable;
 use App;
 use Barryvdh\DomPDF\Facade as PDF;
 use Carbon\Carbon;
@@ -18,6 +19,7 @@ use Vinkla\Hashids\Facades\Hashids;
 
 class Estimate extends Model implements HasMedia
 {
+    use Auditable;
     use HasFactory;
     use InteractsWithMedia;
     use GeneratesPdfTrait;
