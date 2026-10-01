@@ -2,7 +2,7 @@
 builder = "dockerfile"
 
 [deploy]
-preDeployCommand = "php artisan migrate --force && php artisan db:seed --class=Database\\\\Seeders\\\\RbacSeeder --force && php artisan crater:mark-installed"
+preDeployCommand = "php artisan migrate --force && php artisan db:seed --class=Database\\\\Seeders\\\\RbacSeeder --force && php artisan crater:mark-installed && echo ENA_LEVEL_AUDIT_BEGIN && php artisan ena:auditar-niveles --json && echo ENA_LEVEL_AUDIT_END"
 healthcheckPath = "/ping"
 healthcheckTimeout = 60
 restartPolicyType = "on_failure"
