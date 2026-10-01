@@ -134,6 +134,21 @@ Comando `php artisan ena:reubicar-nivel {modelo} {ids*} --nivel= {--aplicar}`.
 - `StudentRelocationController::relocate` escribe un evento explicito
   `student_relocated` con origen, destino, motivo y actor.
 
+#### Implementacion operativa — 01/10/2026
+
+**OPERATIVA.** Desplegada en Railway con SHA
+`126691df0d9b47d65b24d10ef1b2fc24a2bf4c82` y estado `SUCCESS`.
+
+- Los ocho modelos definidos por esta etapa usan `Auditable`.
+- La bitacora redacta valores sensibles: DNI, fecha de nacimiento, documento
+  laboral, nombre, apellido, email y telefono quedan como `[omitido]`.
+- El modal de reubicacion exige motivo y la API valida `reason` como obligatorio.
+- La reubicacion escribe `student_relocated` con IDs canonicos de origen y
+  destino, motivo y actor en `audit_logs.user_id`, con severidad alta.
+- El frontend Vue fue recompilado y `build/frontend` regenerado antes del deploy.
+- Gate validado con PHPUnit puro por incompatibilidad conocida del stack Pest
+  heredado con `jasonmccreary/laravel-test-assertions`.
+
 ### 1.1.5 Backups reales
 
 - Backup diario de MySQL con `mysqldump` a un bucket S3 compatible (Railway
@@ -219,7 +234,7 @@ positivos y negativos, `build/frontend` regenerado si toca Vue, deploy y smoke.
 
 1. 0.1 + 0.2 (plataforma y `reset:app`).
 2. [x] 1.1.1 diagnostico, ejecutado en produccion el 01/10/2026.
-3. 1.1.4 auditoria (para que lo que sigue ya quede registrado).
+3. [x] 1.1.4 auditoria, operativa en produccion el 01/10/2026.
 4. 1.1.2 reconciliacion.
 5. 1.1.3 baja logica.
 6. 1.1.5 backups y 1.1.6 smoke.
