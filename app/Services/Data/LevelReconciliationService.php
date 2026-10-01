@@ -18,7 +18,6 @@ use Crater\Models\Student;
 use Crater\Models\StudyPlan;
 use Crater\Models\Subject;
 use Crater\Models\User;
-use Crater\Services\Audit\Auditor;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
@@ -40,13 +39,6 @@ class LevelReconciliationService
         'Expense' => ['class' => Expense::class, 'label' => 'Gastos'],
         'Subject' => ['class' => Subject::class, 'label' => 'Materias'],
     ];
-
-    protected $auditor;
-
-    public function __construct(Auditor $auditor)
-    {
-        $this->auditor = $auditor;
-    }
 
     public function listOrphans(int $companyId): array
     {
@@ -160,23 +152,26 @@ class LevelReconciliationService
                     ->where('company_id', $companyId)
                     ->update(['school_level_id' => $target->id]);
 
-                $this->auditor->record(
-                    'level_reassigned',
-                    $actor,
-                    [
-                        'type' => $modelClass,
-                        'id' => $record->id,
-                        'company_id' => $companyId,
-                        'school_level_id' => $target->id,
-                    ],
-                    ['school_level_id' => $oldLevelId],
-                    [
+                $request = app()->bound('request') ? request() : null;
+
+                AuditLog::create([
+                    'company_id' => $companyId,
+                    'school_level_id' => $target->id,
+                    'user_id' => optional($actor)->id,
+                    'action' => 'level_reassigned',
+                    'auditable_type' => $modelClass,
+                    'auditable_id' => $record->id,
+                    'old_values' => ['school_level_id' => $oldLevelId],
+                    'new_values' => [
                         'school_level_id' => (int) $target->id,
                         'reason' => $reason,
                         'source' => 'level_reconciliation',
                     ],
-                    AuditLog::SEVERITY_HIGH
-                );
+                    'ip_address' => $request ? $request->ip() : null,
+                    'user_agent' => $request ? substr((string) $request->userAgent(), 0, 255) : null,
+                    'severity' => AuditLog::SEVERITY_HIGH,
+                    'created_at' => now(),
+                ]);
 
                 $results[] = [
                     'model' => $canonicalName,
