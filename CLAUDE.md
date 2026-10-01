@@ -237,7 +237,7 @@ No crear usuarios de prueba para personal en produccion hasta cerrar R1.
 
 ### Cierre del bloque heredado — fila R1
 
-Estado: operativo en staging y produccion, SHA `a40f866`, 01/10/2026. La migracion `2026_10_01_180000_harden_user_access` convierte solo al superusuario legacy en una asignacion explicita `total_admin`, conserva revocaciones y registra conteos sin datos personales. Si produccion tenia un superusuario y no queda un total admin vigente, bloquea el predeploy. `RbacSeeder` deja de conceder roles segun etiquetas legacy.
+Estado: operativo en staging y produccion, SHA final `01951af`, 01/10/2026. La migracion `2026_10_01_180000_harden_user_access` convierte solo al superusuario legacy en una asignacion explicita `total_admin`, conserva revocaciones y registra conteos sin datos personales. Si produccion tenia un superusuario y no queda un total admin vigente, bloquea el predeploy. `RbacSeeder` deja de conceder roles segun etiquetas legacy.
 
 Usuarios exige permisos de lectura/gestion, alcance y jerarquia de `canManageUser`; nadie se edita a si mismo por `/users` (usar `/me`). Las altas son `staff` sin asignaciones; las bajas desactivan y revocan tokens. R2 sigue pendiente: no hay aun UI para asignar roles.
 
@@ -251,7 +251,9 @@ Staging usa `LOG_CHANNEL=stderr` para observar excepciones y `QUEUE_CONNECTION=s
 
 Validacion R1: 35 tests/258 aserciones, 39 verificaciones HTTP con sesiones reales y recheck sobre el SHA final `a40f866`. Deployment staging `e73c5e4e-d30f-43d5-8d6d-944e10a1df97` en SUCCESS; creacion de factura ficticia 200, PDF real 200, sin firma/firma alterada/vencimiento alterado 403 y archivos publicados iguales al build.
 
-Produccion: deployment `f300eb5c-19df-4c35-9aab-d1f97bbccaf2`, SUCCESS, rama `produccion`, mismo SHA probado. Predeploy: usuarios 2 antes/2 despues, 1 superusuario legacy y 1 total admin vigente. Smoke real de 10 endpoints/archivos aprobado; las sesiones con roles limitados se probaron exclusivamente en staging. No se crearon cuentas productivas de prueba. R2 y filas 5 a 8 siguen pendientes.
+Despliegue inicial de R1 en produccion: `f300eb5c-19df-4c35-9aab-d1f97bbccaf2`, SUCCESS, rama `produccion`, mismo SHA probado. Predeploy: usuarios 2 antes/2 despues, 1 superusuario legacy y 1 total admin vigente. Smoke real de 10 endpoints/archivos aprobado; las sesiones con roles limitados se probaron exclusivamente en staging. No se crearon cuentas productivas de prueba. R2 y filas 5 a 8 siguen pendientes.
+
+Revision final del cache: los PDF privados se guardan en directorios independientes por ID de media; los caminos legacy no cambian. Gate final 36 tests/261 aserciones. SHA `01951af` verificado en staging `276a95ca-8f2e-4a66-a713-5750defd0c13` (cache PDF activado, alta y descarga real aprobadas) y produccion `5739491b-adea-4805-ac8e-0f7e639358ff`, ambos SUCCESS. Smoke productivo repetido sobre la version final. Ver cierre detallado en bitacora.
 
 **Variables de entorno que configurar en Railway:**
 ```
