@@ -74,7 +74,7 @@ class LevelReconciliationTest extends TestCase
             'Clasificación histórica confirmada'
         );
 
-        $this->assertSame(2, DB::table('estimates')->where('id', 1)->value('school_level_id'));
+        $this->assertSame(2, (int) DB::table('estimates')->where('id', 1)->value('school_level_id'));
         $this->assertSame(2, $result[0]['to_school_level_id']);
 
         $audit = DB::table('audit_logs')
