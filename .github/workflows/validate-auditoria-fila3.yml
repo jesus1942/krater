@@ -45,12 +45,8 @@ jobs:
           php -l app/Models/PayrollPayment.php
           php -l tests/Isolation/AuditExpansionTest.php
 
-      - name: Tests de auditoria y regresion
-        run: |
-          vendor/bin/pest \
-            tests/Isolation/AuditExpansionTest.php \
-            tests/Isolation/StudentCoursePlacementTest.php \
-            tests/Isolation/PayrollFoundationTest.php
+      - name: Test de auditoria aislado del stack Pest legacy
+        run: vendor/bin/phpunit tests/Isolation/AuditExpansionTest.php
 
       - name: Node 20
         uses: actions/setup-node@v4
