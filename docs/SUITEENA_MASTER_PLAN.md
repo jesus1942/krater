@@ -32,7 +32,7 @@ Solo **Operativo** equivale a DONE.
 
 - [x] Bloqueo duro de `reset:app` en produccion incluso con `--force`.
 - [x] Auditoría de datos potencialmente ocultos por `school_level_id` nulo o incorrecto en estimates, invoices, payments, expenses, items y students. Primera corrida productiva 01/10/2026: `PRE-000001` del 16/08/2026 existe y tiene `school_level_id = NULL`; sin evidencia única para reasignación automática.
-- [ ] Herramienta de reconciliación para registros globales/huérfanos por nivel.
+- [x] Herramienta de reconciliación para registros globales/huérfanos por nivel: dry-run, aplicación transaccional, auditoría atómica y UI total-admin.
 - [ ] Backups automáticos y política de retención.
 - [ ] Prueba periódica de restauración en ambiente aislado.
 - [ ] Soft delete o baja lógica para entidades donde borrar físicamente sea riesgoso.
@@ -154,7 +154,7 @@ Solo **Operativo** equivale a DONE.
 - [x] Numeración por empresa transversal a niveles.
 - [x] Informes seguros y aislados.
 - [ ] Auditoría y reconciliación de registros previos con `school_level_id` nulo.
-- [ ] Vista total-admin “Todos los niveles” para recuperación/reclasificación.
+- [x] Vista total-admin “Todos los niveles” para recuperación/reclasificación mediante Configuración > Registros sin nivel.
 - [ ] URLs firmadas para PDFs de factura/presupuesto/cobro.
 - [ ] Revisar deletes físicos y reemplazar por estados/soft delete donde corresponda.
 - [ ] Integridad referencial y pruebas de no pérdida en conversiones Estimate → Invoice.

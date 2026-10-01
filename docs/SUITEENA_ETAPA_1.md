@@ -110,6 +110,25 @@ Comando `php artisan ena:reubicar-nivel {modelo} {ids*} --nivel= {--aplicar}`.
   servicio (`NivelReconciliador`), no logica duplicada.
 - Permiso nuevo `data.reconcile`, solo total admin, en `alwaysAudited()`.
 
+#### Implementacion operativa — 01/10/2026
+
+**OPERATIVA.** La feature validada fue desplegada en Railway con SHA
+`5bd1fa363b2e97cc96e89af2f87a76234a60466f` y estado `SUCCESS`.
+
+- `ena:reubicar-nivel` hace dry-run por defecto; solo escribe con `--aplicar`.
+- La aplicacion usa transaccion y `lockForUpdate` por registro.
+- No permite pisar registros que ya tengan un nivel valido.
+- Rechaza destinos de otra empresa y contradicciones con vinculos canonicos
+  (alumno, matricula, factura, ciclo, division, materia, etc.).
+- `level_reassigned` se escribe dentro de la misma transaccion: si falla la
+  bitacora, tambien se revierte el cambio de nivel.
+- `data.reconcile` es exclusivo de total-admin y queda en `alwaysAudited()`.
+- La pantalla `Configuracion > Registros sin nivel` solo aparece para total-admin
+  en el contexto `Toda la institucion`, permite seleccionar uno o varios
+  registros del mismo tipo, simular, elegir nivel, indicar motivo y aplicar.
+- Backend, PHP 8.2, rutas, Vue y bundle productivo fueron validados antes del
+  despliegue.
+
 ### 1.1.3 Baja logica en lugar de borrado
 
 - Agregar `SoftDeletes` (migracion `deleted_at`) a Invoice, Estimate, Payment,
@@ -235,7 +254,7 @@ positivos y negativos, `build/frontend` regenerado si toca Vue, deploy y smoke.
 1. 0.1 + 0.2 (plataforma y `reset:app`).
 2. [x] 1.1.1 diagnostico, ejecutado en produccion el 01/10/2026.
 3. [x] 1.1.4 auditoria, operativa en produccion el 01/10/2026.
-4. 1.1.2 reconciliacion.
+4. [x] 1.1.2 reconciliacion, operativa en produccion el 01/10/2026.
 5. 1.1.3 baja logica.
 6. 1.1.5 backups y 1.1.6 smoke.
 7. 1.2 reubicacion.

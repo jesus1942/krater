@@ -23,3 +23,16 @@
 - Cada reubicación registra el evento semántico `student_relocated` con IDs de origen/destino, motivo, actor y severidad alta.
 - Se recompiló Vue y se regeneró `build/frontend` antes de producción.
 - El gate específico pasó con PHPUnit puro. El stack Pest heredado mantiene una incompatibilidad conocida de firma en `jasonmccreary/laravel-test-assertions`; no se ocultó ni se modificó esa deuda dentro de esta feature.
+
+## 2026-10-01 — Reconciliación segura de registros sin nivel
+
+- Feature desplegada: `5bd1fa363b2e97cc96e89af2f87a76234a60466f` — Railway `SUCCESS`.
+- Nuevo permiso `data.reconcile`, restringido por corte duro a total-admin y auditado siempre.
+- Nuevo comando `ena:reubicar-nivel {modelo} {ids*} --nivel= {--aplicar}`.
+- Sin `--aplicar`, el comando solo simula y las pruebas verifican cero queries de escritura.
+- La aplicación real usa transacción, `lockForUpdate`, valida empresa/nivel y rechaza registros ya correctamente clasificados.
+- Los vínculos canónicos impiden reconciliaciones contradictorias; por ejemplo, una factura vinculada a un alumno de Primario no puede enviarse a Secundario.
+- El evento `level_reassigned` se inserta dentro de la misma transacción. Una falla de auditoría revierte también la reasignación.
+- Nueva pantalla `Configuración > Registros sin nivel`, visible únicamente para total-admin en `Toda la institución`.
+- La pantalla permite selección múltiple por tipo, vista previa obligatoria, nivel destino y motivo antes de aplicar.
+- El presupuesto histórico `PRE-000001` aparece en esta herramienta, pero no fue reasignado: sigue requiriendo decisión humana sobre su nivel.
