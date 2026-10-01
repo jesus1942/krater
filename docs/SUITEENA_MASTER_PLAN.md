@@ -353,6 +353,7 @@ No es prioridad por encima de integridad y producto, pero debe planificarse.
 - [ ] CI reproducible sin workflows temporales.
 - [x] Entorno staging separado de producción, con MySQL y volumen propios (01/10/2026). Fila P operativa con excepción autorizada para predeploy; ver bitácora y `CLAUDE.md`.
 - [x] Migraciones, siembra RBAC y marca de instalación verificadas en el predeploy de staging.
+- [ ] Fila P2: ramas separadas (`produccion` para production y rama de trabajo para staging), total admin ficticio e ingreso real verificado. Separacion ya aplicada; falta completar siembra y smoke de la cuenta.
 - [ ] Smoke `ena:smoke` automatizado en staging (fila 6); la fila P tiene smoke manual real.
 
 ---

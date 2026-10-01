@@ -46,6 +46,8 @@ La app esta publicada en GitHub Pages y se puede instalar directamente desde el 
 
 El backend corre en Railway con base de datos MySQL.
 
+Produccion despliega la rama `produccion`; staging despliega `claude/web-app-migration-laf9yy` y usa su propio MySQL. Los cambios se prueban en staging antes de promoverlos por merge a `produccion`. Ver el circuito y la cuenta ficticia de pruebas en `CLAUDE.md`.
+
 ### Variables de entorno necesarias en Railway
 
 ```

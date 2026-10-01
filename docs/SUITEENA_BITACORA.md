@@ -66,3 +66,12 @@
 - Producción conserva MySQL y volumen originales; deploy web de la corrección permanente `SUCCESS`. La excepción de configuración de predeploy se aplicó sólo a staging.
 - Documentación actualizada en `CLAUDE.md`, `README.md` y plan maestro. No se tocó Vue; no corresponde regenerar `build/frontend`.
 - Fila P cerrada para revisión de Claude. R1 y las filas posteriores siguen pendientes. El comando `ena:smoke`, backups y prueba de restauración corresponden a la fila 6 y no se declaran implementados.
+
+## 2026-10-01 — Fila P2: separacion de ramas y cuenta ficticia
+
+- La revision adjunta del usuario aprobo P con condicion P2 antes de R1: separar despliegues para que staging proteja produccion.
+- Se creo `produccion` en el SHA productivo comprobado `cc4c3dc4b4c867b64fd9beaf5f098b0fd8c9812a` y se cambio exclusivamente `source.branch` del servicio web productivo. Deploy `0f8b1b2b-5b9b-4d0d-97aa-2c0c2db20059`: `SUCCESS`, misma revision. MySQL, volumen, variables, dominios y configuracion legacy conservados.
+- Staging conserva `claude/web-app-migration-laf9yy`. Los pushes siguientes de desarrollo ya no deben generar un deploy productivo; se verificara con el commit P2.
+- Nuevo `ena:preparar-staging`: doble corte entorno/base, clave solo por variable de staging, institucion ficticia, dos niveles y asignacion explicita total_admin. Transaccion, sin sobreescribir credenciales o revocaciones al repetir. No copia datos de la escuela.
+- Tests locales: `PrepareStagingTest`, 5 tests / 20 assertions, positivos y negativos; produccion y base incorrecta rechazadas antes de cualquier query. PHPUnit 9.6.37 / PHP 8.3 local. Railway conserva PHP 8.2 / MySQL.
+- Siembra real, login y verificacion de que el push no despliega produccion: pendientes de completar antes de declarar P2 operativa. R1 aun no se implemento; no se crean cuentas de personal de prueba en produccion.

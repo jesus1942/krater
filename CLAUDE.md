@@ -15,7 +15,7 @@ El proyecto tiene dos partes:
 - Mockups a mano cuando se necesiten wireframes
 - Todos los commits deben escribirse en español rioplatense
 - El README.md es el principal — debe estar siempre actualizado y en español
-- Push siempre a la rama `claude/web-app-migration-laf9yy` en el repo `jesus1942/krater`
+- Desarrollo y push a `claude/web-app-migration-laf9yy` en el repo `jesus1942/krater`, que despliega solo staging. Produccion sigue `produccion`; promover por merge solo despues de verificar staging (fila P2).
 - El logo de la app es un placeholder; el definitivo lo pasa Jesus Olguin
 - A Jesus le gusta como funciona el modulo de configuraciones del panel web; usarlo como patron de referencia al construir pantallas de ajustes (ver seccion "Modulo de configuraciones" abajo)
 
@@ -222,7 +222,18 @@ El usuario autorizo expresamente la excepcion al prompt el 01/10/2026: configura
 
 Pendiente de plataforma: migrar a Infrastructure as Code antes del corte legacy, con plan revisado que conserve todos los recursos y no afecte produccion. No aplicar un plan que proponga borrar servicios o volumenes.
 
-**Validaciones temporales:** nunca subirlas a esta rama mientras produccion tambien la despliegue automaticamente. Usar un despliegue local dirigido exclusivamente a staging o una rama temporal conectada solo a staging; luego volver a la rama compartida. No crear usuarios de prueba para personal en produccion hasta cerrar R1.
+### Ramas y promocion — fila P2 (01/10/2026)
+
+- `production` / servicio `krater` sigue **`produccion`**, creada desde `cc4c3dc4b4c867b64fd9beaf5f098b0fd8c9812a`, el SHA productivo comprobado antes del cambio. Deploy de cambio de rama `0f8b1b2b-5b9b-4d0d-97aa-2c0c2db20059`: `SUCCESS`, mismo SHA, sin cambios de datos ni infraestructura MySQL.
+- `staging` / `krater-staging` sigue **`claude/web-app-migration-laf9yy`**. Cada push de desarrollo despliega solo staging.
+- Circuito: desarrollar y probar localmente -> push a rama de trabajo -> verificar SHA exacto, predeploy y smoke real en staging -> revisar diff -> merge a `produccion` -> verificar deploy y smoke de produccion. No mover `produccion` a un SHA no verificado ni volver a conectar produccion a la rama de desarrollo.
+- Los commits de validacion temporal se retiran antes de promover: revisar el diff completo de `produccion...claude/web-app-migration-laf9yy`. No basta con un `/ping` 200 para aprobar una release.
+
+**Cuenta ficticia de staging:** `php artisan ena:preparar-staging` exige simultaneamente `APP_ENV=staging` y base `krater_staging`; no tiene `--force`. Crea una institucion ficticia, niveles Primario/Secundario, preferencias y `total-admin.staging@example.invalid` con asignacion explicita `total_admin`. La clave inicial sale exclusivamente de `STAGING_ADMIN_PASSWORD` (24 caracteres como minimo), variable del servicio web de staging: no se imprime ni se guarda en el repo. Repetir el comando conserva clave y asignaciones, incluidas revocaciones. No usar `db:seed` general ni copiar datos productivos para crear estas pruebas.
+
+En staging agregar `&& php artisan ena:preparar-staging` al predeploy terminante autorizado, despues de las migraciones, `RbacSeeder` y `crater:mark-installed`. **Nunca agregarlo al predeploy productivo.** El doble corte rechaza su ejecucion alli aun si se lo invoca por error. Validacion local: `PrepareStagingTest` prueba produccion, base incorrecta, clave ausente, asignacion explicita, repeticion y colision de email; no requiere datos de la escuela. La siembra y el ingreso reales se registran en la bitacora cuando se verifican.
+
+No crear usuarios de prueba para personal en produccion hasta cerrar R1.
 
 **Variables de entorno que configurar en Railway:**
 ```
