@@ -355,6 +355,15 @@ class LegacyRoutesSecurityTest extends TestCase
         $this->assertSame(200, $invoice->getGeneratedPDFOrStream('invoice')->getStatusCode());
     }
 
+    public function test_pdf_rendering_returns_pdf_bytes_without_wrapping_another_http_response(): void
+    {
+        DB::table('company_settings')->insert(['company_id' => 1, 'option' => 'language', 'value' => 'es']);
+        $invoice = new PdfStorageFixtureInvoice(['company_id' => 1, 'unique_hash' => 'pdf-render']);
+        $response = $invoice->getGeneratedPDFOrStream('invoice');
+        $this->assertSame('application/pdf', $response->headers->get('Content-Type'));
+        $this->assertSame('%PDF-1.4\nDocumento ficticio', $response->getContent());
+    }
+
     public function test_migration_converts_only_legacy_super_admin_and_seeder_does_not_restore_revocations(): void
     {
         DB::statement('ALTER TABLE users DROP COLUMN is_active');
