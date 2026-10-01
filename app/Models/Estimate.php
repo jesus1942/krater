@@ -71,7 +71,7 @@ class Estimate extends Model implements HasMedia
 
     public function getEstimatePdfUrlAttribute()
     {
-        return url('/estimates/pdf/'.$this->unique_hash);
+        return \Illuminate\Support\Facades\URL::temporarySignedRoute('documents.estimate', now()->addDay(), ['estimate' => $this->unique_hash]);
     }
 
     public static function getNextEstimateNumber($value)
@@ -506,7 +506,7 @@ class Estimate extends Model implements HasMedia
             '{ESTIMATE_EXPIRY_DATE}' => $this->formattedExpiryDate,
             '{ESTIMATE_NUMBER}' => $this->estimate_number,
             '{ESTIMATE_REF_NUMBER}' => $this->reference_number,
-            '{ESTIMATE_LINK}' => url('/customer/estimates/pdf/'.$this->unique_hash),
+            '{ESTIMATE_LINK}' => \Illuminate\Support\Facades\URL::temporarySignedRoute('documents.customer.estimate', now()->addDays(7), ['estimate' => $this->unique_hash]),
         ];
     }
 }

@@ -6,108 +6,84 @@ use Crater\Http\Controllers\Controller;
 use Crater\Http\Requests\UserRequest;
 use Crater\Models\CompanySetting;
 use Crater\Models\User;
+use Crater\Services\Access\AccessManager;
+use Crater\Services\Access\TenantUsers;
+use Crater\Support\TenantContext;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 
 class UsersController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Http\JsonResponse
-     */
-    public function index(Request $request)
+    public function index(Request $request, TenantUsers $users)
     {
-        $limit = $request->has('limit') ? $request->limit : 10;
-
-        $users = User::where('role', 'admin', 'creator')
-            ->applyFilters(
-                $request->only([
-                    'phone',
-                    'email',
-                    'display_name',
-                    'orderByField',
-                    'orderBy',
-                ])
-            )
-            ->latest()
-            ->paginate($limit);
-
-        return response()->json([
-            'users' => $users,
-        ]);
+        return response()->json(['users' => $users->staff($request->user())
+            ->applyFilters($request->only(['phone', 'email', 'display_name', 'orderByField', 'orderBy']))
+            ->latest()->paginate(min(100, max(1, (int) $request->get('limit', 10))))]);
     }
 
-    /**
-     * Store a newly created resource in storage.
-     *
-     * @param  \Illuminate\Http\UserRequest  $request
-     * @return \Illuminate\Http\JsonResponse
-     */
-    public function store(UserRequest $request)
+    public function store(UserRequest $request, AccessManager $access)
     {
         $data = $request->validated();
-        $data['role'] = 'admin';
-        $data['company_id'] = Auth::user()->company_id;
-        $data['creator_id'] = Auth::id();
-        $user = User::create($data);
+        $data['role'] = 'staff';
+        $data['company_id'] = TenantContext::companyId();
+        $data['creator_id'] = $request->user()->id;
+        abort_unless($access->canManageUser($request->user(), new User($data)), 403);
+        $user = DB::transaction(function () use ($data) {
+            $user = User::create($data);
+            $user->setSettings(['language' => CompanySetting::getSetting('language', $user->company_id) ?: 'es']);
 
-        $user->setSettings([
-            'language' => CompanySetting::getSetting('language', $user->company_id),
-        ]);
+            return $user;
+        });
 
-        return response()->json([
-            'user' => $user,
-            'success' => true,
-        ]);
+        return response()->json(['user' => $user->fresh(), 'success' => true]);
     }
 
-    /**
-     * Display the specified resource.
-     *
-     * @param  \Crater\Models\User  $user
-     * @return \Illuminate\Http\JsonResponse
-     */
-    public function show(User $user)
+    public function show(Request $request, User $user, TenantUsers $users)
     {
-        return response()->json([
-            'user' => $user,
-            'success' => true,
-        ]);
+        abort_unless($users->canViewStaff($request->user(), $user), 403);
+
+        return response()->json(['user' => $user, 'success' => true]);
     }
 
-    /**
-     * Update the specified resource in storage.
-     *
-     * @param  \Illuminate\Http\UserRequest  $request
-     * @param  \Crater\Models\User  $user
-     * @return \Illuminate\Http\JsonResponse
-     */
-    public function update(UserRequest $request, User $user)
+    public function update(UserRequest $request, User $user, AccessManager $access)
     {
-        $user->update($request->validated());
+        // FormRequest autoriza antes de validar. Se repite bajo bloqueo para
+        // impedir que una asignacion concurrente eleve al destino entre ambos.
+        DB::transaction(function () use ($request, $user, $access) {
+            $target = User::whereKey($user->id)->lockForUpdate()->firstOrFail();
+            abort_unless(app(TenantUsers::class)->canViewStaff($request->user(), $target)
+                && $access->canManageUser($request->user(), $target), 403);
+            $data = $request->validated();
+            if (empty($data['password'])) {
+                unset($data['password']);
+            }
+            $target->update($data);
+        });
 
-        return response()->json([
-            'user' => $user,
-            'success' => true,
-        ]);
+        return response()->json(['user' => $user->fresh(), 'success' => true]);
     }
 
-    /**
-     * Display a listing of the resource.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Http\JsonResponse
-     */
-    public function delete(Request $request)
+    public function delete(Request $request, AccessManager $access, TenantUsers $users)
     {
-        if ($request->users) {
-            User::destroy($request->users);
-        }
+        $data = $request->validate(['users' => ['required', 'array', 'min:1'], 'users.*' => ['required', 'integer', 'distinct']]);
+        DB::transaction(function () use ($request, $data, $access, $users) {
+            $targets = User::whereIn('id', $data['users'])->orderBy('id')->lockForUpdate()->get();
+            abort_unless($targets->count() === count($data['users']), 403);
+            // Se autoriza el lote completo antes de desactivar a nadie.
+            foreach ($targets as $target) {
+                abort_unless($users->canViewStaff($request->user(), $target)
+                    && $access->canManageUser($request->user(), $target), 403);
+            }
+            foreach ($targets as $target) {
+                $target->forceFill(['is_active' => false, 'remember_token' => null])->save();
+                $target->tokens()->delete();
+                if (DB::getSchemaBuilder()->hasTable('sessions')) {
+                    DB::table('sessions')->where('user_id', $target->id)->delete();
+                }
+                $access->forget($target);
+            }
+        });
 
-        return response()->json([
-            'success' => true,
-        ]);
+        return response()->json(['success' => true]);
     }
 }

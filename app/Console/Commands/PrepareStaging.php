@@ -10,7 +10,7 @@ use Illuminate\Support\Facades\Hash;
 /** Datos ficticios: nunca copia ni modifica la institucion de produccion. */
 class PrepareStaging extends Command
 {
-    protected $signature = 'ena:preparar-staging';
+    protected $signature = 'ena:preparar-staging {--matriz : Agrega preceptor, finanzas y familias ficticias para probar R1}';
 
     protected $description = 'Crea una institucion y un total admin ficticios exclusivamente en krater_staging';
 
@@ -36,6 +36,9 @@ class PrepareStaging extends Command
             }
 
             // No restablecer claves, roles ni fechas al repetir un deploy.
+            if ($this->option('matriz')) {
+                app(\Crater\Services\Access\StagingAccessFixtures::class)->prepare((int) $company->id);
+            }
             $this->info('Institucion ficticia ya preparada; se conservan sus credenciales y asignaciones.');
 
             return 0;
@@ -115,6 +118,10 @@ class PrepareStaging extends Command
             }
         });
 
+        if ($this->option('matriz')) {
+            $companyId = DB::table('companies')->where('unique_hash', $companyHash)->value('id');
+            app(\Crater\Services\Access\StagingAccessFixtures::class)->prepare((int) $companyId);
+        }
         $this->info('Institucion ficticia y total_admin preparados en staging. No se imprimen credenciales.');
 
         return 0;

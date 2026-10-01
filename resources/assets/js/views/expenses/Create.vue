@@ -264,6 +264,7 @@ export default {
         amount: 100,
         notes: '',
         user_id: null,
+        receiptUrl: null,
       },
 
       money: {
@@ -340,7 +341,7 @@ export default {
 
     getReceiptUrl() {
       if (this.isEdit) {
-        return `/expenses/${this.$route.params.id}/receipt`
+        return this.formData.receiptUrl
       }
     },
 

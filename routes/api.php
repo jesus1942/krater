@@ -117,7 +117,7 @@ Route::prefix('/v1')->group(function () {
     Route::group(['prefix' => 'auth'], function () {
         Route::post('login', [AuthController::class, 'login']);
 
-        Route::post('logout', [AuthController::class, 'logout'])->middleware('auth:sanctum');
+        Route::post('logout', [AuthController::class, 'logout'])->middleware(['auth:sanctum', 'active-account']);
 
         // Send reset password mail
         Route::post('password/email', [ForgotPasswordController::class, 'sendResetLinkEmail'])->middleware("throttle:10,2");
@@ -162,17 +162,17 @@ Route::prefix('/v1')->group(function () {
     | Suite institucional — estructura academica
     |--------------------------------------------------------------------------
     |
-    | Rutas del esquema NUEVO de autorizacion. A diferencia del bloque `admin`
+    | Rutas del esquema NUEVO de autorizacion. Igual que el bloque heredado cerrado por R1,
     | de mas abajo, aca cada ruta declara el permiso que exige y el tenant se
     | valida contra el usuario autenticado, no contra el header que mande el
     | cliente.
     |
     | Mientras convivan los dos esquemas, todo lo academico va aca y lo
-    | economico sigue en el bloque viejo.
+    | economico exige tenant y permisos en el bloque de mas abajo.
     |
     */
 
-    Route::middleware(['auth:sanctum', 'tenant'])->group(function () {
+    Route::middleware(['auth:sanctum', 'active-account', 'tenant', 'tenant-resource'])->group(function () {
         // --- Personal ---
         Route::get('/staff', [StaffMembersController::class, 'index'])
             ->middleware('permission:hr.staff.view');
@@ -270,237 +270,295 @@ Route::prefix('/v1')->group(function () {
 
     });
 
-    Route::middleware(['auth:sanctum', 'admin'])->group(function () {
+    // Excepciones deliberadas de tenant: el perfil propio y bootstrap no
+    // dependen de elegir nivel; el selector debe funcionar antes de elegirlo.
+    // Los cinco catalogos son constantes, sin datos institucionales ni secretos.
+    // Allowlist exacta y documentada en RouteAuthorizationMatrixTest.
+    Route::middleware(['auth:sanctum', 'active-account'])->group(function () {
+        Route::get('/bootstrap', BootstrapController::class);
+        Route::get('/auth/check', [AuthController::class, 'check']);
+        Route::get('/currencies', CurrenciesController::class);
+        Route::get('/timezones', TimezonesController::class);
+        Route::get('/date/formats', DateFormatsController::class);
+        Route::get('/fiscal/years', FiscalYearsController::class);
+        Route::get('/languages', LanguagesController::class);
+        Route::get('/me', [CompanyController::class, 'getUser']);
+        Route::put('/me', [CompanyController::class, 'updateProfile']);
+        Route::get('/me/settings', GetUserSettingsController::class);
+        Route::put('/me/settings', UpdateUserSettingsController::class);
+        Route::post('/me/upload-avatar', [CompanyController::class, 'uploadAvatar']);
+        Route::get('/school-levels', [SchoolLevelsController::class, 'index']);
+    });
+
+    Route::middleware(['auth:sanctum', 'active-account', 'admin', 'tenant', 'tenant-resource'])->group(function () {
 
 
         // Bootstrap
         //----------------------------------
 
-        Route::get('/bootstrap', BootstrapController::class);
 
 
         // Dashboard
         //----------------------------------
 
-        Route::get('/dashboard', DashboardController::class);
+        Route::get('/dashboard', DashboardController::class)->middleware('permission:finance.view');
 
 
         // Auth check
         //----------------------------------
 
-        Route::get('/auth/check', [AuthController::class, 'check']);
 
 
         // Search users
         //----------------------------------
 
-        Route::get('/search', SearchController::class);
+        Route::get('/search', SearchController::class)->middleware('permission:finance.view,system.user.view');
 
 
         // MISC
         //----------------------------------
 
-        Route::get('/currencies', CurrenciesController::class);
 
-        Route::get('/timezones', TimezonesController::class);
 
-        Route::get('/date/formats', DateFormatsController::class);
 
-        Route::get('/fiscal/years', FiscalYearsController::class);
 
-        Route::get('/languages', LanguagesController::class);
 
-        Route::get('/next-number', NextNumberController::class);
+        Route::get('/next-number', NextNumberController::class)->middleware('permission:finance.view');
 
 
         // Self Update
         //----------------------------------
 
-        Route::get('/check/update', CheckVersionController::class);
+        Route::get('/check/update', CheckVersionController::class)->middleware('permission:system.settings.manage');
 
-        Route::post('/update/download', DownloadUpdateController::class);
+        Route::post('/update/download', DownloadUpdateController::class)->middleware('permission:system.settings.manage');
 
-        Route::post('/update/unzip', UnzipUpdateController::class);
+        Route::post('/update/unzip', UnzipUpdateController::class)->middleware('permission:system.settings.manage');
 
-        Route::post('/update/copy', CopyFilesController::class);
+        Route::post('/update/copy', CopyFilesController::class)->middleware('permission:system.settings.manage');
 
-        Route::post('/update/delete', DeleteFilesController::class);
+        Route::post('/update/delete', DeleteFilesController::class)->middleware('permission:system.settings.manage');
 
-        Route::post('/update/migrate', MigrateUpdateController::class);
+        Route::post('/update/migrate', MigrateUpdateController::class)->middleware('permission:system.settings.manage');
 
-        Route::post('/update/finish', FinishUpdateController::class);
+        Route::post('/update/finish', FinishUpdateController::class)->middleware('permission:system.settings.manage');
 
 
         // Customers
         //----------------------------------
 
-        Route::post('/customers/delete', [CustomersController::class, 'delete']);
+        // Hasta la baja logica (fila 5), borrar una familia institucional puede
+        // afectar hermanos/documentos de otros niveles: solo total admin.
+        Route::post('/customers/delete', [CustomersController::class, 'delete'])
+            ->middleware(['permission:finance.invoice.manage', 'permission:system.settings.manage']);
 
-        Route::get('customers/{customer}/stats', CustomerStatsController::class);
+        Route::get('customers/{customer}/stats', CustomerStatsController::class)->middleware('permission:finance.view');
 
-        Route::resource('customers', CustomersController::class);
+        Route::apiResource('customers', CustomersController::class)->only(['index', 'show'])
+            ->middleware('permission:finance.view');
+        Route::apiResource('customers', CustomersController::class)->only(['store', 'update'])
+            ->middleware('permission:finance.invoice.manage');
 
 
         // Families / responsible adults (canonical family_members)
         //----------------------------------
 
-        Route::get('/family-members', [FamilyMembersController::class, 'index']);
-        Route::post('/family-members', [FamilyMembersController::class, 'store']);
-        Route::put('/family-members/{familyMember}', [FamilyMembersController::class, 'update']);
+        Route::get('/family-members', [FamilyMembersController::class, 'index'])->middleware('permission:students.view_file,finance.view');
+        Route::post('/family-members', [FamilyMembersController::class, 'store'])->middleware('permission:students.guardian.manage');
+        Route::put('/family-members/{familyMember}', [FamilyMembersController::class, 'update'])->middleware('permission:students.guardian.manage');
 
 
         // Students / school records
         //----------------------------------
 
-        Route::get('/students/placement-options', [StudentsController::class, 'placementOptions']);
-        Route::get('/students/{student}/relocation-options', [StudentRelocationController::class, 'options']);
-        Route::put('/students/{student}/relocate', [StudentRelocationController::class, 'relocate']);
-        Route::apiResource('students', StudentsController::class);
+        Route::get('/students/placement-options', [StudentsController::class, 'placementOptions'])->middleware('permission:students.manage');
+        Route::get('/students/{student}/relocation-options', [StudentRelocationController::class, 'options'])->middleware('permission:academic.enrollment.transfer');
+        Route::put('/students/{student}/relocate', [StudentRelocationController::class, 'relocate'])->middleware('permission:academic.enrollment.transfer');
+        Route::apiResource('students', StudentsController::class)->only(['index', 'show'])
+            ->middleware('permission:students.view_basic');
+        Route::apiResource('students', StudentsController::class)->only(['store', 'update', 'destroy'])
+            ->middleware('permission:students.manage');
 
 
         // Items
         //----------------------------------
 
-        Route::post('/items/delete', [ItemsController::class, 'delete']);
+        Route::post('/items/delete', [ItemsController::class, 'delete'])->middleware('permission:finance.invoice.manage');
 
-        Route::resource('items', ItemsController::class);
+        Route::apiResource('items', ItemsController::class)->only(['index', 'show'])
+            ->middleware('permission:finance.view');
+        Route::apiResource('items', ItemsController::class)->only(['store', 'update'])
+            ->middleware('permission:finance.invoice.manage');
 
-        Route::resource('units', UnitsController::class);
+        Route::apiResource('units', UnitsController::class)->only(['index', 'show'])
+            ->middleware('permission:finance.view');
+        Route::apiResource('units', UnitsController::class)->only(['store', 'update', 'destroy'])
+            ->middleware('permission:finance.invoice.manage');
 
 
         // School billing options
         //----------------------------------
-        Route::get('/school-billing/options', SchoolBillingOptionsController::class)->middleware('tenant');
+        Route::get('/school-billing/options', SchoolBillingOptionsController::class)->middleware('tenant')->middleware('permission:finance.view');
 
         // Invoices
         //-------------------------------------------------
 
-        Route::post('/invoices/{invoice}/send', SendInvoiceController::class);
+        Route::post('/invoices/{invoice}/send', SendInvoiceController::class)->middleware('permission:finance.invoice.manage');
 
-        Route::post('/invoices/{invoice}/clone', CloneInvoiceController::class);
+        Route::post('/invoices/{invoice}/clone', CloneInvoiceController::class)->middleware('permission:finance.invoice.manage');
 
-        Route::post('/invoices/{invoice}/status', ChangeInvoiceStatusController::class);
+        Route::post('/invoices/{invoice}/status', ChangeInvoiceStatusController::class)->middleware('permission:finance.invoice.manage');
 
-        Route::post('/invoices/delete', [InvoicesController::class, 'delete']);
+        Route::post('/invoices/delete', [InvoicesController::class, 'delete'])->middleware('permission:finance.invoice.manage');
 
-        Route::get('/invoices/templates', InvoiceTemplatesController::class);
+        Route::get('/invoices/templates', InvoiceTemplatesController::class)->middleware('permission:finance.view');
 
-        Route::apiResource('invoices', InvoicesController::class);
+        Route::apiResource('invoices', InvoicesController::class)->only(['index', 'show'])
+            ->middleware('permission:finance.view');
+        Route::apiResource('invoices', InvoicesController::class)->only(['store', 'update'])
+            ->middleware('permission:finance.invoice.manage');
 
 
         // Estimates
         //-------------------------------------------------
 
-        Route::post('/estimates/{estimate}/send', SendEstimateController::class);
+        Route::post('/estimates/{estimate}/send', SendEstimateController::class)->middleware('permission:finance.invoice.manage');
 
-        Route::post('/estimates/{estimate}/status', ChangeEstimateStatusController::class);
+        Route::post('/estimates/{estimate}/status', ChangeEstimateStatusController::class)->middleware('permission:finance.invoice.manage');
 
-        Route::post('/estimates/{estimate}/convert-to-invoice', ConvertEstimateController::class);
+        Route::post('/estimates/{estimate}/convert-to-invoice', ConvertEstimateController::class)->middleware('permission:finance.invoice.manage');
 
-        Route::get('/estimates/templates', EstimateTemplatesController::class);
+        Route::get('/estimates/templates', EstimateTemplatesController::class)->middleware('permission:finance.view');
 
-        Route::post('/estimates/delete', [EstimatesController::class, 'delete']);
+        Route::post('/estimates/delete', [EstimatesController::class, 'delete'])->middleware('permission:finance.invoice.manage');
 
-        Route::apiResource('estimates', EstimatesController::class);
+        Route::apiResource('estimates', EstimatesController::class)->only(['index', 'show'])
+            ->middleware('permission:finance.view');
+        Route::apiResource('estimates', EstimatesController::class)->only(['store', 'update'])
+            ->middleware('permission:finance.invoice.manage');
 
 
         // Expenses
         //----------------------------------
 
-        Route::get('/expenses/{expense}/show/receipt', ShowReceiptController::class);
+        Route::get('/expenses/{expense}/show/receipt', ShowReceiptController::class)->middleware('permission:finance.view');
 
-        Route::post('/expenses/{expense}/upload/receipts', UploadReceiptController::class);
+        Route::post('/expenses/{expense}/upload/receipts', UploadReceiptController::class)->middleware('permission:finance.expense.manage');
 
-        Route::post('/expenses/delete', [ExpensesController::class, 'delete']);
+        Route::post('/expenses/delete', [ExpensesController::class, 'delete'])->middleware('permission:finance.expense.manage');
 
-        Route::apiResource('expenses', ExpensesController::class);
+        Route::apiResource('expenses', ExpensesController::class)->only(['index', 'show'])
+            ->middleware('permission:finance.view');
+        Route::apiResource('expenses', ExpensesController::class)->only(['store', 'update'])
+            ->middleware('permission:finance.expense.manage');
 
-        Route::apiResource('categories', ExpenseCategoriesController::class);
+        Route::apiResource('categories', ExpenseCategoriesController::class)->only(['index', 'show'])
+            ->middleware('permission:finance.view');
+        Route::apiResource('categories', ExpenseCategoriesController::class)->only(['store', 'update', 'destroy'])
+            ->middleware('permission:finance.expense.manage');
 
 
         // Payments
         //----------------------------------
 
-        Route::post('/payments/{payment}/send', SendPaymentController::class);
+        Route::post('/payments/{payment}/send', SendPaymentController::class)->middleware('permission:finance.payment.manage');
 
-        Route::post('/payments/delete', [PaymentsController::class, 'delete']);
+        Route::post('/payments/delete', [PaymentsController::class, 'delete'])->middleware('permission:finance.payment.manage');
 
-        Route::apiResource('payments', PaymentsController::class);
+        Route::apiResource('payments', PaymentsController::class)->only(['index', 'show'])
+            ->middleware('permission:finance.view');
+        Route::apiResource('payments', PaymentsController::class)->only(['store', 'update'])
+            ->middleware('permission:finance.payment.manage');
 
-        Route::apiResource('payment-methods', PaymentMethodsController::class);
+        Route::apiResource('payment-methods', PaymentMethodsController::class)->only(['index', 'show'])
+            ->middleware('permission:system.settings.manage');
+        Route::apiResource('payment-methods', PaymentMethodsController::class)->only(['store', 'update', 'destroy'])
+            ->middleware('permission:system.settings.manage');
 
 
         // Custom fields
         //----------------------------------
 
-        Route::resource('custom-fields', CustomFieldsController::class);
+        Route::apiResource('custom-fields', CustomFieldsController::class)->only(['index', 'show'])
+            ->middleware('permission:system.settings.manage');
+        Route::apiResource('custom-fields', CustomFieldsController::class)->only(['store', 'update', 'destroy'])
+            ->middleware('permission:system.settings.manage');
 
 
         // Backup & Disk
         //----------------------------------
 
-        Route::apiResource('backups', BackupsController::class);
+        Route::apiResource('backups', BackupsController::class)->only(['index'])
+            ->middleware('permission:system.backup.manage');
+        Route::apiResource('backups', BackupsController::class)->only(['store', 'destroy'])
+            ->middleware('permission:system.backup.manage');
 
-        Route::apiResource('/disks', DiskController::class);
+        Route::apiResource('/disks', DiskController::class)->only(['index', 'show'])
+            ->middleware('permission:system.settings.manage');
+        Route::apiResource('/disks', DiskController::class)->only(['store', 'update', 'destroy'])
+            ->middleware('permission:system.settings.manage');
 
-        Route::get('download-backup', DownloadBackupController::class);
+        Route::get('download-backup', DownloadBackupController::class)->middleware('permission:system.backup.manage');
 
-        Route::get('/disk/drivers', [DiskController::class, 'getDiskDrivers']);
+        Route::get('/disk/drivers', [DiskController::class, 'getDiskDrivers'])->middleware('permission:system.settings.manage');
 
 
         // Settings
         //----------------------------------
 
-        Route::get('/me', [CompanyController::class, 'getUser']);
-
-        Route::put('/me', [CompanyController::class, 'updateProfile']);
-
-        Route::get('/me/settings', GetUserSettingsController::class);
-
-        Route::put('/me/settings', UpdateUserSettingsController::class);
-
-        Route::post('/me/upload-avatar', [CompanyController::class, 'uploadAvatar']);
 
 
-        Route::put('/company', [CompanyController::class, 'updateCompany']);
 
-        Route::post('/company/upload-logo', [CompanyController::class, 'uploadCompanyLogo']);
 
-        Route::get('/company/settings', GetCompanySettingsController::class);
 
-        Route::post('/company/settings', UpdateCompanySettingsController::class);
 
-        Route::get('/school-levels', [SchoolLevelsController::class, 'index']);
+        Route::put('/company', [CompanyController::class, 'updateCompany'])->middleware('permission:system.settings.manage');
 
-        Route::put('/school-levels/{schoolLevel}', [SchoolLevelsController::class, 'update']);
+        Route::post('/company/upload-logo', [CompanyController::class, 'uploadCompanyLogo'])->middleware('permission:system.settings.manage');
+
+        Route::get('/company/settings', GetCompanySettingsController::class)->middleware('permission:system.settings.manage');
+
+        Route::post('/company/settings', UpdateCompanySettingsController::class)->middleware('permission:system.settings.manage');
+
+
+        Route::put('/school-levels/{schoolLevel}', [SchoolLevelsController::class, 'update'])->middleware('permission:system.school_level.manage');
 
 
         // Mails
         //----------------------------------
 
-        Route::get('/mail/drivers', [MailConfigurationController::class, 'getMailDrivers']);
+        Route::get('/mail/drivers', [MailConfigurationController::class, 'getMailDrivers'])->middleware('permission:system.settings.manage');
 
-        Route::get('/mail/config', [MailConfigurationController::class, 'getMailEnvironment']);
+        Route::get('/mail/config', [MailConfigurationController::class, 'getMailEnvironment'])->middleware('permission:system.settings.manage');
 
-        Route::post('/mail/config', [MailConfigurationController::class, 'saveMailEnvironment']);
+        Route::post('/mail/config', [MailConfigurationController::class, 'saveMailEnvironment'])->middleware('permission:system.settings.manage');
 
-        Route::post('/mail/test', [MailConfigurationController::class, 'testEmailConfig']);
+        Route::post('/mail/test', [MailConfigurationController::class, 'testEmailConfig'])->middleware('permission:system.settings.manage');
 
 
-        Route::apiResource('notes', NotesController::class);
+        Route::apiResource('notes', NotesController::class)->only(['index', 'show'])
+            ->middleware('permission:system.settings.manage');
+        Route::apiResource('notes', NotesController::class)->only(['store', 'update', 'destroy'])
+            ->middleware('permission:system.settings.manage');
 
 
         // Tax Types
         //----------------------------------
 
-        Route::apiResource('tax-types', TaxTypesController::class);
+        Route::apiResource('tax-types', TaxTypesController::class)->only(['index', 'show'])
+            ->middleware('permission:system.settings.manage');
+        Route::apiResource('tax-types', TaxTypesController::class)->only(['store', 'update', 'destroy'])
+            ->middleware('permission:system.settings.manage');
 
 
         // Users
         //----------------------------------
 
-        Route::post('/users/delete', [UsersController::class, 'delete']);
+        Route::post('/users/delete', [UsersController::class, 'delete'])->middleware('permission:system.user.manage');
 
-        Route::apiResource('/users', UsersController::class);
+        Route::apiResource('/users', UsersController::class)->only(['index', 'show'])
+            ->middleware('permission:system.user.view');
+        Route::apiResource('/users', UsersController::class)->only(['store', 'update'])
+            ->middleware('permission:system.user.manage');
     });
 });

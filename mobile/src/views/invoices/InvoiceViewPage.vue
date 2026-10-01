@@ -161,7 +161,7 @@ function formatMoney(amount: number) {
 }
 
 function viewPdf() {
-  window.open(`/invoices/pdf/${invoice.value?.unique_hash}`, '_blank')
+  if (invoice.value?.invoicePdfUrl) window.open(invoice.value.invoicePdfUrl, '_blank')
 }
 
 async function sendInvoice() {

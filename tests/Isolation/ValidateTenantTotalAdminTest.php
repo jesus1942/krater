@@ -14,9 +14,16 @@ afterEach(function () {
 });
 
 test('total admin can select another company tenant', function () {
+    config(['database.default' => 'sqlite', 'database.connections.sqlite.database' => ':memory:']);
+    \Illuminate\Support\Facades\DB::purge('sqlite');
+    \Illuminate\Support\Facades\Schema::create('companies', function ($table) {
+        $table->increments('id');
+    });
+    \Illuminate\Support\Facades\DB::table('companies')->insert(['id' => 2]);
     $user = new User();
     $user->id = 99;
     $user->company_id = 1;
+    $user->is_active = true;
 
     $access = new class extends AccessManager {
         public function isTotalAdmin(User $user): bool
@@ -45,6 +52,7 @@ test('non total admin cannot select another company tenant', function () {
     $user = new User();
     $user->id = 100;
     $user->company_id = 1;
+    $user->is_active = true;
 
     $access = new class extends AccessManager {
         public function isTotalAdmin(User $user): bool

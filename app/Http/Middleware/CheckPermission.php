@@ -6,6 +6,7 @@ use Closure;
 use Crater\Enums\Permission;
 use Crater\Services\Access\AccessManager;
 use Crater\Services\Audit\Auditor;
+use Crater\Support\TenantContext;
 use Illuminate\Http\Request;
 
 /**
@@ -43,8 +44,7 @@ class CheckPermission
             return response()->json(['error' => 'unauthenticated'], 401);
         }
 
-        $schoolLevelId = $request->header('school-level');
-        $schoolLevelId = $schoolLevelId !== null ? (int) $schoolLevelId : null;
+        $schoolLevelId = TenantContext::schoolLevelId();
 
         // Varios permisos en el mismo middleware se evaluan como O: alcanza con
         // tener uno. Para exigir todos, encadenar dos middleware.

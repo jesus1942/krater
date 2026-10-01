@@ -83,3 +83,15 @@
 - Ingreso real con la cuenta ficticia: `POST /api/v1/auth/login` 200 con token; solicitudes autenticadas `GET /api/v1/bootstrap` y `GET /api/v1/school-levels`: 200. `/login` abre con URL final `/login`, 200.
 - Despues del push, el deployment productivo sigue siendo `0f8b1b2b-5b9b-4d0d-97aa-2c0c2db20059`, branch `produccion`, SHA `cc4c3dc4b4c867b64fd9beaf5f098b0fd8c9812a`, `SUCCESS`; `/ping` real 200 `ok`. No hubo auto-deploy del commit de staging en produccion.
 - P2 cerrada. No hubo cambios Vue ni bundle que regenerar. La cuenta es exclusivamente de staging; el bloqueo de R1 sigue vigente para personal de prueba en produccion.
+
+## 2026-10-01 — Fila R1: cierre del bloque heredado
+
+- Se explico antes de implementar: cerrar tenant/permisos, reemplazar autoridad legacy por asignaciones vigentes y migrar primero al superusuario para evitar perder el acceso.
+- Todas las rutas institucionales de `api/v1` exigen cuenta activa, tenant y permiso. Matriz sobre `Route::getRoutes()` con allowlist exacta; prueba negativa detecta tanto rutas autenticadas sin permiso como rutas publicas no previstas.
+- Usuarios: empresa/niveles, `canManageUser`, bloqueo de autoedicion y destinos de jerarquia superior o alcance mixto; alta `staff` sin permisos. Baja transaccional de lote, conserva cuentas, revoca tokens y sesiones. Seeder no recrea roles revocados. Migracion del superusuario con conteos y corte si falta total admin vigente en produccion.
+- Clientes y busqueda por contexto validado y alumnos del nivel, incluyendo responsables canonicos. FormRequests financieros rechazan familias/documentos de otro nivel. Cambio de email/clave de una familia con rol RBAC tambien exige gestionar esa cuenta. Borrado fisico de clientes solo total admin hasta fila 5.
+- Lectura/escritura economica protegida; alumnos del preceptor se limitan a divisiones de sus matriculas vigentes. Configuracion, correo, discos, backups y descarga con permisos restringidos a total admin.
+- PDF y recibos con firma y vencimiento; API/UI un dia, correo siete dias. Vue y mobile usan la URL devuelta por API. PDF guardado en disco privado y bloqueo nginx de copias estaticas locales legacy; archivos antiguos de buckets externos no cambian ACL automaticamente.
+- Build web y mobile completados; `build/frontend` regenerado y descompresion concatenada comparada con `public/assets/js/app.js`. Tooling legacy: npm requiere `--legacy-peer-deps` y webpack `--openssl-legacy-provider` en Node 24. No se cambio el lockfile.
+- Gate local con PHPUnit 9.6 y PHP 8.3: seguridad, matriz, staging, catalogos y regresiones previas de auditoria/reconciliacion. El stack Pest/JMac legacy no levanta completo en este runtime; se ejecuto el gate seleccionado y las regresiones con las mismas aserciones y bootstrap compatible, sin declarar toda la suite heredada aprobada.
+- Fixture permanente `ena:preparar-staging --matriz`, sin endpoint de depuracion ni cuentas productivas. Smoke real de staging y promocion a `produccion`: pendientes. R2 y filas 5 a 8 siguen pendientes.

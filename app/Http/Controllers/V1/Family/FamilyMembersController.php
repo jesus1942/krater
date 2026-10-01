@@ -21,7 +21,7 @@ class FamilyMembersController extends Controller
         $companyId = (int) $request->header('company');
         $user = $request->user();
         $levelId = TenantContext::schoolLevelId();
-        $institutionWide = $access->isTotalAdmin($user);
+        $institutionWide = $access->isTotalAdmin($user) && $levelId === null;
 
         $query = FamilyMember::query()
             ->where('company_id', $companyId)
@@ -53,6 +53,10 @@ class FamilyMembersController extends Controller
             })
             ->orderBy('name');
 
+        if (! $access->hasLevelWideScope($user, $levelId)) {
+            $query->whereHas('students', fn ($students) => $students->accessibleTo($user));
+            $query->with(['students' => fn ($students) => $students->accessibleTo($user)]);
+        }
         $members = $query->get();
 
         return response()->json([

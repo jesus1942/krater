@@ -46,6 +46,23 @@ class Student extends Model
         return $this->belongsTo(User::class, 'guardian_id');
     }
 
+    public function enrollments()
+    {
+        return $this->hasMany(Enrollment::class);
+    }
+
+    public function scopeAccessibleTo($query, User $actor)
+    {
+        $access = app(\Crater\Services\Access\AccessManager::class);
+        if ($access->hasLevelWideScope($actor, \Crater\Support\TenantContext::schoolLevelId())) {
+            return $query;
+        }
+
+        return $query->whereHas('enrollments', function ($enrollments) use ($access, $actor) {
+            $enrollments->active()->whereIn('division_id', $access->scopedDivisionIds($actor));
+        });
+    }
+
     public function familyMembers()
     {
         return $this->belongsToMany(FamilyMember::class, 'student_family_members')

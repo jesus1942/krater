@@ -31,7 +31,7 @@
         <template slot="actions">
           <sw-button
             v-if="$route.name === 'estimates.edit'"
-            :href="`/estimates/pdf/${newEstimate.unique_hash}`"
+            :href="newEstimate.estimatePdfUrl"
             tag-name="a"
             target="_blank"
             class="mr-3"

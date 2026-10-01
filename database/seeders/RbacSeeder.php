@@ -29,7 +29,6 @@ class RbacSeeder extends Seeder
 
         foreach (Company::all() as $company) {
             $this->sembrarRoles($company->id);
-            $this->migrarRolesHeredados($company->id);
         }
     }
 
@@ -123,83 +122,4 @@ class RbacSeeder extends Seeder
         );
     }
 
-    /**
-     * Puente de compatibilidad para instalaciones existentes.
-     *
-     * Un `super admin` heredado SIEMPRE debe conservar administracion total al
-     * migrar al RBAC nuevo, aunque ya tenga alguna otra fila en `role_user`.
-     * Antes se omitia a cualquier usuario que tuviera un rol previo y eso
-     * podia dejar al administrador historico sin acceso a los modulos nuevos.
-     *
-     * Para los `admin` heredados seguimos siendo conservadores: solo se les
-     * asigna Direccion general cuando aun no tienen ninguna asignacion RBAC,
-     * para no pisar decisiones tomadas manualmente.
-     */
-    protected function migrarRolesHeredados($companyId)
-    {
-        $roleIds = DB::table('roles')
-            ->where('company_id', $companyId)
-            ->whereIn('name', [RoleName::TOTAL_ADMIN, RoleName::GENERAL_DIRECTOR])
-            ->pluck('id', 'name');
-
-        $users = DB::table('users')
-            ->where('company_id', $companyId)
-            ->whereIn('role', ['super admin', 'admin'])
-            ->get(['id', 'role']);
-
-        foreach ($users as $user) {
-            if ($user->role === 'super admin') {
-                if (! isset($roleIds[RoleName::TOTAL_ADMIN])) {
-                    continue;
-                }
-
-                $alreadyTotalAdmin = DB::table('role_user')
-                    ->where('user_id', $user->id)
-                    ->where('company_id', $companyId)
-                    ->where('role_id', $roleIds[RoleName::TOTAL_ADMIN])
-                    ->whereNull('school_level_id')
-                    ->exists();
-
-                if ($alreadyTotalAdmin) {
-                    continue;
-                }
-
-                DB::table('role_user')->insert([
-                    'user_id' => $user->id,
-                    'role_id' => $roleIds[RoleName::TOTAL_ADMIN],
-                    'company_id' => $companyId,
-                    'school_level_id' => null,
-                    'starts_on' => null,
-                    'ends_on' => null,
-                    'granted_by' => null,
-                    'granted_at' => now(),
-                    'created_at' => now(),
-                    'updated_at' => now(),
-                ]);
-
-                continue;
-            }
-
-            if (DB::table('role_user')->where('user_id', $user->id)->exists()) {
-                continue;
-            }
-
-            if (! isset($roleIds[RoleName::GENERAL_DIRECTOR])) {
-                continue;
-            }
-
-            DB::table('role_user')->insert([
-                'user_id' => $user->id,
-                'role_id' => $roleIds[RoleName::GENERAL_DIRECTOR],
-                'company_id' => $companyId,
-                'school_level_id' => null,
-                'starts_on' => null,
-                'ends_on' => null,
-                'granted_by' => null,
-                'granted_at' => now(),
-                'created_at' => now(),
-                'updated_at' => now(),
-            ]);
-        }
-    }
 }

@@ -123,7 +123,7 @@ Models live in `app/Models/`. The company-scoping pattern is central: most queri
 
 PDF generation is done server-side via `barryvdh/laravel-dompdf`. The trait `GeneratesPdfTrait` is used on Invoice, Estimate, and Payment models. Blade templates for PDFs are under `resources/views/app/pdf/`.
 
-Authentication uses Laravel Sanctum (token-based). There are two middleware groups to be aware of: `auth:sanctum` for regular users and `abilities:super-admin` for admin-only routes.
+Authentication uses Laravel Sanctum. Institutional API routes require `active-account`, `tenant` and explicit `permission:` middleware. The legacy `admin` middleware now requires a current `role_user` assignment; the `users.role` label never grants authority. Own profile, bootstrap and fixed catalogs have an exact documented allowlist in `RouteAuthorizationMatrixTest`.
 
 ### Frontend (Vue 2 SPA)
 
@@ -234,6 +234,18 @@ Pendiente de plataforma: migrar a Infrastructure as Code antes del corte legacy,
 En staging agregar `&& php artisan ena:preparar-staging` al predeploy terminante autorizado, despues de las migraciones, `RbacSeeder` y `crater:mark-installed`. **Nunca agregarlo al predeploy productivo.** El doble corte rechaza su ejecucion alli aun si se lo invoca por error. Validacion local: `PrepareStagingTest` prueba produccion, base incorrecta, clave ausente, asignacion explicita, repeticion y colision de email; no requiere datos de la escuela. Siembra e ingreso reales verificados en deployment staging `9f352b8e-fa10-4583-a8e7-8ed82dfdbbf8`, SHA `8772379`, `SUCCESS`: login, bootstrap y selector de niveles 200. El push no genero deploy productivo. Evidencia en `docs/SUITEENA_BITACORA.md`.
 
 No crear usuarios de prueba para personal en produccion hasta cerrar R1.
+
+### Cierre del bloque heredado — fila R1
+
+Estado: implementado y probado localmente; staging y promocion productiva pendientes. La migracion `2026_10_01_180000_harden_user_access` convierte solo al superusuario legacy en una asignacion explicita `total_admin`, conserva revocaciones y registra conteos sin datos personales. Si produccion tenia un superusuario y no queda un total admin vigente, bloquea el predeploy. `RbacSeeder` deja de conceder roles segun etiquetas legacy.
+
+Usuarios exige permisos de lectura/gestion, alcance y jerarquia de `canManageUser`; nadie se edita a si mismo por `/users` (usar `/me`). Las altas son `staff` sin asignaciones; las bajas desactivan y revocan tokens. R2 sigue pendiente: no hay aun UI para asignar roles.
+
+Clientes y busqueda toman empresa de `TenantContext` y filtran responsables legacy y canonicos por nivel. Finanzas requiere permisos para leer y escribir. El borrado fisico de clientes queda solo para total admin hasta la baja logica de la fila 5, porque puede afectar hermanos de otros niveles.
+
+Los enlaces PDF/recibos se firman con vencimiento: un dia en API/UI, siete dias en correo. Los enlaces viejos sin firma dejan de funcionar. Los PDF nuevos se guardan en `finance_private`, fuera de `public`; nginx bloquea las carpetas locales legacy y PDF bajo `/storage` y `/media`. Copias historicas en buckets publicos externos requieren revision del administrador del bucket; la app no cambia ACL de archivos antiguos.
+
+Para la matriz real usar solo staging: `ena:preparar-staging --matriz` prepara preceptor/administrativo de Primario, dos familias y alumnos ficticios. Mantiene el doble corte entorno/base y no cambia claves, bajas o revocaciones existentes. Nunca ejecutar en produccion ni agregar al predeploy productivo.
 
 **Variables de entorno que configurar en Railway:**
 ```

@@ -37,9 +37,6 @@ use Illuminate\Support\Facades\DB;
  */
 class AccessManager
 {
-    /** Cache de permisos por usuario y nivel, en segundos. */
-    const CACHE_TTL = 300;
-
     /**
      * @param  string  $permission  constante de Permission
      * @param  int|null  $schoolLevelId  nivel en el que se pide el permiso
@@ -94,41 +91,21 @@ class AccessManager
      */
     public function effectivePermissions(User $user, ?int $schoolLevelId = null): array
     {
-        $key = "acl:u{$user->id}:l".($schoolLevelId ?? 'global');
+        if (! $this->isActive($user)) {
+            return [];
+        }
+        if ($this->isTotalAdmin($user)) {
+            return Permission::all();
+        }
 
-        return Cache::remember($key, self::CACHE_TTL, function () use ($user, $schoolLevelId) {
-            $today = now()->toDateString();
+        // Autoridad vigente en cada consulta: una revocacion o vencimiento no
+        // puede seguir otorgando acceso por una cache de cinco minutos.
+        $rows = $this->rolesQuery($user, $schoolLevelId)
+            ->join('permission_role', 'permission_role.role_id', '=', 'roles.id')
+            ->join('permissions', 'permissions.id', '=', 'permission_role.permission_id')
+            ->pluck('permissions.name')->unique()->values()->all();
 
-            $rows = DB::table('role_user')
-                ->join('roles', 'roles.id', '=', 'role_user.role_id')
-                ->join('permission_role', 'permission_role.role_id', '=', 'roles.id')
-                ->join('permissions', 'permissions.id', '=', 'permission_role.permission_id')
-                ->where('role_user.user_id', $user->id)
-                ->where('role_user.company_id', $user->company_id)
-                ->where('roles.company_id', $user->company_id)
-                // El rol aplica si es global, o si es del nivel consultado.
-                ->where(function ($q) use ($schoolLevelId) {
-                    $q->whereNull('role_user.school_level_id');
-                    if ($schoolLevelId !== null) {
-                        $q->orWhere('role_user.school_level_id', $schoolLevelId);
-                    }
-                })
-                // Vigencia.
-                ->where(function ($q) use ($today) {
-                    $q->whereNull('role_user.starts_on')->orWhere('role_user.starts_on', '<=', $today);
-                })
-                ->where(function ($q) use ($today) {
-                    $q->whereNull('role_user.ends_on')->orWhere('role_user.ends_on', '>=', $today);
-                })
-                ->pluck('permissions.name')
-                ->unique()
-                ->values()
-                ->all();
-
-            // Segundo filtro de seguridad: aunque la base los otorgue, los
-            // permisos exclusivos de administracion total nunca salen por aca.
-            return array_values(array_diff($rows, Permission::totalAdminOnly()));
-        });
+        return array_values(array_diff($rows, Permission::totalAdminOnly()));
     }
 
     /**
@@ -251,23 +228,58 @@ class AccessManager
      */
     public function isTotalAdmin(User $user): bool
     {
-        return Cache::remember("acl:u{$user->id}:total_admin", self::CACHE_TTL, function () use ($user) {
-            $today = now()->toDateString();
+        return $this->isActive($user) && $this->currentAssignments($user)
+            ->where('roles.name', RoleName::TOTAL_ADMIN)
+            ->where('roles.scope_type', 'global')
+            ->whereNull('role_user.school_level_id')->exists();
+    }
 
-            return DB::table('role_user')
-                ->join('roles', 'roles.id', '=', 'role_user.role_id')
-                ->where('role_user.user_id', $user->id)
-                ->where('role_user.company_id', $user->company_id)
-                ->where('roles.company_id', $user->company_id)
-                ->where('roles.name', RoleName::TOTAL_ADMIN)
-                ->whereNull('role_user.school_level_id')
-                ->where(function ($query) use ($today) {
-                    $query->whereNull('role_user.starts_on')->orWhere('role_user.starts_on', '<=', $today);
-                })
-                ->where(function ($query) use ($today) {
-                    $query->whereNull('role_user.ends_on')->orWhere('role_user.ends_on', '>=', $today);
-                })
-                ->exists();
+    public function hasActiveRole(User $user): bool
+    {
+        return $this->isActive($user) && $this->currentAssignments($user)->exists();
+    }
+
+    public function hasInstitutionWideScope(User $user): bool
+    {
+        return $this->isActive($user) && $this->currentAssignments($user)
+            ->where('roles.scope_type', 'global')->whereNull('role_user.school_level_id')->exists();
+    }
+
+    public function levelIds(User $user): array
+    {
+        if (! $this->isActive($user)) {
+            return [];
+        }
+        if ($this->hasInstitutionWideScope($user)) {
+            return DB::table('school_levels')->where('company_id', $user->company_id)
+                ->where('enabled', true)->pluck('id')->map(fn ($id) => (int) $id)->all();
+        }
+
+        return $this->currentAssignments($user)
+            ->join('school_levels', 'school_levels.id', '=', 'role_user.school_level_id')
+            ->where('school_levels.company_id', $user->company_id)->where('school_levels.enabled', true)
+            ->pluck('school_levels.id')->unique()->map(fn ($id) => (int) $id)->values()->all();
+    }
+
+    protected function currentAssignments(User $user)
+    {
+        $today = now()->toDateString();
+
+        return DB::table('role_user')->join('roles', 'roles.id', '=', 'role_user.role_id')
+            ->where('role_user.user_id', $user->id)
+            ->where('role_user.company_id', $user->company_id)
+            ->where('roles.company_id', $user->company_id)
+            ->where(fn ($q) => $q->whereNull('role_user.starts_on')->orWhere('role_user.starts_on', '<=', $today))
+            ->where(fn ($q) => $q->whereNull('role_user.ends_on')->orWhere('role_user.ends_on', '>=', $today));
+    }
+
+    protected function rolesQuery(User $user, ?int $schoolLevelId = null)
+    {
+        return $this->currentAssignments($user)->where(function ($q) use ($schoolLevelId) {
+            $q->where(fn ($global) => $global->whereNull('role_user.school_level_id')->where('roles.scope_type', 'global'));
+            if ($schoolLevelId !== null) {
+                $q->orWhere('role_user.school_level_id', $schoolLevelId);
+            }
         });
     }
 
@@ -277,20 +289,7 @@ class AccessManager
      */
     public function hierarchyLevel(User $user): int
     {
-        $today = now()->toDateString();
-
-        $min = DB::table('role_user')
-            ->join('roles', 'roles.id', '=', 'role_user.role_id')
-            ->where('role_user.user_id', $user->id)
-            ->where('role_user.company_id', $user->company_id)
-            ->where('roles.company_id', $user->company_id)
-            ->where(function ($query) use ($today) {
-                $query->whereNull('role_user.starts_on')->orWhere('role_user.starts_on', '<=', $today);
-            })
-            ->where(function ($query) use ($today) {
-                $query->whereNull('role_user.ends_on')->orWhere('role_user.ends_on', '>=', $today);
-            })
-            ->min('roles.hierarchy_level');
+        $min = $this->currentAssignments($user)->min('roles.hierarchy_level');
 
         return $min === null ? PHP_INT_MAX : (int) $min;
     }
@@ -305,15 +304,29 @@ class AccessManager
      */
     public function canManageUser(User $actor, User $target): bool
     {
-        if ($actor->id === $target->id) {
-            return false;   // nadie se edita los propios roles
+        if (! $this->isActive($actor) || ($target->exists && (int) $actor->id === (int) $target->id)) {
+            return false;
         }
-
         if ($this->isTotalAdmin($actor)) {
             return true;
         }
+        if ((int) $actor->company_id !== (int) $target->company_id || $this->isTotalAdmin($target)) {
+            return false;
+        }
+        if ($this->hierarchyLevel($actor) >= $this->hierarchyLevel($target)) {
+            return false;
+        }
+        if (! $target->exists) {
+            return true; // alta staff sin asignaciones; nunca otorga un rol
+        }
+        if ($this->hasInstitutionWideScope($actor)) {
+            return true;
+        }
+        $targetAssignments = $this->currentAssignments($target)->pluck('role_user.school_level_id');
 
-        return $this->hierarchyLevel($actor) < $this->hierarchyLevel($target);
+        return $targetAssignments->isNotEmpty()
+            && ! $targetAssignments->contains(null)
+            && $targetAssignments->diff($this->levelIds($actor))->isEmpty();
     }
 
     /**
@@ -351,28 +364,12 @@ class AccessManager
      */
     protected function rolesFor(User $user, ?int $schoolLevelId = null): array
     {
-        $today = now()->toDateString();
+        if (! $this->isActive($user)) {
+            return [];
+        }
 
-        return DB::table('role_user')
-            ->join('roles', 'roles.id', '=', 'role_user.role_id')
-            ->where('role_user.user_id', $user->id)
-            ->where('role_user.company_id', $user->company_id)
-            ->where('roles.company_id', $user->company_id)
-            ->where(function ($q) use ($schoolLevelId) {
-                $q->whereNull('role_user.school_level_id');
-                if ($schoolLevelId !== null) {
-                    $q->orWhere('role_user.school_level_id', $schoolLevelId);
-                }
-            })
-            ->where(function ($q) use ($today) {
-                $q->whereNull('role_user.starts_on')->orWhere('role_user.starts_on', '<=', $today);
-            })
-            ->where(function ($q) use ($today) {
-                $q->whereNull('role_user.ends_on')->orWhere('role_user.ends_on', '>=', $today);
-            })
-            ->select('roles.name', 'roles.scope_type', 'roles.hierarchy_level')
-            ->get()
-            ->all();
+        return $this->rolesQuery($user, $schoolLevelId)
+            ->select('roles.name', 'roles.scope_type', 'roles.hierarchy_level')->get()->all();
     }
 
     protected function isActive(User $user): bool
@@ -387,9 +384,8 @@ class AccessManager
     }
 
     /**
-     * Invalida la cache de un usuario. Hay que llamarla en cada cambio de rol
-     * o de alcance; si no, un permiso revocado sigue vigente hasta cinco
-     * minutos.
+     * Limpia entradas historicas por compatibilidad. R1 consulta la autoridad
+     * vigente sin cache para que revocar/desactivar surta efecto inmediato.
      */
     public function forget(User $user): void
     {

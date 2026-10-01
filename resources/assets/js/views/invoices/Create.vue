@@ -32,7 +32,7 @@
           <sw-button
             v-if="$route.name === 'invoices.edit'"
             :disabled="isLoading"
-            :href="`/invoices/pdf/${newInvoice.unique_hash}`"
+            :href="newInvoice.invoicePdfUrl"
             tag-name="a"
             variant="primary-outline"
             class="mr-3"

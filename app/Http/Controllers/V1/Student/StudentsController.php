@@ -35,6 +35,7 @@ class StudentsController extends Controller
         }
 
         $query = $allLevels ? Student::acrossLevels() : Student::query();
+        $query->accessibleTo($user);
         $query->with([
             'guardian:id,name,email,phone',
             'familyMembers',
@@ -333,5 +334,6 @@ class StudentsController extends Controller
     private function ensureCompany(Request $request, Student $student)
     {
         abort_unless((int) $student->company_id === (int) $request->header('company'), 404);
+        abort_unless(Student::whereKey($student->id)->accessibleTo($request->user())->exists(), 403);
     }
 }

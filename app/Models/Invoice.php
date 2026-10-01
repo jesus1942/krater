@@ -164,7 +164,7 @@ class Invoice extends Model implements HasMedia
 
     public function getInvoicePdfUrlAttribute()
     {
-        return url('/invoices/pdf/'.$this->unique_hash);
+        return \Illuminate\Support\Facades\URL::temporarySignedRoute('documents.invoice', now()->addDay(), ['invoice' => $this->unique_hash]);
     }
 
     public function getPreviousStatus()
@@ -602,7 +602,7 @@ class Invoice extends Model implements HasMedia
             '{INVOICE_DUE_DATE}' => $this->formattedDueDate,
             '{INVOICE_NUMBER}' => $this->invoice_number,
             '{INVOICE_REF_NUMBER}' => $this->reference_number,
-            '{INVOICE_LINK}' => url('/customer/invoices/pdf/'.$this->unique_hash),
+            '{INVOICE_LINK}' => \Illuminate\Support\Facades\URL::temporarySignedRoute('documents.customer.invoice', now()->addDays(7), ['invoice' => $this->unique_hash]),
         ];
     }
 }

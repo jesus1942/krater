@@ -27,6 +27,7 @@ class Expense extends Model implements HasMedia
         'formattedExpenseDate',
         'formattedCreatedAt',
         'receipt',
+        'receiptUrl',
     ];
 
     public function setExpenseDateAttribute($value)
@@ -73,6 +74,11 @@ class Expense extends Model implements HasMedia
         }
 
         return null;
+    }
+
+    public function getReceiptUrlAttribute()
+    {
+        return \Illuminate\Support\Facades\URL::temporarySignedRoute('documents.receipt', now()->addDay(), ['expense' => $this->id]);
     }
 
     public function scopeExpensesBetween($query, $start, $end)

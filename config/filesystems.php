@@ -43,6 +43,13 @@ return [
 
     'disks' => [
 
+        // Comprobantes: se entregan solo mediante las rutas firmadas.
+        'finance_private' => [
+            'driver' => 'local',
+            'root' => storage_path('app/finance-private'),
+            'visibility' => 'private',
+        ],
+
         'local' => [
             'driver' => 'local',
             'root' => storage_path('app'),

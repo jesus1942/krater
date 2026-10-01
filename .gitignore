@@ -1,7 +1,10 @@
 /node_modules
+/mobile/node_modules
+/mobile/dist
 /public/storage
 /public/hot
 /storage/*.key
+/storage/framework/testing
 /vendor
 /.idea
 Homestead.json

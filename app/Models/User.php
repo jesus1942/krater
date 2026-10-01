@@ -56,6 +56,8 @@ class User extends Authenticatable implements HasMedia
         'remember_token',
     ];
 
+    protected $casts = ['is_active' => 'boolean'];
+
     protected $with = [
         'currency',
     ];
@@ -94,7 +96,7 @@ class User extends Authenticatable implements HasMedia
         $email = $request->email;
         $password = $request->password;
 
-        return (\Auth::attempt(['email' => $email, 'password' => $password], $remember));
+        return (\Auth::attempt(['email' => $email, 'password' => $password, 'is_active' => true], $remember));
     }
 
     public function getFormattedCreatedAtAttribute($value)
@@ -353,7 +355,7 @@ class User extends Authenticatable implements HasMedia
         ]);
 
         $data['creator_id'] = Auth::id();
-        $data['company_id'] = $request->header('company');
+        $data['company_id'] = \Crater\Support\TenantContext::companyId();
         $data['role'] = 'customer';
         $data['password'] = Hash::make($request->password);
         $customer = User::create($data);

@@ -83,7 +83,7 @@ class Payment extends Model implements HasMedia
 
     public function getPaymentPdfUrlAttribute()
     {
-        return url('/payments/pdf/'.$this->unique_hash);
+        return \Illuminate\Support\Facades\URL::temporarySignedRoute('documents.payment', now()->addDay(), ['payment' => $this->unique_hash]);
     }
 
     public function getPaymentNumAttribute()
@@ -467,7 +467,7 @@ class Payment extends Model implements HasMedia
             '{PAYMENT_MODE}' => $this->paymentMethod ? $this->paymentMethod->name : null,
             '{PAYMENT_NUMBER}' => $this->payment_number,
             '{PAYMENT_AMOUNT}' => $this->reference_number,
-            '{PAYMENT_LINK}' => $this->paymentPdfUrl,
+            '{PAYMENT_LINK}' => \Illuminate\Support\Facades\URL::temporarySignedRoute('documents.payment', now()->addDays(7), ['payment' => $this->unique_hash]),
         ];
     }
 }

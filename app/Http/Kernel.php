@@ -62,13 +62,14 @@ class Kernel extends HttpKernel
         'can' => \Illuminate\Auth\Middleware\Authorize::class,
         'guest' => \Crater\Http\Middleware\RedirectIfAuthenticated::class,
         'throttle' => \Illuminate\Routing\Middleware\ThrottleRequests::class,
-        // `admin` es el esquema viejo: compara users.role contra dos strings y
-        // da acceso a toda la API o a ninguna. Se mantiene mientras convivan
-        // los dos sistemas; las rutas nuevas usan `permission`.
+        // `admin` solo exige una asignacion RBAC vigente. Cada ruta exige permiso.
         'admin' => AdminMiddleware::class,
+        'active-account' => \Crater\Http\Middleware\ActiveAccount::class,
+        'signed' => \Illuminate\Routing\Middleware\ValidateSignature::class,
 
         'permission' => \Crater\Http\Middleware\CheckPermission::class,
         'tenant' => \Crater\Http\Middleware\ValidateTenant::class,
+        'tenant-resource' => \Crater\Http\Middleware\TenantResource::class,
         'report-tenant' => \Crater\Http\Middleware\ReportTenant::class,
 
         'verified' => \Illuminate\Auth\Middleware\EnsureEmailIsVerified::class,
@@ -91,8 +92,13 @@ class Kernel extends HttpKernel
         \Illuminate\View\Middleware\ShareErrorsFromSession::class,
         \Crater\Http\Middleware\Authenticate::class,
         \Illuminate\Session\Middleware\AuthenticateSession::class,
+        \Crater\Http\Middleware\ActiveAccount::class,
+        AdminMiddleware::class,
         \Crater\Http\Middleware\ValidateTenant::class,
+        \Crater\Http\Middleware\CheckPermission::class,
+        \Illuminate\Routing\Middleware\ValidateSignature::class,
         \Illuminate\Routing\Middleware\SubstituteBindings::class,
+        \Crater\Http\Middleware\TenantResource::class,
         \Illuminate\Auth\Middleware\Authorize::class,
     ];
 }

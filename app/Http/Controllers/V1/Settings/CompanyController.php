@@ -58,7 +58,7 @@ class CompanyController extends Controller
      */
     public function updateCompany(CompanyRequest $request)
     {
-        $company = Auth::user()->company;
+        $company = Company::findOrFail(\Crater\Support\TenantContext::companyId());
 
         $company->update($request->only('name'));
 

@@ -18,7 +18,7 @@
         @component('mail::subcopy')
             {!! $data['body'] !!}
             @if(!$data['attach']['data'])
-                @component('mail::button', ['url' => url('/payments/pdf/'.$data['payment']['unique_hash'])])
+                @component('mail::button', ['url' => URL::temporarySignedRoute('documents.payment', now()->addDays(7), ['payment' => $data['payment']['unique_hash']])])
                     View Payment
                 @endcomponent
             @endif

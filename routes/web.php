@@ -55,33 +55,33 @@ Route::prefix('reports')->middleware(['redirect-if-unauthenticated', 'report-ten
 // download invoice pdf
 // -------------------------------------------------
 
-Route::get('/invoices/pdf/{invoice:unique_hash}', InvoicePdfController::class);
+Route::get('/invoices/pdf/{invoice:unique_hash}', InvoicePdfController::class)->name('documents.invoice')->middleware('signed');
 
 
 // download estimate pdf
 // -------------------------------------------------
 
-Route::get('/estimates/pdf/{estimate:unique_hash}', EstimatePdfController::class);
+Route::get('/estimates/pdf/{estimate:unique_hash}', EstimatePdfController::class)->name('documents.estimate')->middleware('signed');
 
 
 // download payment pdf
 // -------------------------------------------------
 
-Route::get('/payments/pdf/{payment:unique_hash}', PaymentPdfController::class);
+Route::get('/payments/pdf/{payment:unique_hash}', PaymentPdfController::class)->name('documents.payment')->middleware('signed');
 
 
 // download expense receipt
 // -------------------------------------------------
 
-Route::get('/expenses/{expense}/receipt', DownloadReceiptController::class);
+Route::get('/expenses/{expense}/receipt', DownloadReceiptController::class)->name('documents.receipt')->middleware('signed');
 
 
 // customer pdf endpoints for invoice and estimate
 // -------------------------------------------------
 
-Route::get('/customer/invoices/pdf/{invoice:unique_hash}', CustomerInvoicePdfController::class);
+Route::get('/customer/invoices/pdf/{invoice:unique_hash}', CustomerInvoicePdfController::class)->name('documents.customer.invoice')->middleware('signed');
 
-Route::get('/customer/estimates/pdf/{estimate:unique_hash}', CustomerEstimatePdfController::class);
+Route::get('/customer/estimates/pdf/{estimate:unique_hash}', CustomerEstimatePdfController::class)->name('documents.customer.estimate')->middleware('signed');
 
 
 Route::get('auth/logout', function () {
@@ -113,7 +113,7 @@ Route::get('/', function () {
 
 Route::get('/admin/{vue?}', function () {
     return view('app');
-})->where('vue', '[\/\w\.-]*')->name('admin')->middleware(['install', 'redirect-if-unauthenticated']);
+})->where('vue', '[\/\w\.-]*')->name('admin')->middleware(['install', 'redirect-if-unauthenticated', 'active-account']);
 
 
 // Move other http requests to the Vue App

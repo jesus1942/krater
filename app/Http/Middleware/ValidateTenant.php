@@ -4,10 +4,10 @@ namespace Crater\Http\Middleware;
 
 use Closure;
 use Crater\Models\SchoolLevel;
+use Crater\Models\Company;
 use Crater\Services\Access\AccessManager;
 use Crater\Support\TenantContext;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 
 /**
  * Valida los headers de tenant CONTRA EL USUARIO AUTENTICADO.
@@ -30,7 +30,13 @@ class ValidateTenant
         $user = $request->user();
 
         if (! $user) {
-            return $next($request);
+            return response()->json(['error' => 'unauthenticated'], 401);
+        }
+
+        abort_unless($user->is_active, 403);
+        foreach (['company', 'school-level'] as $header) {
+            $value = $request->header($header);
+            abort_if($value !== null && $value !== '' && (! ctype_digit($value) || (int) $value <= 0), 403);
         }
 
         $isTotalAdmin = $this->access->isTotalAdmin($user);
@@ -48,6 +54,8 @@ class ValidateTenant
                 return response()->json(['error' => 'forbidden'], 403);
             }
         }
+
+        abort_unless($companyId > 0 && Company::whereKey($companyId)->exists(), 403);
 
         // --- nivel institucional --------------------------------------------
         // La vista sin nivel equivale a "Toda la institucion" y es exclusiva
@@ -77,12 +85,18 @@ class ValidateTenant
             }
 
             if (! $isTotalAdmin
-                && ! $this->tieneAlcanceGlobal($user->id, $companyId)
-                && ! $this->perteneceAlNivel($user->id, $levelId)) {
+                && ! $this->access->hasInstitutionWideScope($user)
+                && ! in_array($levelId, $this->access->levelIds($user), true)) {
                 return response()->json(['error' => 'forbidden'], 403);
             }
         }
 
+        // Los controladores legacy reciben ahora solo headers normalizados y
+        // validados. El contexto sigue siendo la fuente de verdad.
+        $request->headers->set('company', (string) $companyId);
+        if ($levelId !== null) {
+            $request->headers->set('school-level', (string) $levelId);
+        }
         TenantContext::set($companyId, $levelId);
 
         try {
@@ -92,48 +106,4 @@ class ValidateTenant
         }
     }
 
-    protected function perteneceAlNivel($userId, $levelId): bool
-    {
-        $direct = DB::table('school_level_user')
-            ->where('user_id', $userId)
-            ->where('school_level_id', $levelId)
-            ->exists();
-
-        if ($direct) {
-            return true;
-        }
-
-        $today = now()->toDateString();
-
-        return DB::table('role_user')
-            ->where('user_id', $userId)
-            ->where('school_level_id', $levelId)
-            ->where(function ($query) use ($today) {
-                $query->whereNull('starts_on')->orWhere('starts_on', '<=', $today);
-            })
-            ->where(function ($query) use ($today) {
-                $query->whereNull('ends_on')->orWhere('ends_on', '>=', $today);
-            })
-            ->exists();
-    }
-
-    protected function tieneAlcanceGlobal($userId, $companyId): bool
-    {
-        $today = now()->toDateString();
-
-        return DB::table('role_user')
-            ->join('roles', 'roles.id', '=', 'role_user.role_id')
-            ->where('role_user.user_id', $userId)
-            ->where('role_user.company_id', $companyId)
-            ->where('roles.company_id', $companyId)
-            ->where('roles.scope_type', 'global')
-            ->whereNull('role_user.school_level_id')
-            ->where(function ($query) use ($today) {
-                $query->whereNull('role_user.starts_on')->orWhere('role_user.starts_on', '<=', $today);
-            })
-            ->where(function ($query) use ($today) {
-                $query->whereNull('role_user.ends_on')->orWhere('role_user.ends_on', '>=', $today);
-            })
-            ->exists();
-    }
 }

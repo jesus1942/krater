@@ -38,6 +38,10 @@ trait GeneratesPdfTrait
             $media = $this->getMedia($collection_name)->first();
 
             if ($media) {
+                if ($media->disk === 'finance_private') {
+                    return collect(['path' => $media->getPath(), 'file_name' => $media->file_name]);
+                }
+
                 $file_disk = FileDisk::find($media->custom_properties['file_disk_id']);
 
                 if (! $file_disk) {
@@ -86,19 +90,12 @@ trait GeneratesPdfTrait
             $this->clearMediaCollection($collection_name);
         }
 
-        $file_disk = FileDisk::whereSetAsDefault(true)->first();
-
-        if ($file_disk) {
-            $file_disk->setConfig();
-        }
-
         $media = \Storage::disk('local')->path('temp/'.$collection_name.'/'.$this->id.'/temp.pdf');
 
         try {
             $this->addMedia($media)
-                ->withCustomProperties(['file_disk_id' => $file_disk->id])
                 ->usingFileName($file_name.'.pdf')
-                ->toMediaCollection($collection_name, config('filesystems.default'));
+                ->toMediaCollection($collection_name, 'finance_private');
 
             \Storage::disk('local')->deleteDirectory('temp/'.$collection_name.'/'.$this->id);
 
