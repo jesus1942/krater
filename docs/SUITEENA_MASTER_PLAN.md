@@ -31,7 +31,7 @@ Solo **Operativo** equivale a DONE.
 ## Tareas
 
 - [x] Bloqueo duro de `reset:app` en produccion incluso con `--force`.
-- [ ] Auditoría de datos potencialmente ocultos por `school_level_id` nulo o incorrecto en estimates, invoices, payments, expenses, items y students.
+- [x] Auditoría de datos potencialmente ocultos por `school_level_id` nulo o incorrecto en estimates, invoices, payments, expenses, items y students. Primera corrida productiva 01/10/2026: `PRE-000001` del 16/08/2026 existe y tiene `school_level_id = NULL`; sin evidencia única para reasignación automática.
 - [ ] Herramienta de reconciliación para registros globales/huérfanos por nivel.
 - [ ] Backups automáticos y política de retención.
 - [ ] Prueba periódica de restauración en ambiente aislado.
