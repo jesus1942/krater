@@ -4,12 +4,15 @@ namespace Crater\Http\Controllers\V1\Student;
 
 use Crater\Http\Controllers\Controller;
 use Crater\Models\AcademicYear;
+use Crater\Models\AuditLog;
 use Crater\Models\Division;
 use Crater\Models\Enrollment;
 use Crater\Models\GradeLevel;
 use Crater\Models\SchoolLevel;
 use Crater\Models\Student;
+use Crater\Services\Audit\Auditor;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
@@ -60,6 +63,7 @@ class StudentRelocationController extends Controller
             'academic_year_id' => ['required', 'integer'],
             'grade_level_id' => ['required', 'integer'],
             'division_id' => ['required', 'integer'],
+            'reason' => ['required', 'string', 'max:500'],
         ]);
 
         $result = DB::transaction(function () use ($data, $student, $companyId) {
@@ -106,6 +110,17 @@ class StudentRelocationController extends Controller
                 ->where('status', Enrollment::STATUS_ACTIVE)
                 ->lockForUpdate()
                 ->first();
+
+            $originDivision = $existing
+                ? Division::acrossLevels()->whereKey($existing->division_id)->first(['id', 'grade_level_id'])
+                : null;
+
+            $origin = [
+                'school_level_id' => $student->school_level_id ? (int) $student->school_level_id : null,
+                'academic_year_id' => $existing ? (int) $existing->academic_year_id : null,
+                'grade_level_id' => $originDivision ? (int) $originDivision->grade_level_id : null,
+                'division_id' => $existing ? (int) $existing->division_id : null,
+            ];
 
             if ($existing && $existing->division_id !== $division->id && $existing->sectionEnrollments()->exists()) {
                 throw ValidationException::withMessages([
@@ -161,6 +176,28 @@ class StudentRelocationController extends Controller
                 $enrollmentData['has_curricular_adaptation'] = false;
                 $enrollment = Enrollment::create($enrollmentData);
             }
+
+            $destination = [
+                'school_level_id' => (int) $schoolLevel->id,
+                'academic_year_id' => (int) $academicYear->id,
+                'grade_level_id' => (int) $gradeLevel->id,
+                'division_id' => (int) $division->id,
+                'reason' => $data['reason'],
+            ];
+
+            app(Auditor::class)->record(
+                'student_relocated',
+                Auth::user(),
+                [
+                    'type' => Student::class,
+                    'id' => $student->id,
+                    'company_id' => $companyId,
+                    'school_level_id' => $schoolLevel->id,
+                ],
+                $origin,
+                $destination,
+                AuditLog::SEVERITY_HIGH
+            );
 
             return [$student->fresh(), $enrollment];
         });
