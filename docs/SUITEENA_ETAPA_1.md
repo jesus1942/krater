@@ -83,6 +83,20 @@ Primera ejecucion en produccion: correrla y registrar el resultado en la
 bitacora del proyecto. Con eso se cierra (o se descarta) la hipotesis del
 presupuesto del 16/08.
 
+#### Primera ejecucion en produccion — 01/10/2026
+
+**OPERATIVA.** El comando fue desplegado, probado como solo lectura y ejecutado
+contra produccion. Resultado completo: `docs/audits/2026-10-01-level-audit.json`.
+
+Hallazgo: existe un unico presupuesto, `PRE-000001` (id 1), fechado
+`2026-08-16`, con `school_level_id = NULL`. No tiene una deduccion unica de
+nivel (`sin_evidencia`), por lo que no se modifica automaticamente.
+
+La hipotesis del presupuesto del 16/08 queda **confirmada**: el registro existe,
+pero desaparece de las vistas con nivel seleccionado porque el scope exige
+igualdad estricta de `school_level_id`. No se detectaron niveles inexistentes ni
+niveles de otra empresa en los 13 modelos auditados.
+
 ### 1.1.2 Reconciliacion
 
 Comando `php artisan ena:reubicar-nivel {modelo} {ids*} --nivel= {--aplicar}`.
@@ -204,7 +218,7 @@ Un PR por fila, en este orden. Cada uno: especificacion corta en el PR, tests
 positivos y negativos, `build/frontend` regenerado si toca Vue, deploy y smoke.
 
 1. 0.1 + 0.2 (plataforma y `reset:app`).
-2. 1.1.1 diagnostico, y **correrlo en produccion antes de seguir**.
+2. [x] 1.1.1 diagnostico, ejecutado en produccion el 01/10/2026.
 3. 1.1.4 auditoria (para que lo que sigue ya quede registrado).
 4. 1.1.2 reconciliacion.
 5. 1.1.3 baja logica.
