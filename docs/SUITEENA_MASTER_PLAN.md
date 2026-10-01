@@ -158,7 +158,7 @@ Solo **Operativo** equivale a DONE.
 - [ ] URLs firmadas para PDFs de factura/presupuesto/cobro.
 - [ ] Revisar deletes físicos y reemplazar por estados/soft delete donde corresponda.
 - [ ] Integridad referencial y pruebas de no pérdida en conversiones Estimate → Invoice.
-- [ ] Auditoría económica de cambios sensibles.
+- [x] Auditoría económica de cambios sensibles: Invoice, Estimate, Payment y Expense con `Auditable` desde 01/10/2026.
 
 ---
 
@@ -180,6 +180,7 @@ Solo **Operativo** equivale a DONE.
 - [x] Liquidación interna bruto/descuentos/neto.
 - [x] Aprobación antes del pago.
 - [x] Pagos parciales/totales y reversión sin delete.
+- [x] Auditoría de Personal y liquidaciones: StaffMember, PayrollSlip y PayrollPayment; valores personales sensibles redactados.
 - [ ] Conceptos salariales versionados y novedades mensuales.
 - [ ] Recibo salarial imprimible.
 - [ ] Asiento/impacto económico de liquidaciones aprobadas.
