@@ -6,6 +6,8 @@ use Crater\Models\PaymentMethod;
 use Crater\Models\Unit;
 use Crater\Models\User;
 use Illuminate\Database\Migrations\Migration;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 class SeedBaseData extends Migration
 {
@@ -33,20 +35,25 @@ class SeedBaseData extends Migration
             }
         }
 
-        if (PaymentMethod::count() === 0) {
+        // En una instalacion nueva estas tablas se crean despues de esta
+        // migracion. No inventar la empresa #1 ni insertar claves huerfanas.
+        $hasDefaultCompany = Schema::hasTable('companies')
+            && DB::table('companies')->where('id', 1)->exists();
+
+        if ($hasDefaultCompany && Schema::hasTable('payment_methods') && PaymentMethod::count() === 0) {
             PaymentMethod::create(['name' => 'Efectivo', 'company_id' => 1]);
             PaymentMethod::create(['name' => 'Transferencia', 'company_id' => 1]);
             PaymentMethod::create(['name' => 'Tarjeta de credito', 'company_id' => 1]);
             PaymentMethod::create(['name' => 'Cheque', 'company_id' => 1]);
         }
 
-        if (Unit::count() === 0) {
+        if ($hasDefaultCompany && Schema::hasTable('units') && Unit::count() === 0) {
             foreach (['unidad', 'hora', 'kg', 'mes', 'dia'] as $u) {
                 Unit::create(['name' => $u, 'company_id' => 1]);
             }
         }
 
-        if (CompanySetting::count() === 0) {
+        if (Schema::hasTable('company_settings') && CompanySetting::count() === 0) {
             $user = User::where('role', 'super admin')->first();
             if ($user) {
                 $billingFmt = '<h3>{BILLING_ADDRESS_NAME}</h3><p>{BILLING_ADDRESS_STREET_1}</p><p>{BILLING_CITY}  {BILLING_STATE}</p><p>{BILLING_COUNTRY}  {BILLING_ZIP_CODE}</p>';
