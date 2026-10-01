@@ -2,7 +2,9 @@
 
 namespace Tests\Feature;
 
+use Crater\Console\Commands\ResetApp;
 use Illuminate\Support\Facades\Artisan;
+use Symfony\Component\Console\Tester\CommandTester;
 use Tests\TestCase;
 
 class ResetAppSafetyTest extends TestCase
@@ -15,9 +17,15 @@ class ResetAppSafetyTest extends TestCase
 
         Artisan::shouldReceive('call')->never();
 
-        $this->artisan('reset:app', ['--force' => true])
-            ->expectsOutput('reset:app esta bloqueado en produccion.')
-            ->assertExitCode(1);
+        $tester = $this->commandTester();
+
+        $status = $tester->execute(['--force' => true]);
+
+        $this->assertSame(1, $status);
+        $this->assertStringContainsString(
+            'reset:app esta bloqueado en produccion.',
+            $tester->getDisplay()
+        );
     }
 
     public function test_reset_app_keeps_its_destructive_flow_outside_production_when_forced(): void
@@ -38,10 +46,21 @@ class ResetAppSafetyTest extends TestCase
             ->ordered()
             ->andReturn(0);
 
-        $this->artisan('reset:app', ['--force' => true])
-            ->expectsOutput('Running migrate:fresh')
-            ->expectsOutput('Seeding database')
-            ->expectsOutput('App has been reset successfully')
-            ->assertExitCode(0);
+        $tester = $this->commandTester();
+
+        $status = $tester->execute(['--force' => true]);
+
+        $this->assertSame(0, $status);
+        $this->assertStringContainsString('Running migrate:fresh', $tester->getDisplay());
+        $this->assertStringContainsString('Seeding database', $tester->getDisplay());
+        $this->assertStringContainsString('App has been reset successfully', $tester->getDisplay());
+    }
+
+    private function commandTester(): CommandTester
+    {
+        $command = new ResetApp();
+        $command->setLaravel($this->app);
+
+        return new CommandTester($command);
     }
 }
