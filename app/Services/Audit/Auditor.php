@@ -15,6 +15,12 @@ class Auditor
         'signature_data', 'attendee_secret', 'moderator_secret',
         'teacher_comment', 'justification', 'notes', 'override_reason',
         'equivalence_note',
+
+        // Datos personales que no hacen falta para reconstruir un cambio.
+        // La bitácora conserva que el campo cambió, pero nunca el valor.
+        'dni', 'birth_date',
+        'document_number', 'document_number_normalized',
+        'first_name', 'last_name', 'email', 'phone',
     ];
 
     public function record(
