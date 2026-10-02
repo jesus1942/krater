@@ -10,6 +10,8 @@
     "reports": "Reports",
     "settings": "Settings",
     "logout": "Logout",
+    "students": "Students",
+    "my_profile": "My profile",
     "users": "Users"
   },
   "general": {
@@ -609,6 +611,7 @@
     "menu_title": {
       "account_settings": "Account Settings",
       "school_levels": "School levels",
+      "enrollments": "Enrollments",
       "academic_years": "Academic years",
       "company_information": "Company Information",
       "customization": "Customization",

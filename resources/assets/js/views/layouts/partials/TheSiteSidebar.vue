@@ -21,7 +21,7 @@
         <sw-list variant="sidebar">
           <sw-list-item
             v-for="item in group.items"
-            :title="$t(item.title)"
+            :title="item.title"
             :key="item.route"
             :active="hasActiveUrl(item.route)"
             :to="item.route"
@@ -54,7 +54,7 @@
           <sw-list variant="sidebar">
             <sw-list-item
               v-for="item in group.items"
-              :title="$t(item.title)"
+              :title="item.title"
               :key="item.route"
               :active="hasActiveUrl(item.route)"
               :to="item.route"
@@ -71,6 +71,7 @@
 </template>
 
 <script type="text/babel">
+import { navigationLabel, settingsLabel } from '../../../helpers/navigation'
 import { can } from '../../../helpers/access'
 import {
   HomeIcon,
@@ -125,7 +126,7 @@ export default {
           title: 'Inicio',
           items: [
             {
-              title: 'navigation.dashboard',
+              title: navigationLabel('navigation.dashboard'),
               icon: 'home-icon',
               route: '/admin/dashboard',
             },
@@ -135,12 +136,12 @@ export default {
           title: 'Gestión académica',
           items: [
             {
-              title: 'navigation.students',
+              title: navigationLabel('navigation.students'),
               icon: 'academic-cap-icon',
               route: '/admin/students',
             },
             {
-              title: 'navigation.customers',
+              title: navigationLabel('navigation.customers'),
               icon: 'user-icon',
               route: '/admin/customers',
             },
@@ -150,27 +151,27 @@ export default {
           title: 'Administración económica',
           items: [
             {
-              title: 'navigation.items',
+              title: navigationLabel('navigation.items'),
               icon: 'star-icon',
               route: '/admin/items',
             },
             {
-              title: 'navigation.estimates',
+              title: navigationLabel('navigation.estimates'),
               icon: 'document-icon',
               route: '/admin/estimates',
             },
             {
-              title: 'navigation.invoices',
+              title: navigationLabel('navigation.invoices'),
               icon: 'document-text-icon',
               route: '/admin/invoices',
             },
             {
-              title: 'navigation.payments',
+              title: navigationLabel('navigation.payments'),
               icon: 'credit-card-icon',
               route: '/admin/payments',
             },
             {
-              title: 'navigation.expenses',
+              title: navigationLabel('navigation.expenses'),
               icon: 'calculator-icon',
               route: '/admin/expenses',
             },
@@ -205,7 +206,7 @@ export default {
         })
       }
       systemItems.push({
-        title: 'navigation.settings',
+        title: settingsLabel(this.currentUser),
         icon: 'cog-icon',
         route: '/admin/settings',
       })
@@ -214,7 +215,7 @@ export default {
         title: 'Informes',
         items: [
           {
-            title: 'navigation.reports',
+            title: navigationLabel('navigation.reports'),
             icon: 'chart-bar-icon',
             route: '/admin/reports',
           },

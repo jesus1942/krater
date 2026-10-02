@@ -101,7 +101,7 @@
 
           <sw-dropdown-item tag-name="router-link" to="/admin/settings">
             <cog-icon class="w-4 h-4 mr-2 text-gray-600" />
-            {{ $t('navigation.settings') }}
+            {{ settingsTitle }}
           </sw-dropdown-item>
 
           <sw-dropdown-item @click="logout">
@@ -116,6 +116,7 @@
 
 <script type="text/babel">
 import { mapGetters, mapActions } from 'vuex'
+import { settingsLabel } from '../../../helpers/navigation'
 import { can, landingPath } from '../../../helpers/access'
 import {
   PlusIcon,
@@ -143,6 +144,7 @@ export default {
     }
   },
   computed: {
+    settingsTitle() { return settingsLabel(this.currentUser) },
     homePath() { return landingPath(this.currentUser) },
     ...mapGetters('user', ['currentUser']),
     ...mapGetters(['isSidebarOpen']),

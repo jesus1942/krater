@@ -151,3 +151,12 @@
 - Smoke publico posterior: ping/login 200, login conserva URL `/login`, tres APIs sin sesion 401; JS/CSS 200 e identicos byte por byte al build. JS SHA256 `79d6b83b324eb49e830dae4557d4ddc83a08b6f4b35818d08e9925cc6a61b0ce`. Evidencia completa sin claves/tokens en `docs/audits/2026-10-02-r2b-smoke.json`.
 - Produccion reverificada despues del push: sigue en `5739491b-adea-4805-ac8e-0f7e639358ff`, SUCCESS. No se promovio R2/R2b ni se modificaron cuentas o datos productivos.
 - Limite explicito: el navegador de staging abre el formulario de ingreso, sin una sesion autenticada disponible. El recorrido automatizado de UI se hizo sobre componentes reales en JSDOM; el ensayo HTTP de MySQL usa un servidor temporal de loopback en staging. No equivalen a una inspeccion visual autenticada de la web publica. Esa revision queda pendiente antes de promover. Se detiene esta fila; no se avanza a 5/6/7/C/8.
+
+
+## 2026-10-02 — Etiquetas de navegacion y promocion autorizada de R2/R2b
+
+- Jesus pide corregir `navigation.students`, Settings/Mi perfil y cualquier clave cruda del menu nuevo; recompilar, verificar staging y luego promover a `produccion`. Esta instruccion autoriza la promocion y reemplaza el corte anterior, sin avanzar a las filas siguientes.
+- Causa: `navigation.students` y `settings.menu_title.enrollments` faltaban en ingles; las cuentas sin idioma configurado reciben `en`. Se completan esos fallbacks. La navegacion lateral y de configuracion usa las etiquetas institucionales españolas existentes; no cambia el idioma elegido para el resto de la app.
+- Alumnos siempre aparece como Alumnos. La entrada de configuracion, dropdown del encabezado y titulo/breadcrumb de la pantalla usan Configuracion con `system.settings.manage`, Mi perfil sin ese permiso. Rutas y permisos se conservan, incluidos los accesos de lectura academica.
+- El ensayo DOM deja de reemplazar `$t/$tc` por la clave: usa VueI18n y catalogos reales. Verifica tres roles en `en/es` (seis recorridos), ambos menus y el encabezado; tambien comprueba todos los items de total admin y el cambio reactivo a Configuracion. Falla ante claves crudas o llamadas prohibidas.
+- Build de produccion completado, partes gzip regeneradas y descompresion comparada con JS publicado. Staging y promocion: en curso; se registran SHA/deploy/smoke al confirmar el resultado.

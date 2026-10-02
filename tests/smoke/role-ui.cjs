@@ -14,12 +14,10 @@ const Vuex = require('vuex')
 const Router = require('vue-router')
 const compiler = require('vue-template-compiler')
 const babel = require('@babel/core')
-Vue.use(Vuex); Vue.use(Router); Vue.use(require('vuelidate').default)
+Vue.use(require('vue-i18n')); Vue.use(Vuex); Vue.use(Router); Vue.use(require('vuelidate').default)
 Vue.config.productionTip = false; Vue.config.devtools = false
 const errors = []
 Vue.config.errorHandler = error => errors.push(error)
-Vue.prototype.$t = text => text
-Vue.prototype.$tc = text => text
 Vue.prototype.$notification = () => {}
 const wrapper = { functional: true, render: (h, c) => h('div', c.data, Object.values(c.slots()).flat()) }
 const icon = { functional: true, render: h => h('span') }
@@ -37,6 +35,7 @@ function load(file) {
   file = path.resolve(file)
   if (cache.has(file)) return cache.get(file)
   const source = fs.readFileSync(file, 'utf8')
+  if (file.endsWith('.json')) return { __esModule: true, default: JSON.parse(source) }
   const sfc = file.endsWith('.vue') ? compiler.parseComponent(source) : null
   if (sfc) {
     const compiled = compiler.compile(sfc.template.content)
@@ -77,7 +76,7 @@ function find(instance, options) {
   if (instance.$options.template === options.template) return instance
   for (const child of instance.$children) { const found = find(child, options); if (found) return found }
 }
-async function exercise(role) {
+async function exercise(role, locale) {
   const calls = []; const storage = new Map([['selectedSchoolLevel', '999']])
   window.Ls = { get: k => storage.get(k), set: (k, v) => storage.set(k, String(v)), remove: k => storage.delete(k) }
   const permissions = [...definitions[role === 'registrar' ? 'preceptor' : role].permissions,
@@ -115,7 +114,9 @@ async function exercise(role) {
     ] },
   ] }] })
   router.push('/admin/dashboard')
-  const app = new Vue({ store, router, render: h => h('router-view') }).$mount()
+  const i18n = new (require('vue-i18n'))({ locale, fallbackLocale: 'en', silentTranslationWarn: true,
+    messages: { en: require('../../resources/assets/js/plugins/en.json'), es: require('../../resources/assets/js/plugins/es.json') } })
+  const app = new Vue({ store, router, i18n, render: h => h('router-view') }).$mount()
   document.body.append(app.$el); await flush()
   assert.equal(router.currentRoute.path, '/admin/students')
   assert.equal(storage.get('selectedSchoolLevel'), '1')
@@ -123,6 +124,12 @@ async function exercise(role) {
   const sidebar = find(app, component('layouts/partials/TheSiteSidebar'))
   const links = sidebar.menuGroups.flatMap(group => group.items.map(item => item.route))
   assert.deepStrictEqual(links, ['/admin/students', '/admin/settings'])
+  assert.deepStrictEqual(sidebar.menuGroups.flatMap(group => group.items.map(item => item.title)), ['Alumnos', 'Mi perfil'])
+  assert(sidebar.$el.textContent.includes('Alumnos') && sidebar.$el.textContent.includes('Mi perfil'))
+  assert(!sidebar.$el.textContent.includes('navigation.'))
+  const header = find(app, component('layouts/partials/TheSiteHeader'))
+  assert.equal(header.settingsTitle, 'Mi perfil')
+  assert(header.$el.textContent.includes('Mi perfil'))
   const screen = find(app, students)
   assert.equal(screen.canCreate, role === 'registrar')
   assert(!screen.canRelocate); assert(!calls.includes('/api/v1/students/placement-options'))
@@ -138,7 +145,10 @@ async function exercise(role) {
   }
   router.push('/admin/settings/user-profile'); await flush()
   assert(find(app, profile) && !find(app, profile).isRequestOnGoing)
-  const menu = find(app, settings).visibleMenuItems.map(item => item.link)
+  const settingsScreen = find(app, settings)
+  assert.equal(settingsScreen.settingsTitle, 'Mi perfil')
+  for (const anchor of settingsScreen.$el.querySelectorAll('a')) assert(!/settings\.menu_title\.|navigation\./.test(anchor.textContent), anchor.textContent)
+  const menu = settingsScreen.visibleMenuItems.map(item => item.link)
   assert(menu.includes('/admin/settings/academic-years')); assert(menu.includes('/admin/settings/academic-structure')); assert(menu.includes('/admin/settings/enrollments'))
   assert(!menu.includes('/admin/settings/backup'))
   for (const [route, options] of [['academic-years', years], ['academic-structure', structure], ['enrollments', enrollments]]) {
@@ -149,7 +159,18 @@ async function exercise(role) {
     if (route === 'enrollments') { academic.divisionId = 1; await academic.cargarMatriculas(); await flush() }
   }
   assert.deepStrictEqual(errors, [])
-  console.log(role + ': inicio, menus, lectura academica y acciones OK; sin llamadas prohibidas')
+  // Tambien verifica todos los items visibles de administracion total.
+  assert(!calls.includes('/api/v1/search'))
+  responses['/api/v1/search'] = {} // La busqueda solo se habilita al pasar a total admin.
+  user.is_total_admin = true
+  await Vue.nextTick()
+  assert.equal(header.settingsTitle, 'Configuración')
+  assert.equal(settingsScreen.settingsTitle, 'Configuración')
+  assert(sidebar.$el.textContent.includes('Configuración'))
+  assert(!/navigation\./.test(sidebar.$el.textContent))
+  for (const item of sidebar.menuGroups.flatMap(group => group.items)) assert(!item.title.startsWith('navigation.'))
+  for (const anchor of settingsScreen.$el.querySelectorAll('a')) assert(!/settings\.menu_title\.|navigation\./.test(anchor.textContent), anchor.textContent)
+  console.log(role + ' (' + locale + '): inicio, menus, lectura academica y acciones OK; sin llamadas prohibidas')
   app.$destroy(); app.$el.remove()
 }
-(async () => { for (const role of ['preceptor', 'registrar', 'teacher']) await exercise(role) })().catch(error => { console.error(error); process.exitCode = 1 })
+(async () => { for (const locale of ['en', 'es']) for (const role of ['preceptor', 'registrar', 'teacher']) await exercise(role, locale) })().catch(error => { console.error(error); process.exitCode = 1 })

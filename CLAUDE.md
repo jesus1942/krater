@@ -336,3 +336,13 @@ Deployment `aaf5c0c2-5044-4b48-bc37-c9a76599dd42`, codigo `cc9edaa`,
 SUCCESS; 63 comprobaciones HTTP en PHP 8.2/MySQL aprobadas. Evidencia sin
 secretos: `docs/audits/2026-10-02-r2b-smoke.json`. La revision visual autenticada
 sigue pendiente. Produccion permanece en su deployment final R1; no promover.
+
+
+### Etiquetas y autorizacion de promocion (02/10/2026)
+
+Jesus autoriza promover R2/R2b despues de corregir las etiquetas y verificar
+staging. Esta instruccion reemplaza el corte previo. `helpers/navigation.js`
+resuelve las etiquetas españolas del menu y Configuracion/Mi perfil segun
+`system.settings.manage`, tanto en sidebar como en encabezado y layout.
+El resto de la app conserva el idioma del perfil. El gate DOM usa VueI18n real,
+prueba en/es, roles limitados y total admin y rechaza claves crudas visibles.

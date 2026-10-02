@@ -1,14 +1,14 @@
 <template>
   <base-page>
     <div class="pb-6">
-      <sw-page-header :title="$tc('settings.setting', 1)">
+      <sw-page-header :title="settingsTitle">
         <sw-breadcrumb slot="breadcrumbs">
           <sw-breadcrumb-item
             :title="$t('general.home')"
             :to="homePath"
           />
           <sw-breadcrumb-item
-            :title="$tc('settings.setting', 2)"
+            :title="settingsTitle"
             to="/admin/settings/user-profile"
             active
           />
@@ -33,7 +33,7 @@
         <sw-list>
           <sw-list-item
             v-for="(menuItem, index) in visibleMenuItems"
-            :title="$t(menuItem.title)"
+            :title="menuLabel(menuItem.title)"
             :key="index"
             :to="menuItem.link"
             :active="hasActiveUrl(menuItem.link)"
@@ -55,6 +55,7 @@
 </template>
 
 <script>
+import { navigationLabel, settingsLabel } from '../../helpers/navigation'
 import { canVisit, landingPath } from '../../helpers/access'
 import {
   UserIcon,
@@ -219,6 +220,7 @@ export default {
   },
 
   computed: {
+    settingsTitle() { return settingsLabel(this.$store.state.user.currentUser) },
     homePath() { return landingPath(this.$store.state.user.currentUser) },
     isTotalAdmin() {
       const currentUser = this.$store.state.user.currentUser
@@ -266,8 +268,9 @@ export default {
   },
 
   methods: {
+    menuLabel(key) { return navigationLabel(key) },
     getCustomLabel({ title }) {
-      return this.$t(title)
+      return navigationLabel(title)
     },
     hasActiveUrl(url) {
       return this.$route.path.indexOf(url) > -1
