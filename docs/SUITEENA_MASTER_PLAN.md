@@ -66,7 +66,7 @@ Solo **Operativo** equivale a DONE.
 - [x] Total admin transversal a empresas en ValidateTenant.
 - [x] Aislamiento transversal básico de módulos económicos.
 - [x] Informes protegidos por sesión, permiso y tenant.
-- [ ] Administración visual completa de usuarios, roles y scopes. R2/R2b implementadas y protegidas; gate local (61 tests/464 aserciones), DOM por tres roles y HTTP MySQL (63 comprobaciones) aprobados. Staging cc9edaa SUCCESS; revision visual autenticada pendiente. No promovidas ni operativas en produccion.
+- [x] Administración visual completa de usuarios, roles y scopes. R2/R2b operativas en produccion: SHA 1289f3c, deployment fd03f25b SUCCESS, migracion de historial aplicada y siembra de 76 permisos/14 roles confirmada. Gate local: 64 tests/493 aserciones, nueve recorridos DOM por tres roles en/es/sin idioma y login español; staging MySQL: 68 HTTP aprobados, incluida cuenta sin idioma guardado. Smoke publico y evidencia en docs/audits/2026-10-02-r2-r2b-production.json.
 - [ ] Impedir asignación de roles fuera del scope del actor.
 - [ ] Unificar RBAC legacy y nativo.
 - [ ] Tests de escalación de privilegios por cada rol.

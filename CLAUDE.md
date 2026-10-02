@@ -251,7 +251,7 @@ Staging usa `LOG_CHANNEL=stderr` para observar excepciones y `QUEUE_CONNECTION=s
 
 Validacion R1: 35 tests/258 aserciones, 39 verificaciones HTTP con sesiones reales y recheck sobre el SHA final `a40f866`. Deployment staging `e73c5e4e-d30f-43d5-8d6d-944e10a1df97` en SUCCESS; creacion de factura ficticia 200, PDF real 200, sin firma/firma alterada/vencimiento alterado 403 y archivos publicados iguales al build.
 
-Despliegue inicial de R1 en produccion: `f300eb5c-19df-4c35-9aab-d1f97bbccaf2`, SUCCESS, rama `produccion`, mismo SHA probado. Predeploy: usuarios 2 antes/2 despues, 1 superusuario legacy y 1 total admin vigente. Smoke real de 10 endpoints/archivos aprobado; las sesiones con roles limitados se probaron exclusivamente en staging. No se crearon cuentas productivas de prueba. R2 y filas 5 a 8 siguen pendientes.
+Despliegue inicial de R1 en produccion: `f300eb5c-19df-4c35-9aab-d1f97bbccaf2`, SUCCESS, rama `produccion`, mismo SHA probado. Predeploy: usuarios 2 antes/2 despues, 1 superusuario legacy y 1 total admin vigente. Smoke real de 10 endpoints/archivos aprobado; las sesiones con roles limitados se probaron exclusivamente en staging. No se crearon cuentas productivas de prueba. R2/R2b se cerraron posteriormente; ver la promocion del 02/10/2026. Filas 5 a 8 pendientes.
 
 Revision final del cache: los PDF privados se guardan en directorios independientes por ID de media; los caminos legacy no cambian. Gate final 36 tests/261 aserciones. SHA `01951af` verificado en staging `276a95ca-8f2e-4a66-a713-5750defd0c13` (cache PDF activado, alta y descarga real aprobadas) y produccion `5739491b-adea-4805-ac8e-0f7e639358ff`, ambos SUCCESS. Smoke productivo repetido sobre la version final. Ver cierre detallado en bitacora.
 
@@ -302,11 +302,12 @@ La migracion agrega historial sin borrar datos y su `down` se bloquea: recuperar
 la unicidad antigua exigiria descartar historia, por lo que requiere una
 migracion de reversion revisada.
 
-No promover R2 a `produccion` antes de su revision. La verificacion visual con
-sesion y el ensayo de usuario desde UI se registran aparte de las pruebas HTTP.
+R2/R2b promovidas con autorizacion de Jesus el 02/10/2026, SHA `1289f3c`.
+Metodo de verificacion: componentes Vue reales en JSDOM y HTTP autenticado
+en staging/MySQL; no se declara una recorrida visual manual con sesion.
 
 
-### R2b — experiencia por rol y registro delegado (solo staging)
+### R2b — experiencia por rol y registro delegado
 
 `preceptor_registrar` es adicional al preceptor vigente, de alcance division.
 `students.register` permite alta con matricula inicial atomica y edicion de
@@ -325,7 +326,7 @@ JSDOM monta los componentes Vue y falla ante llamadas prohibidas; no reemplaza
 la revision visual con sesion real. El ensayo HTTP de staging se ejecuta con
 `php tests/smoke/staging-role-experience.php`, solo en `staging/krater_staging`.
 Usa loopback temporal con parada garantizada y datos ficticios; no imprime
-claves/tokens ni habilita endpoints de depuracion. No promover a produccion.
+claves/tokens ni habilita endpoints de depuracion. Este ensayo es exclusivo de staging.
 
 
 Predeploy exclusivo de staging para R2b (terminante, despues de migrar/sembrar):
@@ -335,7 +336,7 @@ Predeploy exclusivo de staging para R2b (terminante, despues de migrar/sembrar):
 Deployment `aaf5c0c2-5044-4b48-bc37-c9a76599dd42`, codigo `cc9edaa`,
 SUCCESS; 63 comprobaciones HTTP en PHP 8.2/MySQL aprobadas. Evidencia sin
 secretos: `docs/audits/2026-10-02-r2b-smoke.json`. La revision visual autenticada
-sigue pendiente. Produccion permanece en su deployment final R1; no promover.
+no se realizo en esa revision. Estado posterior: ver cierre productivo del 02/10/2026.
 
 
 ### Etiquetas y autorizacion de promocion (02/10/2026)
@@ -364,3 +365,19 @@ comprobables en logs. El comando legacy con `&&` solo acreditaba migrate en
 produccion y prevalecia sobre el ajuste del servicio. No volver a una cadena
 sin shell. El script compartido no contiene fixtures ni pruebas; staging
 lo invoca antes de su preparacion y sus 68 comprobaciones HTTP exclusivas.
+
+
+### R2/R2b operativas — cierre productivo (02/10/2026)
+
+- Rama `produccion`, SHA `1289f3cf0335d90df120d0a1b36bb72c735e3497`.
+- Staging `bc6f07ce-995c-4441-9dc1-7f17537f2cf2`, SUCCESS: script completo,
+  76 permisos/14 roles y 68 HTTP con MySQL; cuenta sin idioma y con idioma
+  vacio resuelve es en bootstrap y Mi perfil, con validacion española.
+- Produccion `fd03f25b-e03c-447e-b51d-d66841389054`, SUCCESS: `Nothing to migrate`,
+  siembra de 76 permisos/14 roles y marcador `SuiteEna predeploy: completo`.
+  La migracion de historial ya se aplico en `7864247f-6c9c-4b48-909d-24b32257d1f1`.
+- Gate local: 64 tests/493 aserciones, nueve recorridos DOM por tres roles
+  en/es/sin idioma, login predeterminado español y cobertura de catalogo es.
+- `APP_LOCALE=es` y `APP_FALLBACK_LOCALE=es` explicitos en ambos servicios.
+- Evidencia y smoke publico: `docs/audits/2026-10-02-r2-r2b-production.json`.
+  Las filas siguientes no se adelantan por esta promocion.
