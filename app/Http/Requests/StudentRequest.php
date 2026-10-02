@@ -17,7 +17,7 @@ class StudentRequest extends FormRequest
         $companyId = $this->header('company');
         $studentId = optional($this->route('student'))->id;
 
-        return [
+        $rules = [
             'first_name' => ['required', 'string', 'max:100'],
             'last_name' => ['required', 'string', 'max:100'],
             'dni' => [
@@ -60,5 +60,18 @@ class StudentRequest extends FormRequest
             'family_members.*.is_financial_responsible' => ['nullable', 'boolean'],
             'family_members.*.is_primary_contact' => ['nullable', 'boolean'],
         ];
+
+        // La habilitacion delegada nunca usa el formulario completo del legajo.
+        if (! app(\Crater\Services\Access\AccessManager::class)->allows($this->user(),
+            \Crater\Enums\Permission::STUDENT_MANAGE, \Crater\Support\TenantContext::schoolLevelId())) {
+            $allowed = ['first_name', 'last_name', 'dni', 'birth_date'];
+            if (! $studentId) {
+                $allowed = array_merge($allowed, ['academic_year_id', 'grade_level_id', 'division_id', 'status']);
+                $rules['status'] = ['sometimes', Rule::in(['active', 'pending'])];
+            }
+            abort_if(array_diff(array_keys($this->all()), $allowed), 403, 'La habilitacion permite solo datos basicos.');
+            $rules = array_intersect_key($rules, array_flip($allowed));
+        }
+        return $rules;
     }
 }

@@ -2,11 +2,11 @@
   <base-page>
     <sw-page-header title="Alumnos">
       <sw-breadcrumb slot="breadcrumbs">
-        <sw-breadcrumb-item title="Inicio" to="/admin/dashboard" />
+        <sw-breadcrumb-item title="Inicio" :to="homePath" />
         <sw-breadcrumb-item title="Alumnos" to="#" active />
       </sw-breadcrumb>
       <template slot="actions">
-        <sw-button size="lg" variant="primary" @click="openCreate">
+        <sw-button v-if="canCreate" size="lg" variant="primary" @click="openCreate">
           <plus-sm-icon class="h-6 mr-1 -ml-2" /> Nuevo alumno
         </sw-button>
       </template>
@@ -49,8 +49,8 @@
     <div v-if="loading" class="p-8 text-center text-gray-500">Cargando alumnos…</div>
     <div v-else-if="!students.length" class="p-10 text-center bg-white rounded shadow">
       <h3 class="mb-2 text-lg font-semibold">Todavía no hay alumnos cargados</h3>
-      <p class="mb-5 text-gray-500">Creá el primer legajo y vinculalo con su familia y responsables.</p>
-      <sw-button variant="primary-outline" @click="openCreate">Agregar alumno</sw-button>
+      <p v-if="canCreate" class="mb-5 text-gray-500">Creá el primer legajo en tu división asignada.</p>
+      <sw-button v-if="canCreate" variant="primary-outline" @click="openCreate">Agregar alumno</sw-button>
     </div>
     <div v-else class="grid gap-4 lg:grid-cols-2">
       <article v-for="student in students" :key="student.id" class="p-5 bg-white rounded shadow">
@@ -72,8 +72,8 @@
           </div>
         </div>
         <div class="flex justify-end gap-3 mt-4">
-          <button v-if="!filters.all_levels" class="text-sm font-medium text-primary-500" @click="openEdit(student)">Editar</button>
-          <button v-if="canViewAllLevels" class="text-sm font-medium text-indigo-600" @click="openRelocate(student)">Reubicar</button>
+          <button v-if="!filters.all_levels && student.can_edit" class="text-sm font-medium text-primary-500" @click="openEdit(student)">Editar</button>
+          <button v-if="canRelocate" class="text-sm font-medium text-indigo-600" @click="openRelocate(student)">Reubicar</button>
         </div>
       </article>
     </div>
@@ -91,19 +91,19 @@
           <label class="text-sm">Apellido *<sw-input v-model="form.last_name" class="mt-1" required /></label>
           <label class="text-sm">DNI<sw-input v-model="form.dni" class="mt-1" /></label>
           <label class="text-sm">Fecha de nacimiento<sw-input v-model="form.birth_date" type="date" class="mt-1" /></label>
-          <label class="text-sm">Ciclo lectivo *
+          <label v-if="canManage || !form.id" class="text-sm">Ciclo lectivo *
             <select v-model="form.academic_year_id" required class="w-full h-10 px-3 mt-1 bg-white border border-gray-300 rounded" @change="onAcademicYearChange">
               <option value="">Seleccionar ciclo</option>
               <option v-for="year in academicYears" :key="year.id" :value="year.id">{{ year.name || year.year }}</option>
             </select>
           </label>
-          <label class="text-sm">Curso/Año *
+          <label v-if="canManage || !form.id" class="text-sm">Curso/Año *
             <select v-model="form.grade_level_id" required class="w-full h-10 px-3 mt-1 bg-white border border-gray-300 rounded" @change="onGradeLevelChange">
               <option value="">Seleccionar curso</option>
               <option v-for="grade in gradeLevels" :key="grade.id" :value="grade.id">{{ grade.name }}</option>
             </select>
           </label>
-          <label class="text-sm">División *
+          <label v-if="canManage || !form.id" class="text-sm">División *
             <select v-model="form.division_id" required class="w-full h-10 px-3 mt-1 bg-white border border-gray-300 rounded">
               <option value="">Seleccionar división</option>
               <option v-for="division in availableDivisions" :key="division.id" :value="division.id">{{ division.name }}</option>
@@ -113,7 +113,7 @@
             <span class="block">Nivel institucional</span>
             <div class="flex items-center h-10 px-3 mt-1 text-gray-600 bg-gray-50 border border-gray-200 rounded">{{ activeLevelName }}</div>
           </div>
-          <label class="text-sm">Estado
+          <label v-if="canManage" class="text-sm">Estado
             <select v-model="form.status" class="w-full h-10 px-3 mt-1 bg-white border border-gray-300 rounded">
               <option value="active">Activo</option>
               <option value="pending">Pendiente</option>
@@ -121,10 +121,10 @@
               <option value="graduated">Egresado</option>
             </select>
           </label>
-          <label class="text-sm md:col-span-2">Observaciones<textarea v-model="form.notes" rows="3" class="w-full px-3 py-2 mt-1 border border-gray-300 rounded"></textarea></label>
+          <label v-if="canSensitive" class="text-sm md:col-span-2">Observaciones<textarea v-model="form.notes" rows="3" class="w-full px-3 py-2 mt-1 border border-gray-300 rounded"></textarea></label>
         </div>
 
-        <div class="pt-6 mt-6 border-t border-gray-200">
+        <div v-if="canManage" class="pt-6 mt-6 border-t border-gray-200">
           <div class="flex flex-wrap items-start justify-between gap-3 mb-4">
             <div>
               <h3 class="text-base font-semibold text-gray-800">Familia y responsables</h3>
@@ -240,6 +240,7 @@
 </template>
 
 <script>
+import { can, landingPath } from '../../helpers/access'
 import { PlusSmIcon } from '@vue-hero-icons/solid'
 
 let familyKey = 0
@@ -305,10 +306,14 @@ export default {
   },
   created() {
     this.fetchSchoolLevels()
-    this.fetchPlacementOptions()
     this.fetchStudents()
   },
   computed: {
+    homePath() { return landingPath(this.$store.state.user.currentUser) },
+    canManage() { return can(this.$store.state.user.currentUser, 'students.manage') },
+    canSensitive() { return this.canManage && can(this.$store.state.user.currentUser, 'students.view_sensitive') },
+    canCreate() { return this.canManage || can(this.$store.state.user.currentUser, 'students.register') },
+    canRelocate() { return can(this.$store.state.user.currentUser, 'academic.enrollment.transfer') },
     availableDivisions() {
       return this.divisions.filter((division) =>
         Number(division.academic_year_id) === Number(this.form.academic_year_id) &&
@@ -372,7 +377,7 @@ export default {
       this.showForm = true
     },
     async openEdit(student) {
-      await this.fetchPlacementOptions()
+      if (this.canManage) await this.fetchPlacementOptions()
       const members = (student.family_members || []).map((member) => ({
         ...newFamilyMember(),
         id: member.id,
@@ -434,9 +439,16 @@ export default {
       this.saving = true
       this.error = ''
       try {
-        const payload = {
+        let payload = {
           ...this.form,
           family_members: this.form.family_members.map(({ local_key, ...member }) => member),
+        }
+        if (!this.canSensitive) delete payload.notes
+        if (!this.canManage) {
+          payload = { first_name: this.form.first_name, last_name: this.form.last_name,
+            dni: this.form.dni || null, birth_date: this.form.birth_date || null }
+          if (!this.form.id) Object.assign(payload, { academic_year_id: this.form.academic_year_id,
+            grade_level_id: this.form.grade_level_id, division_id: this.form.division_id, status: 'active' })
         }
         if (this.form.id) {
           await window.axios.put(`/api/v1/students/${this.form.id}`, payload)

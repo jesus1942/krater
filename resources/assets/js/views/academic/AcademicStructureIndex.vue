@@ -68,7 +68,7 @@
                 </td>
                 <td class="py-2 text-gray-600">{{ c.pedagogical_unit || '—' }}</td>
                 <td class="py-2 text-right">
-                  <button type="button" class="text-primary-500 hover:underline" @click="editarCurso(c)">
+                  <button v-if="canManageDivisions" type="button" class="text-primary-500 hover:underline" @click="editarCurso(c)">
                     Editar
                   </button>
                 </td>
@@ -80,7 +80,7 @@
             Todavía no hay cursos en este nivel.
           </p>
 
-          <form class="p-4 border rounded-lg border-primary-200 bg-primary-50" @submit.prevent="guardarCurso">
+          <form v-if="canManageDivisions" class="p-4 border rounded-lg border-primary-200 bg-primary-50" @submit.prevent="guardarCurso">
             <h5 class="mb-3 text-sm font-semibold">
               {{ cursoEnEdicion ? 'Editar curso' : 'Nuevo curso' }}
             </h5>
@@ -148,7 +148,7 @@
                 <td class="py-2 text-gray-600">{{ d.shift || '—' }}</td>
                 <td class="py-2 text-gray-600">{{ d.capacity || '—' }}</td>
                 <td class="py-2 text-right">
-                  <button type="button" class="text-primary-500 hover:underline" @click="editarDivision(d)">
+                  <button v-if="canManageDivisions" type="button" class="text-primary-500 hover:underline" @click="editarDivision(d)">
                     Editar
                   </button>
                 </td>
@@ -160,8 +160,7 @@
             Todavía no hay divisiones para este ciclo.
           </p>
 
-          <form
-            v-if="years.length && gradeLevels.length"
+          <form v-if="canManageDivisions && years.length && gradeLevels.length"
             class="p-4 border rounded-lg border-primary-200 bg-primary-50"
             @submit.prevent="guardarDivision"
           >
@@ -234,11 +233,11 @@
                   {{ m.counts_for_promotion ? 'Computa' : 'No computa' }}
                 </td>
                 <td class="py-2 text-right">
-                  <button type="button" class="text-primary-500 hover:underline" @click="editarMateria(m)">
+                  <button v-if="canManageSubjects" type="button" class="text-primary-500 hover:underline" @click="editarMateria(m)">
                     Editar
                   </button>
                   <button
-                    v-if="m.enabled"
+                    v-if="canManageSubjects && m.enabled"
                     type="button"
                     class="ml-3 text-red-600 hover:underline"
                     @click="deshabilitarMateria(m)"
@@ -254,7 +253,7 @@
             Todavía no hay materias en este nivel.
           </p>
 
-          <form class="p-4 border rounded-lg border-primary-200 bg-primary-50" @submit.prevent="guardarMateria">
+          <form v-if="canManageSubjects" class="p-4 border rounded-lg border-primary-200 bg-primary-50" @submit.prevent="guardarMateria">
             <h5 class="mb-3 text-sm font-semibold">
               {{ materiaEnEdicion ? 'Editar materia' : 'Nueva materia' }}
             </h5>
@@ -303,6 +302,7 @@
 </template>
 
 <script>
+import { can } from '../../helpers/access'
 const Campo = {
   props: ['label', 'error'],
   template: `<label class="block text-sm text-gray-700">
@@ -340,6 +340,8 @@ export default {
   },
 
   computed: {
+    canManageDivisions() { return can(this.$store.state.user.currentUser, 'academic.division.manage') },
+    canManageSubjects() { return can(this.$store.state.user.currentUser, 'academic.study_plan.manage') },
     tabs() {
       return [
         { id: 'cursos', label: 'Cursos', count: this.gradeLevels.length },

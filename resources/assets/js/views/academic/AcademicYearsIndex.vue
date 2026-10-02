@@ -28,17 +28,17 @@
           <p class="mt-1 mb-6 text-sm text-gray-500">
             Creá el primero para poder cargar cursos, divisiones y matrículas.
           </p>
-          <sw-button variant="primary" @click="startCreate">Crear ciclo lectivo</sw-button>
+          <sw-button v-if="canManage" variant="primary" @click="startCreate">Crear ciclo lectivo</sw-button>
         </div>
 
         <div v-else class="space-y-4">
-          <div v-if="!creating" class="flex justify-end">
+          <div v-if="canManage && !creating" class="flex justify-end">
             <sw-button variant="primary-outline" @click="startCreate">Nuevo ciclo lectivo</sw-button>
           </div>
 
           <!-- formulario de alta o edición -->
           <form
-            v-if="creating || editing"
+            v-if="canManage && (creating || editing)"
             class="p-5 border rounded-lg border-primary-200 bg-primary-50"
             @submit.prevent="save"
           >
@@ -114,7 +114,7 @@
                 </td>
                 <td class="py-3 text-right">
                   <button
-                    v-if="year.status !== 'closed'"
+                    v-if="canManage && year.status !== 'closed'"
                     type="button"
                     class="text-primary-500 hover:underline"
                     @click="startEdit(year)"
@@ -123,7 +123,7 @@
                   </button>
                   <!-- Un ciclo cerrado es historia: no se edita ni se borra. Para
                        tocarlo hay que reabrirlo, y eso pasa por doble control. -->
-                  <span v-else class="text-xs text-gray-400">Cerrado</span>
+                  <span v-else-if="year.status === 'closed'" class="text-xs text-gray-400">Cerrado</span>
                 </td>
               </tr>
             </tbody>
@@ -135,6 +135,7 @@
 </template>
 
 <script>
+import { can } from '../../helpers/access'
 export default {
   data() {
     return {
@@ -152,6 +153,8 @@ export default {
   async created() {
     await this.load()
   },
+
+  computed: { canManage() { return can(this.$store.state.user.currentUser, 'academic.year.manage') } },
 
   methods: {
     emptyForm() {

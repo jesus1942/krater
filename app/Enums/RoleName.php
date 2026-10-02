@@ -46,6 +46,7 @@ final class RoleName
 
     /** Preceptor o tutor de division: asistencia y seguimiento. */
     const PRECEPTOR = 'preceptor';
+    const PRECEPTOR_REGISTRAR = 'preceptor_registrar';
 
     /** Docente a cargo de secciones de materia. */
     const TEACHER = 'teacher';
@@ -190,6 +191,7 @@ final class RoleName
                 'hierarchy_level' => 40,
                 'scope_type' => 'division',
                 'permissions' => [
+                    $P::ACADEMIC_YEAR_VIEW, $P::STUDY_PLAN_VIEW,
                     $P::DIVISION_VIEW, $P::SECTION_VIEW, $P::ENROLLMENT_VIEW,
                     $P::ATTENDANCE_VIEW_ALL, $P::ATTENDANCE_RECORD, $P::ATTENDANCE_JUSTIFY,
                     $P::GRADE_VIEW_ALL,
@@ -199,12 +201,21 @@ final class RoleName
                 ],
             ],
 
+            self::PRECEPTOR_REGISTRAR => [
+                'label' => 'Preceptor con alta de alumnos',
+                'description' => 'Habilitacion adicional de la direccion para registrar alumnos en una division concreta.',
+                'hierarchy_level' => 40,
+                'scope_type' => 'division',
+                'permissions' => [$P::STUDENT_REGISTER, $P::STUDENT_VIEW_BASIC],
+            ],
+
             self::TEACHER => [
                 'label' => 'Docente',
                 'description' => 'Carga notas y asistencia de las secciones a su cargo, y de ninguna otra.',
                 'hierarchy_level' => 50,
                 'scope_type' => 'section',
                 'permissions' => [
+                    $P::ACADEMIC_YEAR_VIEW, $P::STUDY_PLAN_VIEW, $P::DIVISION_VIEW,
                     $P::SECTION_VIEW, $P::ENROLLMENT_VIEW,
                     $P::GRADE_VIEW_OWN_SECTIONS, $P::GRADE_RECORD, $P::GRADE_PUBLISH,
                     $P::ATTENDANCE_VIEW_OWN_SECTIONS, $P::ATTENDANCE_RECORD,

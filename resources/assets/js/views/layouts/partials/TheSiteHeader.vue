@@ -3,7 +3,7 @@
     class="ena-site-header fixed top-0 left-0 z-40 flex items-center justify-between w-full px-4 py-3 md:h-16 md:px-8"
   >
     <a
-      href="/admin/dashboard"
+      :href="homePath"
       class="ena-header-brand float-none not-italic brand-main md:float-left font-base"
       :class="{ 'ena-header-brand--institution': !selectedLevel }"
     >
@@ -40,7 +40,7 @@
     </div>
 
     <ul class="float-right h-8 m-0 list-none md:h-9">
-      <global-search class="hidden float-left mr-2 md:block" />
+      <global-search v-if="can('finance.view') || can('system.user.view')" class="hidden float-left mr-2 md:block" />
 
       <a
         :class="{ 'is-active': isSidebarOpen }"
@@ -53,7 +53,7 @@
         </div>
       </a>
 
-      <li class="relative hidden float-left m-0 md:block">
+      <li v-if="can('finance.invoice.manage')" class="relative hidden float-left m-0 md:block">
         <sw-dropdown>
           <a
             slot="activator"
@@ -116,6 +116,7 @@
 
 <script type="text/babel">
 import { mapGetters, mapActions } from 'vuex'
+import { can, landingPath } from '../../../helpers/access'
 import {
   PlusIcon,
   DocumentTextIcon,
@@ -142,6 +143,7 @@ export default {
     }
   },
   computed: {
+    homePath() { return landingPath(this.currentUser) },
     ...mapGetters('user', ['currentUser']),
     ...mapGetters(['isSidebarOpen']),
     isTotalAdmin() {
@@ -172,6 +174,7 @@ export default {
     await this.fetchSchoolLevels()
   },
   methods: {
+    can(permission) { return can(this.currentUser, permission) },
     async fetchSchoolLevels() {
       const response = await window.axios.get('/api/v1/school-levels')
       this.schoolLevels = response.data.levels.filter((level) => level.enabled)

@@ -105,6 +105,10 @@ class AccessManager
             ->join('permissions', 'permissions.id', '=', 'permission_role.permission_id')
             ->pluck('permissions.name')->unique()->values()->all();
 
+        if (! $this->rolesQuery($user, $schoolLevelId)->where('roles.name', RoleName::PRECEPTOR)->exists()) {
+            $rows = array_diff($rows, [Permission::STUDENT_REGISTER]);
+        }
+
         return array_values(array_diff($rows, Permission::totalAdminOnly()));
     }
 
@@ -124,6 +128,10 @@ class AccessManager
             return true;
         }
         if (! $this->isActive($user)) {
+            return false;
+        }
+        if ($permission === Permission::STUDENT_REGISTER && ($scope['type'] !== 'division'
+            || ! in_array((int) $scope['id'], $this->scopedDivisionIds($user, Permission::STUDENT_VIEW_FILE, $schoolLevelId, RoleName::PRECEPTOR), true))) {
             return false;
         }
         // Solo cuentan las asignaciones que otorgan ESTE permiso. Un rol de
@@ -199,7 +207,7 @@ class AccessManager
      * seccion de materia en ellas. Devuelve array vacio si no alcanza ninguna,
      * y el llamador debe interpretarlo como "ninguna", no como "todas".
      */
-    public function scopedDivisionIds(User $user, ?string $permission = null, ?int $level = null): array
+    public function scopedDivisionIds(User $user, ?string $permission = null, ?int $level = null, ?string $roleName = null): array
     {
         if (! $this->isActive($user)) {
             return [];
@@ -207,6 +215,9 @@ class AccessManager
         $ids = [];
         $assignments = $permission === null ? $this->currentAssignments($user)->select('role_user.*', 'roles.scope_type')
             : $this->assignmentsWithPermission($user, $permission, $level);
+        if ($roleName !== null) {
+            $assignments->where('roles.name', $roleName);
+        }
         foreach ($assignments->get() as $assignment) {
             if (! in_array($assignment->scope_type, ['division', 'section'], true)) {
                 continue;
@@ -227,7 +238,11 @@ class AccessManager
                 ->where('school_level_id', $assignment->school_level_id)->whereIn('id', $divisionIds)->pluck('id')->all();
             $ids = array_merge($ids, $valid);
         }
-        return array_values(array_unique(array_map('intval', $ids)));
+        $ids = array_values(array_unique(array_map('intval', $ids)));
+        if ($permission === Permission::STUDENT_REGISTER) {
+            $ids = array_values(array_intersect($ids, $this->scopedDivisionIds($user, Permission::STUDENT_VIEW_FILE, $level, RoleName::PRECEPTOR)));
+        }
+        return $ids;
     }
 
     /** Asignaciones vigentes que originan un permiso, para inspeccion y alcance. */
@@ -391,6 +406,13 @@ class AccessManager
         }
 
         if (! $this->allows($actor, Permission::ROLE_ASSIGN, $schoolLevelId)) {
+            return false;
+        }
+
+        // La delegacion de altas es una decision de direccion; ni una
+        // vicedireccion con permisos agregados ni otro preceptor la otorgan.
+        if ($roleName === RoleName::PRECEPTOR_REGISTRAR && ! $this->rolesQuery($actor, $schoolLevelId)
+            ->whereIn('roles.name', [RoleName::GENERAL_DIRECTOR, RoleName::LEVEL_DIRECTOR])->exists()) {
             return false;
         }
 

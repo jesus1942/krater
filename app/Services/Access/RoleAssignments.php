@@ -99,6 +99,12 @@ class RoleAssignments
             $division = isset($data['division_id']) ? (int) $data['division_id'] : null;
             $section = isset($data['course_section_id']) ? (int) $data['course_section_id'] : null;
             $this->authorizeScope($actor, $role, $level, $division, $section);
+            if ($role->name === 'preceptor_registrar') {
+                // Es una habilitacion adicional para preceptores del nivel.
+                abort_unless(app(AccessManager::class)->assignmentsWithPermission($target, Permission::STUDENT_VIEW_FILE, $level)
+                    ->where('roles.name', 'preceptor')->exists(), 403, 'La cuenta debe tener un rol de preceptor vigente.');
+                abort_unless(in_array($division, app(AccessManager::class)->scopedDivisionIds($target, Permission::STUDENT_VIEW_FILE, $level, 'preceptor'), true), 403);
+            }
             $start = $data['starts_at'] ?? now()->toDateString();
             $end = $data['ends_at'] ?? null;
             if ($end && $end < $start) {

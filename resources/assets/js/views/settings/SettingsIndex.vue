@@ -5,7 +5,7 @@
         <sw-breadcrumb slot="breadcrumbs">
           <sw-breadcrumb-item
             :title="$t('general.home')"
-            to="/admin/dashboard"
+            :to="homePath"
           />
           <sw-breadcrumb-item
             :title="$tc('settings.setting', 2)"
@@ -55,7 +55,7 @@
 </template>
 
 <script>
-import { can } from '../../helpers/access'
+import { canVisit, landingPath } from '../../helpers/access'
 import {
   UserIcon,
   OfficeBuildingIcon,
@@ -219,6 +219,7 @@ export default {
   },
 
   computed: {
+    homePath() { return landingPath(this.$store.state.user.currentUser) },
     isTotalAdmin() {
       const currentUser = this.$store.state.user.currentUser
       return Boolean(
@@ -230,17 +231,11 @@ export default {
       return !window.Ls.get('selectedSchoolLevel')
     },
     visibleMenuItems() {
-      const permissions = {
-        'academic-years': 'academic.year.view', 'academic-structure': 'academic.division.view',
-        'enrollments': 'academic.enrollment.view', 'audit-logs': 'system.audit.view',
-        'data-reconciliation': 'data.reconcile', 'school-levels': 'system.school_level.manage',
-        'backup': 'system.backup.manage',
-      }
       return this.menuItems.filter(item => {
         const key = item.link.split('/').pop()
         if (key === 'user-profile') return true
         if (item.totalAdminOnly && (!this.isTotalAdmin || !this.isWholeInstitutionContext)) return false
-        return can(this.$store.state.user.currentUser, permissions[key] || 'system.settings.manage')
+        return canVisit(this.$store.state.user.currentUser, item.link)
       })
     },
   },

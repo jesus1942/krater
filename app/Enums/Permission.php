@@ -97,6 +97,8 @@ final class Permission
     const STUDENT_VIEW_SENSITIVE = 'students.view_sensitive';
 
     const STUDENT_MANAGE = 'students.manage';
+    /** Alta delegada y edicion basica, sin baja ni pase academico. */
+    const STUDENT_REGISTER = 'students.register';
     const GUARDIAN_MANAGE = 'students.guardian.manage';
 
     // ---------------------------------------------------------------- campus
@@ -278,6 +280,7 @@ final class Permission
             self::STUDENT_VIEW_FILE => ['group' => 'students', 'label' => 'Ver el legajo'],
             self::STUDENT_VIEW_SENSITIVE => ['group' => 'students', 'label' => 'Ver informacion sensible del legajo'],
             self::STUDENT_MANAGE => ['group' => 'students', 'label' => 'Administrar estudiantes'],
+            self::STUDENT_REGISTER => ['group' => 'students', 'label' => 'Registrar alumnos y editar datos basicos en su division'],
             self::GUARDIAN_MANAGE => ['group' => 'students', 'label' => 'Administrar responsables'],
 
             self::CLASS_VIEW => ['group' => 'campus', 'label' => 'Ver clases en vivo'],

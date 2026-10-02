@@ -8,6 +8,36 @@ use Illuminate\Support\Facades\Hash;
 /** Dataset ficticio permanente para probar aislamiento real en staging. */
 class StagingAccessFixtures
 {
+    /** Cuentas nuevas para R2b; conserva claves, bajas y revocaciones al repetir. */
+    public function prepareRoleExperience(int $companyId): array
+    {
+        $this->prepare($companyId); // doble corte de entorno, base e institucion
+        return DB::transaction(function () use ($companyId) {
+            $secret = config('staging.admin_password');
+            $primary = (int) DB::table('school_levels')->where('company_id', $companyId)->where('code', 'primary')->value('id');
+            $division = DB::table('divisions')->where('company_id', $companyId)->where('school_level_id', $primary)->where('name', 'R1 prueba')->first();
+            $other = $this->ensureRow('divisions', ['company_id' => $companyId, 'school_level_id' => $primary,
+                'academic_year_id' => $division->academic_year_id, 'grade_level_id' => $division->grade_level_id, 'name' => 'R2b otra'], []);
+            $subject = $this->ensureRow('subjects', ['company_id' => $companyId, 'school_level_id' => $primary, 'code' => 'FICTICIO-R2B'],
+                ['name' => 'Materia ficticia R2b']);
+            $section = $this->ensureRow('course_sections', ['company_id' => $companyId, 'school_level_id' => $primary,
+                'academic_year_id' => $division->academic_year_id, 'division_id' => $division->id, 'subject_id' => $subject], []);
+            $ids = [];
+            foreach (['preceptor' => 'preceptor', 'registrar' => 'preceptor', 'teacher' => 'teacher',
+                'director' => 'level_director', 'vice' => 'vice_director'] as $key => $role) {
+                $id = $this->account($companyId, $key.'.r2b.staging', 'staff', $secret, $role, $primary);
+                $ids[$key] = $id;
+                if (in_array($key, ['preceptor', 'registrar', 'teacher'], true)) {
+                    $this->ensureRow('user_scopes', ['user_id' => $id, 'company_id' => $companyId,
+                        'scope_type' => $key === 'teacher' ? 'course_section' : 'division',
+                        'scope_id' => $key === 'teacher' ? $section : $division->id], []);
+                }
+            }
+            return $ids + ['level' => $primary, 'division' => (int) $division->id, 'other_division' => $other,
+                'year' => (int) $division->academic_year_id, 'grade' => (int) $division->grade_level_id];
+        });
+    }
+
     public function prepare(int $companyId): void
     {
         if (! app()->environment('staging') || DB::connection()->getDatabaseName() !== 'krater_staging') {

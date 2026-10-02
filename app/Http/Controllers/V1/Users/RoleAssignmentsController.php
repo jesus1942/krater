@@ -55,7 +55,12 @@ class RoleAssignmentsController extends Controller
         if (! $access->isTotalAdmin($request->user())) {
             $query->where('role_user.school_level_id', TenantContext::schoolLevelId());
         }
-        return response()->json(['assignments' => $query->orderByDesc('role_user.id')->get(['role_user.*', 'roles.label', 'roles.name', 'roles.scope_type', 'school_levels.name as level_name', 'divisions.name as division_name']),
+        $rows = $query->orderByDesc('role_user.id')->get(['role_user.*', 'roles.label', 'roles.name', 'roles.hierarchy_level', 'roles.scope_type', 'school_levels.name as level_name', 'divisions.name as division_name']);
+        $rows->each(function ($row) use ($access, $request, $user) {
+            $row->can_revoke = $access->canManageUser($request->user(), $user)
+                && $access->canGrantRole($request->user(), $row->name, $row->hierarchy_level, $row->school_level_id);
+        });
+        return response()->json(['assignments' => $rows,
             'can_manage' => $access->canManageUser($request->user(), $user)]);
     }
 

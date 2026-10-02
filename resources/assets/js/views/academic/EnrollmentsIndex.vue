@@ -93,7 +93,7 @@
                 </td>
                 <td class="py-2 text-right">
                   <button
-                    v-if="m.status === 'active'"
+                    v-if="canManage && m.status === 'active'"
                     type="button"
                     class="text-primary-500 hover:underline"
                     @click="abrirBaja(m)"
@@ -101,7 +101,7 @@
                     Dar de baja
                   </button>
                   <button
-                    v-else
+                    v-else-if="canManage"
                     type="button"
                     class="text-primary-500 hover:underline"
                     @click="reincorporar(m)"
@@ -117,7 +117,7 @@
             Todavía no hay nadie matriculado en esta división.
           </p>
 
-          <form class="p-4 border rounded-lg border-primary-200 bg-primary-50" @submit.prevent="matricular">
+          <form v-if="canManage" class="p-4 border rounded-lg border-primary-200 bg-primary-50" @submit.prevent="matricular">
             <h5 class="mb-3 text-sm font-semibold">Matricular un estudiante</h5>
 
             <div class="grid gap-4 md:grid-cols-3">
@@ -183,7 +183,7 @@
         <label class="block mb-4 text-sm text-gray-700">
           <span class="block mb-1">Motivo</span>
           <select v-model="formBaja.status" class="w-full base-input">
-            <option value="transferred_out">Pase a otra escuela</option>
+            <option v-if="canTransfer" value="transferred_out">Pase a otra escuela</option>
             <option value="withdrawn">Baja</option>
           </select>
           <span v-if="formBaja.status === 'transferred_out'" class="block mt-1 text-xs text-gray-500">
@@ -213,6 +213,7 @@
 </template>
 
 <script>
+import { can } from '../../helpers/access'
 export default {
   data() {
     return {
@@ -232,12 +233,14 @@ export default {
       candidatos: [],
       formAlta: { student_id: null, enrolled_on: '', has_curricular_adaptation: false },
       bajaDe: null,
-      formBaja: { status: 'transferred_out', left_on: '' },
+      formBaja: { status: 'withdrawn', left_on: '' },
       temporizador: null,
     }
   },
 
   computed: {
+    canManage() { return can(this.$store.state.user.currentUser, 'academic.enrollment.manage') },
+    canTransfer() { return can(this.$store.state.user.currentUser, 'academic.enrollment.transfer') },
     divisionesDelCiclo() {
       return this.divisions.filter((d) => String(d.academic_year_id) === String(this.cicloId))
     },
@@ -350,7 +353,7 @@ export default {
     abrirBaja(m) {
       this.bajaDe = m
       this.errorBaja = null
-      this.formBaja = { status: 'transferred_out', left_on: '' }
+      this.formBaja = { status: 'withdrawn', left_on: '' }
     },
 
     async confirmarBaja() {

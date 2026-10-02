@@ -72,7 +72,7 @@
                   <p class="mt-1 text-sm font-medium">{{ status(assignment) }}</p>
                   <p v-if="assignment.revoked_at" class="text-xs text-gray-500">Revocada el {{ assignment.revoked_at }}</p>
                 </div>
-                <sw-button v-if="canAssign && !assignment.revoked_at && (!assignment.ends_on || assignment.ends_on >= today)" variant="danger-outline" :disabled="saving" @click="revoke(assignment)">Revocar acceso</sw-button>
+                <sw-button v-if="canAssign && assignment.can_revoke && !assignment.revoked_at && (!assignment.ends_on || assignment.ends_on >= today)" variant="danger-outline" :disabled="saving" @click="revoke(assignment)">Revocar acceso</sw-button>
               </div>
             </article>
           </sw-card>

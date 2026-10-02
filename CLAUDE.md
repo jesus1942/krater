@@ -304,3 +304,25 @@ migracion de reversion revisada.
 
 No promover R2 a `produccion` antes de su revision. La verificacion visual con
 sesion y el ensayo de usuario desde UI se registran aparte de las pruebas HTTP.
+
+
+### R2b — experiencia por rol y registro delegado (solo staging)
+
+`preceptor_registrar` es adicional al preceptor vigente, de alcance division.
+`students.register` permite alta con matricula inicial atomica y edicion de
+identidad basica; no permite baja, traslado, familiares ni notas sensibles.
+Solo direccion del nivel/general o total admin lo administran via R2. Alcance,
+cupo y autoridad se revalidan bajo bloqueo; auditoria semantica obligatoria.
+
+Vue elige inicio por permisos y evita montar rutas prohibidas; buscador,
+selectores y botones se ocultan segun bootstrap. `placement-options` se pide
+al abrir el alta, nunca al leer Alumnos ni al editar datos basicos delegados.
+Preceptor/docente pueden leer ciclos y estructura, conservando el scope.
+
+Pruebas reproducibles: `php phpunit.phar -c phpunit-rbac.xml` y
+`node tests/smoke/role-ui.cjs` (PHP en PATH, o variable `PHP` apuntando al binario).
+JSDOM monta los componentes Vue y falla ante llamadas prohibidas; no reemplaza
+la revision visual con sesion real. El ensayo HTTP de staging se ejecuta con
+`php tests/smoke/staging-role-experience.php`, solo en `staging/krater_staging`.
+Usa loopback temporal con parada garantizada y datos ficticios; no imprime
+claves/tokens ni habilita endpoints de depuracion. No promover a produccion.

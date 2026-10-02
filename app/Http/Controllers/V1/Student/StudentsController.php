@@ -11,6 +11,7 @@ use Crater\Models\GradeLevel;
 use Crater\Models\SchoolLevel;
 use Crater\Models\Student;
 use Crater\Services\Access\AccessManager;
+use Crater\Services\Access\StudentRegistration;
 use Crater\Support\TenantContext;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -24,7 +25,7 @@ class StudentsController extends Controller
 
     public function index(Request $request)
     {
-        $companyId = (int) $request->header('company');
+        $companyId = TenantContext::companyId();
         $limit = $request->get('limit', 15);
         $user = $request->user();
         $canViewAllLevels = $user && app(AccessManager::class)->isTotalAdmin($user);
@@ -58,8 +59,10 @@ class StudentsController extends Controller
             ->orderBy('first_name');
 
         $students = $limit === 'all' ? $query->get() : $query->paginate((int) $limit);
+        $rows = $limit === 'all' ? $students : $students->getCollection();
+        $rows->each(fn ($student) => $this->presentStudent($student));
         $summaryBase = function () use ($allLevels) {
-            return $allLevels ? Student::acrossLevels() : Student::query();
+            return ($allLevels ? Student::acrossLevels() : Student::query())->accessibleTo(request()->user());
         };
 
         return response()->json([
@@ -76,7 +79,7 @@ class StudentsController extends Controller
 
     public function placementOptions(Request $request)
     {
-        $companyId = (int) $request->header('company');
+        $companyId = TenantContext::companyId();
         $schoolLevelId = (int) TenantContext::schoolLevelId();
 
         abort_unless($schoolLevelId, 422, 'Seleccioná un nivel institucional antes de cargar un alumno.');
@@ -99,6 +102,13 @@ class StudentsController extends Controller
             ->orderBy('name')
             ->get(['id', 'academic_year_id', 'grade_level_id', 'school_level_id', 'name', 'shift', 'capacity']);
 
+        $access = app(AccessManager::class);
+        if (! $access->allows($request->user(), 'students.manage', $schoolLevelId)) {
+            $divisions = $divisions->whereIn('id', $access->scopedDivisionIds($request->user(), 'students.register', $schoolLevelId))->values();
+            $academicYears = $academicYears->whereIn('id', $divisions->pluck('academic_year_id'))->values();
+            $gradeLevels = $gradeLevels->whereIn('id', $divisions->pluck('grade_level_id'))->values();
+        }
+
         return response()->json([
             'academic_years' => $academicYears,
             'grade_levels' => $gradeLevels,
@@ -108,6 +118,10 @@ class StudentsController extends Controller
 
     public function store(StudentRequest $request)
     {
+        if (! app(AccessManager::class)->allows($request->user(), 'students.manage', TenantContext::schoolLevelId())) {
+            $student = app(StudentRegistration::class)->create($request->user(), $request->validated());
+            return response()->json(['student' => $this->loadStudentRelations($student), 'success' => true], 201);
+        }
         $companyId = (int) $request->header('company');
         $validated = $request->validated();
         $familyMembers = $validated['family_members'] ?? [];
@@ -139,6 +153,10 @@ class StudentsController extends Controller
     public function update(StudentRequest $request, Student $student)
     {
         $this->ensureCompany($request, $student);
+        if (! app(AccessManager::class)->allows($request->user(), 'students.manage', TenantContext::schoolLevelId())) {
+            $student = app(StudentRegistration::class)->update($request->user(), $student, $request->validated());
+            return response()->json(['student' => $this->loadStudentRelations($student), 'success' => true]);
+        }
         $companyId = (int) $request->header('company');
         $validated = $request->validated();
         $hasFamilyPayload = array_key_exists('family_members', $validated);
@@ -319,6 +337,26 @@ class StudentsController extends Controller
             ]);
         }
 
+        return $this->presentStudent($student);
+    }
+
+    /** Datos y acciones de cada legajo, sin ampliar un rol de division. */
+    private function presentStudent(Student $student): Student
+    {
+        $actor = request()->user();
+        $access = app(AccessManager::class);
+        $level = TenantContext::schoolLevelId();
+        $manage = $access->allows($actor, 'students.manage', $level);
+        $basic = $access->allows($actor, 'students.register', $level)
+            && $student->enrollments()->active()->whereIn('division_id',
+                $access->scopedDivisionIds($actor, 'students.register', $level))->exists();
+        $student->setAttribute('can_edit', $manage || $basic);
+        if (! $access->allows($actor, 'students.view_sensitive', $level)) {
+            $student->makeHidden('notes');
+        }
+        if (! $access->allows($actor, 'students.view_file', $level)) {
+            $student->makeHidden(['guardian', 'guardian_id', 'familyMembers', 'family_members', 'legacy_family_member']);
+        }
         return $student;
     }
 
