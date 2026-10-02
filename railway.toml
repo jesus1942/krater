@@ -2,7 +2,7 @@
 builder = "dockerfile"
 
 [deploy]
-preDeployCommand = "php artisan migrate --force && php artisan db:seed --class=Database\\\\Seeders\\\\RbacSeeder --force && php artisan crater:mark-installed"
+preDeployCommand = "sh pre-deploy.sh"
 healthcheckPath = "/ping"
 healthcheckTimeout = 60
 restartPolicyType = "on_failure"

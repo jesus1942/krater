@@ -330,7 +330,7 @@ claves/tokens ni habilita endpoints de depuracion. No promover a produccion.
 
 Predeploy exclusivo de staging para R2b (terminante, despues de migrar/sembrar):
 ```sh
-/bin/sh -c 'php artisan migrate --force && php artisan db:seed --class=RbacSeeder --force && php artisan crater:mark-installed && php artisan ena:preparar-staging --matriz && php tests/smoke/staging-role-experience.php'
+/bin/sh -c 'sh pre-deploy.sh && php artisan ena:preparar-staging --matriz && php tests/smoke/staging-role-experience.php'
 ```
 Deployment `aaf5c0c2-5044-4b48-bc37-c9a76599dd42`, codigo `cc9edaa`,
 SUCCESS; 63 comprobaciones HTTP en PHP 8.2/MySQL aprobadas. Evidencia sin
@@ -354,3 +354,13 @@ en/es/sin idioma, roles limitados y total admin, y cobertura española de todas
 las claves del catalogo ingles. El smoke de staging retira/restaura solo el
 idioma de una cuenta ficticia y verifica bootstrap, Mi perfil y validacion
 española por HTTP. Nunca se ejecuta este ensayo en produccion.
+
+
+### Predeploy terminante del repositorio (02/10/2026)
+
+`railway.toml` invoca `sh pre-deploy.sh`. El script usa `set -eu` y pasos
+separados para migraciones, RbacSeeder y mark-installed, con marcadores
+comprobables en logs. El comando legacy con `&&` solo acreditaba migrate en
+produccion y prevalecia sobre el ajuste del servicio. No volver a una cadena
+sin shell. El script compartido no contiene fixtures ni pruebas; staging
+lo invoca antes de su preparacion y sus 68 comprobaciones HTTP exclusivas.

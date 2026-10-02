@@ -166,3 +166,8 @@
 - Jesus pide tambien `APP_LOCALE/config(app.locale)` y `fallback_locale` en es, con una cuenta sin idioma guardado en staging antes de promover. Se completa el arranque/backend, VueI18n, bootstrap, Mi perfil y nuevas altas; no se reescriben preferencias explicitas de cuentas existentes.
 - Catalogo español completo respecto del ingles; textos ingleses remanentes traducidos y mensajes Laravel de auth, paginacion, contraseñas y validacion en español.
 - DOM real: nueve recorridos por tres roles y en/es/sin preferencia. Smoke permanente ampliado: elimina/restaura unicamente la preferencia de la cuenta ficticia de staging, prueba idioma ausente/vacio y respuesta de validacion española. Resultado real de staging y produccion pendiente del nuevo SHA.
+
+### Correccion del predeploy productivo antes del cierre
+
+- El SHA 55ca758 paso staging (68 HTTP; cuenta sin idioma y vacio resuelve es; validacion española) y se promovio. Produccion aplico la migracion de historial y paso 14 verificaciones publicas, con JS/CSS identicos.
+- Los logs de produccion no acreditaron la siembra en el comando legacy encadenado de railway.toml. Un ajuste del servicio y redeploy del mismo SHA tampoco la ejecuto; el archivo del repo prevalece. Se reemplaza por `sh pre-deploy.sh`, script terminante con marcadores, migracion, RbacSeeder y mark-installed. No contiene fixtures ni pruebas productivas. Se verifica el nuevo SHA en staging antes de completar la promocion.
