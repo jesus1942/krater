@@ -147,9 +147,7 @@ export default {
     isTotalAdmin() {
       return Boolean(
         this.currentUser &&
-          (this.currentUser.is_total_admin === true ||
-            this.currentUser.rbac_role === 'total_admin' ||
-            this.currentUser.role === 'super admin')
+          this.currentUser.is_total_admin === true
       )
     },
     selectedLevel() {

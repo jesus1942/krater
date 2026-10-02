@@ -55,6 +55,7 @@
 </template>
 
 <script>
+import { can } from '../../helpers/access'
 import {
   UserIcon,
   OfficeBuildingIcon,
@@ -222,20 +223,25 @@ export default {
       const currentUser = this.$store.state.user.currentUser
       return Boolean(
         currentUser &&
-          (currentUser.is_total_admin === true ||
-            currentUser.rbac_role === 'total_admin' ||
-            currentUser.role === 'super admin')
+          currentUser.is_total_admin === true
       )
     },
     isWholeInstitutionContext() {
       return !window.Ls.get('selectedSchoolLevel')
     },
     visibleMenuItems() {
-      return this.menuItems.filter(
-        (item) =>
-          !item.totalAdminOnly ||
-          (this.isTotalAdmin && this.isWholeInstitutionContext)
-      )
+      const permissions = {
+        'academic-years': 'academic.year.view', 'academic-structure': 'academic.division.view',
+        'enrollments': 'academic.enrollment.view', 'audit-logs': 'system.audit.view',
+        'data-reconciliation': 'data.reconcile', 'school-levels': 'system.school_level.manage',
+        'backup': 'system.backup.manage',
+      }
+      return this.menuItems.filter(item => {
+        const key = item.link.split('/').pop()
+        if (key === 'user-profile') return true
+        if (item.totalAdminOnly && (!this.isTotalAdmin || !this.isWholeInstitutionContext)) return false
+        return can(this.$store.state.user.currentUser, permissions[key] || 'system.settings.manage')
+      })
     },
   },
 

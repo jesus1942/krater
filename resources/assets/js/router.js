@@ -61,6 +61,7 @@ import ExpenseCreate from './views/expenses/Create.vue'
 //User
 import UserIndex from './views/users/Index.vue'
 import UserCreate from './views/users/Create.vue'
+import UserAccess from './views/users/Access.vue'
 
 // Report
 import SalesReports from './views/reports/SalesReports'
@@ -334,6 +335,8 @@ const routes = [
         name: 'users.edit',
         component: UserCreate,
       },
+
+      { path: 'users/:id/access', name: 'users.access', component: UserAccess },
 
       // Reports
       {

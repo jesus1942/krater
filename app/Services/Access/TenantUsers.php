@@ -28,14 +28,21 @@ class TenantUsers
         }
         $today = now()->toDateString();
 
-        return $query->whereExists(function ($q) use ($levelIds, $today) {
+        return $query->where(function ($visible) use ($actor, $levelIds, $today) {
+            $visible->where(function ($new) use ($actor) {
+                $new->where('users.creator_id', $actor->id)->whereNotExists(function ($history) {
+                    $history->selectRaw('1')->from('role_user')->whereColumn('role_user.user_id', 'users.id');
+                });
+            })->orWhereExists(function ($q) use ($levelIds, $today) {
             $q->selectRaw('1')->from('role_user')->join('roles', 'roles.id', '=', 'role_user.role_id')
                 ->whereColumn('role_user.user_id', 'users.id')
                 ->where('role_user.company_id', TenantContext::companyId())
+                ->whereNull('role_user.revoked_at')
                 ->where('roles.company_id', TenantContext::companyId())
                 ->whereIn('role_user.school_level_id', $levelIds)
                 ->where(fn ($date) => $date->whereNull('role_user.starts_on')->orWhere('role_user.starts_on', '<=', $today))
                 ->where(fn ($date) => $date->whereNull('role_user.ends_on')->orWhere('role_user.ends_on', '>=', $today));
+            });
         });
     }
 

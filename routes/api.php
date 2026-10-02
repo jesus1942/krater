@@ -554,6 +554,12 @@ Route::prefix('/v1')->group(function () {
         // Users
         //----------------------------------
 
+        Route::get('/roles', [\Crater\Http\Controllers\V1\Users\RoleAssignmentsController::class, 'roles'])->middleware('permission:system.user.view');
+        Route::get('/users/{user}/role-assignments', [\Crater\Http\Controllers\V1\Users\RoleAssignmentsController::class, 'index'])->middleware('permission:system.user.view');
+        Route::post('/users/{user}/role-assignments', [\Crater\Http\Controllers\V1\Users\RoleAssignmentsController::class, 'store'])->middleware('permission:system.role.assign');
+        Route::post('/role-assignments/{id}/revoke', [\Crater\Http\Controllers\V1\Users\RoleAssignmentsController::class, 'revoke'])->middleware('permission:system.role.assign');
+        Route::get('/users/{user}/effective-permissions', [\Crater\Http\Controllers\V1\Users\RoleAssignmentsController::class, 'effective'])->middleware('permission:system.user.view');
+
         Route::post('/users/delete', [UsersController::class, 'delete'])->middleware('permission:system.user.manage');
 
         Route::apiResource('/users', UsersController::class)->only(['index', 'show'])

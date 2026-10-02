@@ -1,6 +1,6 @@
 <template>
-  <base-page v-if="isSuperAdmin" class="items">
-    <sw-page-header :title="$t('users.title')">
+  <base-page v-if="canView" class="items">
+    <sw-page-header title="Usuarios y roles">
       <sw-breadcrumb slot="breadcrumbs">
         <sw-breadcrumb-item :title="$t('general.home')" to="dashboard" />
         <sw-breadcrumb-item :title="$tc('users.title', 2)" to="#" active />
@@ -19,6 +19,7 @@
 
         <sw-button
           tag-name="router-link"
+          v-if="isSuperAdmin"
           to="users/create"
           variant="primary"
           size="lg"
@@ -82,6 +83,7 @@
       <sw-button
         slot="actions"
         tag-name="router-link"
+        v-if="isSuperAdmin"
         to="/admin/users/create"
         size="lg"
         variant="primary-outline"
@@ -104,7 +106,7 @@
         </p>
 
         <sw-transition type="fade">
-          <sw-dropdown v-if="selectedUsers.length">
+          <sw-dropdown v-if="isSuperAdmin && selectedUsers.length">
             <span
               slot="activator"
               class="flex block text-sm font-medium cursor-pointer select-none text-primary-400"
@@ -115,14 +117,14 @@
 
             <sw-dropdown-item @click="removeMultipleUsers">
               <trash-icon class="h-5 mr-3 text-gray-600" />
-              {{ $t('general.delete') }}
+              Desactivar
             </sw-dropdown-item>
           </sw-dropdown>
         </sw-transition>
       </div>
 
       <div class="absolute z-10 items-center pl-4 mt-2 select-none md:mt-12">
-        <sw-checkbox
+        <sw-checkbox v-if="isSuperAdmin"
           v-model="selectAllFieldStatus"
           variant="primary"
           size="sm"
@@ -130,7 +132,7 @@
           @change="selectAllUsers"
         />
 
-        <sw-checkbox
+        <sw-checkbox v-if="isSuperAdmin"
           v-model="selectAllFieldStatus"
           :label="$t('general.select_all')"
           variant="primary"
@@ -152,7 +154,7 @@
           cell-class="no-click"
         >
           <div slot-scope="row" class="custom-control custom-checkbox">
-            <sw-checkbox
+            <sw-checkbox v-if="isSuperAdmin"
               :id="row.id"
               v-model="selectField"
               :value="row.id"
@@ -166,10 +168,10 @@
           <template slot-scope="row">
             <span>{{ $t('users.name') }}</span>
             <router-link
-              :to="{ path: `users/${row.id}/edit` }"
+              :to="{ path: `users/${row.id}/access` }"
               class="font-medium text-primary-500"
             >
-              {{ row.name }}
+              {{ row.name }}<span v-if="!row.is_active" class="ml-2 text-xs text-gray-500">Desactivada</span>
             </router-link>
           </template>
         </sw-table-column>
@@ -207,8 +209,9 @@
             <span> {{ $t('users.action') }} </span>
             <sw-dropdown>
               <dot-icon slot="activator" />
+              <sw-dropdown-item :to="`users/${row.id}/access`" tag-name="router-link">Roles y permisos</sw-dropdown-item>
 
-              <sw-dropdown-item
+              <sw-dropdown-item v-if="isSuperAdmin && row.id !== currentUser.id"
                 :to="`users/${row.id}/edit`"
                 tag-name="router-link"
               >
@@ -216,9 +219,9 @@
                 {{ $t('general.edit') }}
               </sw-dropdown-item>
 
-              <sw-dropdown-item @click="removeUser(row.id)">
+              <sw-dropdown-item v-if="isSuperAdmin && row.id !== currentUser.id && row.is_active" @click="removeUser(row.id)">
                 <trash-icon class="h-5 mr-3 text-gray-600" />
-                {{ $t('general.delete') }}
+                Desactivar
               </sw-dropdown-item>
             </sw-dropdown>
           </template>
@@ -229,6 +232,7 @@
 </template>
 
 <script>
+import { can } from '../../helpers/access'
 import { mapActions, mapGetters } from 'vuex'
 import AstronautIcon from '@/components/icon/AstronautIcon'
 import {
@@ -273,8 +277,9 @@ export default {
       'totalUsers',
       'selectAllField',
     ]),
+    canView() { return can(this.currentUser, 'system.user.view') },
     isSuperAdmin() {
-      return this.currentUser.role == 'super admin'
+      return can(this.currentUser, 'system.user.manage')
     },
     showEmptyScreen() {
       return !this.totalUsers && !this.isRequestOngoing
@@ -309,7 +314,7 @@ export default {
     },
   },
   created() {
-    if (!this.isSuperAdmin) {
+    if (!this.canView) {
       this.$router.push('/admin/dashboard')
     }
   },

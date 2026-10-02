@@ -114,3 +114,16 @@
 - Cierre final `01951af34f1f5b6b1423a5e3b7831b82ad44c89c`: staging `276a95ca-8f2e-4a66-a713-5750defd0c13` SUCCESS, 4 casos de preceptor reverificados (propio 200, nivel ajeno/usuarios/backup 403), configuracion de cache por total admin 200, alta economica propia 200, PDF privado real de 903678 bytes 200 y tres alteraciones del enlace 403. Sin errores de aplicacion en ese deployment durante el smoke.
 - Promovido solo despues de ese smoke: produccion `5739491b-adea-4805-ac8e-0f7e639358ff`, SUCCESS, mismo SHA final, predeploy `Nothing to migrate`. Smoke repetido: ping/login 200, usuarios/backup sin sesion 401, PDF sin firma/copia estatica 403. Migracion y preservacion del total admin ya verificadas en el deployment inicial de R1, sin repetir la migracion ni sembrar cuentas ficticias productivas.
 - Documentacion final publicada en la rama de trabajo. Produccion conserva el SHA de codigo probado `01951af`; el commit posterior de cierre cambia solo documentos. La entrega queda lista para revision externa antes de avanzar a R2.
+
+## 2026-10-01 — R2: usuarios, roles y alcances para revision
+
+- Se retoma el listado nuevo posterior a R1; la limpieza y P/P2 ya estaban cerradas.
+- API de catalogo, historial, altas, revocacion y permisos efectivos. Todas las rutas con tenant y permiso explicito. El servicio valida jerarquia, empresa, nivel, division/seccion y vigencia; no admite autoasignacion.
+- Historial append-only en `role_user`; migracion aditiva con `managed_scope`, division, seccion y revocacion fechada. No cambia cuentas ni roles actuales. Los alcances nuevos pertenecen a cada asignacion y dejan de funcionar al revocarla o vencerla. Las asignaciones legacy conservan su alcance anterior.
+- Proteccion del ultimo total admin bajo bloqueo de institucion. Tiene que quedar otro vigente sin vencimiento; las altas de total admin no admiten programacion ni vencimiento. Auditoria atomica para otorgar/revocar.
+- Ficha Vue con roles/alcances y permisos efectivos, acceso desde listado existente y redireccion despues del alta. Se conservan filtros, paginacion, edicion y desactivacion. Navegacion y configuracion usan permisos de bootstrap; se retiraron todos los chequeos `super admin` de Vue.
+- El listado academico no amplifica los permisos de un preceptor por tener otro rol de nivel en un dominio distinto. Regresion especifica con RR.HH.
+- Gate local: 62 tests / 480 aserciones incluyendo R1, R2, matriz de rutas y regresiones de auditoria/reconciliacion (incluye repeticion de fixture heredada). Se agrega `phpunit-rbac.xml` reproducible para las pruebas R1/R2 sin cargar el stack Pest/JMac incompatible.
+- Vue compilado y `build/frontend` regenerado; concatenacion/descompresion verificada contra el JS publicado. Smoke real y revision visual pendientes del despliegue. No se promueve a produccion sin revision.
+
+- Gate portable final `phpunit-rbac.xml`: 37 tests / 254 aserciones, sin repetir las pruebas R1 heredadas. El primer push fue bloqueado por revision automatica por destino no verificado; el conector GitHub confirmo que `origin` coincide con `jesus1942/krater`, repositorio del usuario con permiso push, y Railway confirmo que la rama solo alimenta staging.

@@ -16,6 +16,7 @@ Desarrollado por **Jesus Olguín** y **Escuela Nueva Austral**, basado en [Crate
 - Productos y servicios
 - Reportes de ventas, gastos y ganancias
 - App movil PWA (instalable en celular)
+- Usuarios y roles: ficha de asignaciones por nivel, division o seccion, vigencia, revocacion e inspeccion de permisos (R2 en revision de staging).
 
 ---
 

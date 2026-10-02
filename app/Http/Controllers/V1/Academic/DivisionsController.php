@@ -37,10 +37,10 @@ class DivisionsController extends Controller
             $query->forYear($request->academic_year_id);
         }
 
-        if (! $this->access->hasLevelWideScope($request->user(), TenantContext::schoolLevelId())) {
+        if (! $this->access->hasLevelWideScope($request->user(), TenantContext::schoolLevelId(), 'academic.division.view')) {
             // Array vacio significa "ninguna", no "todas". whereIn con lista
             // vacia devuelve cero filas, que es exactamente lo que queremos.
-            $query->whereIn('id', $this->access->scopedDivisionIds($request->user()));
+            $query->whereIn('id', $this->access->scopedDivisionIds($request->user(), 'academic.division.view', TenantContext::schoolLevelId()));
         }
 
         $divisions = $query->orderBy('grade_level_id')->orderBy('name')->get();

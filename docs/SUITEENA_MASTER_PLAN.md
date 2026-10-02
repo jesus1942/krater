@@ -66,7 +66,7 @@ Solo **Operativo** equivale a DONE.
 - [x] Total admin transversal a empresas en ValidateTenant.
 - [x] Aislamiento transversal básico de módulos económicos.
 - [x] Informes protegidos por sesión, permiso y tenant.
-- [ ] Administración visual completa de usuarios, roles y scopes.
+- [ ] Administración visual completa de usuarios, roles y scopes. R2 implementada y protegida; gate local aprobado, despliegue y revision de staging en curso. No operativa en produccion.
 - [ ] Impedir asignación de roles fuera del scope del actor.
 - [ ] Unificar RBAC legacy y nativo.
 - [ ] Tests de escalación de privilegios por cada rol.

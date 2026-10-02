@@ -274,3 +274,33 @@ QUEUE_CONNECTION=database
 **Base de datos:** agregar el plugin MySQL desde el dashboard de Railway. Las variables `$MYSQL*` se inyectan automaticamente en el servicio.
 
 **CORS:** la variable `CORS_ALLOWED_ORIGINS` acepta origenes separados por coma. Siempre incluir el dominio de Pages. `config/cors.php` lee esta variable.
+
+### R2 — usuarios, roles y alcances (revision en staging)
+
+La ficha `/admin/users/{id}/access` separa asignaciones e historial de permisos
+ efectivos. Los endpoints `/roles`, `/users/{user}/role-assignments`,
+`/role-assignments/{id}/revoke` y `/users/{user}/effective-permissions` usan tenant,
+permisos y `AccessManager`. Bootstrap y `/me` entregan permisos por nivel;
+Vue ya no deriva autoridad de `users.role`.
+
+Cada alta es una nueva fila de `role_user`, con division o seccion propia y
+`managed_scope=true`; `revoked_at` retira autoridad de inmediato. Las fechas
+`starts_at`/`ends_at` de la API son dias inclusivos y se guardan en
+`starts_on`/`ends_on`. Los alcances antiguos de `user_scopes` siguen operativos
+solo a traves de sus roles vigentes, sin volver a conceder roles revocados.
+
+Los cambios se serializan por institucion; no se permite autoasignacion ni
+administrar jerarquias iguales/superiores salvo otro total admin. Al revocar o
+dar de baja un total admin tiene que quedar otro activo sin vencimiento. Las
+altas nuevas de total admin son inmediatas y sin fin programado. La auditoria
+semantica del otorgamiento/revocacion es atomica: si falla, no cambia el acceso.
+
+Gate reproducible con PHPUnit 9: `php phpunit.phar -c phpunit-rbac.xml` (o un
+runner PHPUnit 9 compatible instalado). No declara aprobada la suite Pest/JMac
+legacy. El archivo de bootstrap independiente evita esa incompatibilidad.
+La migracion agrega historial sin borrar datos y su `down` se bloquea: recuperar
+la unicidad antigua exigiria descartar historia, por lo que requiere una
+migracion de reversion revisada.
+
+No promover R2 a `produccion` antes de su revision. La verificacion visual con
+sesion y el ensayo de usuario desde UI se registran aparte de las pruebas HTTP.

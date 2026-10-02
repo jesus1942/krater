@@ -38,7 +38,7 @@ class BootstrapController extends Controller
         $default_currency = Currency::findOrFail($settings['currency']);
 
         return response()->json([
-            'user' => $user,
+            'user' => array_merge($user->toArray(), app(\Crater\Services\Access\AccessManager::class)->frontendAccess($user)),
             'company' => $user->company,
             'currencies' => Currency::all(),
             'countries' => Country::all(),

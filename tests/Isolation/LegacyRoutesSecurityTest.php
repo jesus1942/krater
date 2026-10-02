@@ -19,13 +19,13 @@ class LegacyRoutesSecurityTest extends TestCase
 {
     use CreatesApplication;
 
-    private User $admin;
-    private User $preceptor;
-    private User $finance;
-    private User $director;
-    private User $secondary;
-    private User $primaryCustomer;
-    private User $secondaryCustomer;
+    protected User $admin;
+    protected User $preceptor;
+    protected User $finance;
+    protected User $director;
+    protected User $secondary;
+    protected User $primaryCustomer;
+    protected User $secondaryCustomer;
 
     protected function setUp(): void
     {
@@ -67,6 +67,7 @@ class LegacyRoutesSecurityTest extends TestCase
         foreach ([
             '2026_09_01_000100_create_academic_core_tables.php' => 'CreateAcademicCoreTables',
             '2026_09_01_000300_create_rbac_tables.php' => 'CreateRbacTables',
+            '2026_10_02_000000_add_role_assignment_lifecycle.php' => 'AddRoleAssignmentLifecycle',
             '2026_09_01_000600_create_student_family_tables.php' => 'CreateStudentFamilyTables',
         ] as $file => $class) {
             require_once database_path('migrations/'.$file);
@@ -123,19 +124,19 @@ class LegacyRoutesSecurityTest extends TestCase
         $this->withHeaders(['company' => '1', 'school-level' => '1']);
     }
 
-    private function account(string $name, string $role = 'staff', int $company = 1): User
+    protected function account(string $name, string $role = 'staff', int $company = 1): User
     {
         return User::create(['name' => $name, 'email' => $name.'@example.invalid', 'password' => 'clave-ficticia-1234',
             'company_id' => $company, 'role' => $role, 'currency_id' => 1])->fresh();
     }
 
-    private function loginAs(User $user): void
+    protected function loginAs(User $user): void
     {
         auth()->forgetGuards();
         $this->actingAs($user, 'web');
     }
 
-    private function assign(User $user, string $role, ?int $level): void
+    protected function assign(User $user, string $role, ?int $level): void
     {
         DB::table('role_user')->insert(['user_id' => $user->id, 'company_id' => $user->company_id,
             'role_id' => DB::table('roles')->where('company_id', $user->company_id)->where('name', $role)->value('id'),

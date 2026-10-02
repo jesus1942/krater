@@ -8,6 +8,7 @@ use Crater\Models\CompanySetting;
 use Crater\Models\User;
 use Crater\Services\Access\AccessManager;
 use Crater\Services\Access\TenantUsers;
+use Crater\Services\Access\RoleAssignments;
 use Crater\Support\TenantContext;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -50,7 +51,9 @@ class UsersController extends Controller
         // FormRequest autoriza antes de validar. Se repite bajo bloqueo para
         // impedir que una asignacion concurrente eleve al destino entre ambos.
         DB::transaction(function () use ($request, $user, $access) {
+            app(RoleAssignments::class)->lockInstitution(TenantContext::companyId());
             $target = User::whereKey($user->id)->lockForUpdate()->firstOrFail();
+            app(RoleAssignments::class)->authorizeTarget($request->user()->fresh(), $target);
             abort_unless(app(TenantUsers::class)->canViewStaff($request->user(), $target)
                 && $access->canManageUser($request->user(), $target), 403);
             $data = $request->validated();
@@ -67,12 +70,18 @@ class UsersController extends Controller
     {
         $data = $request->validate(['users' => ['required', 'array', 'min:1'], 'users.*' => ['required', 'integer', 'distinct']]);
         DB::transaction(function () use ($request, $data, $access, $users) {
+            $assignments = app(RoleAssignments::class);
+            $assignments->lockInstitution(TenantContext::companyId());
             $targets = User::whereIn('id', $data['users'])->orderBy('id')->lockForUpdate()->get();
             abort_unless($targets->count() === count($data['users']), 403);
             // Se autoriza el lote completo antes de desactivar a nadie.
             foreach ($targets as $target) {
+                $assignments->authorizeTarget($request->user()->fresh(), $target);
                 abort_unless($users->canViewStaff($request->user(), $target)
                     && $access->canManageUser($request->user(), $target), 403);
+            }
+            if ($targets->contains(fn ($target) => $access->isTotalAdmin($target))) {
+                $assignments->ensureAdministratorRemains(TenantContext::companyId(), null, $data['users']);
             }
             foreach ($targets as $target) {
                 $target->forceFill(['is_active' => false, 'remember_token' => null])->save();

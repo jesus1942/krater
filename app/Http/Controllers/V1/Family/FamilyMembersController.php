@@ -53,7 +53,7 @@ class FamilyMembersController extends Controller
             })
             ->orderBy('name');
 
-        if (! $access->hasLevelWideScope($user, $levelId)) {
+        if (! $access->hasLevelWideScope($user, $levelId, 'students.view_basic')) {
             $query->whereHas('students', fn ($students) => $students->accessibleTo($user));
             $query->with(['students' => fn ($students) => $students->accessibleTo($user)]);
         }

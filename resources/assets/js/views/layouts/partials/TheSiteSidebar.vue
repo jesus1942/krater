@@ -71,6 +71,7 @@
 </template>
 
 <script type="text/babel">
+import { can } from '../../../helpers/access'
 import {
   HomeIcon,
   UserIcon,
@@ -110,18 +111,12 @@ export default {
     isTotalAdmin() {
       return Boolean(
         this.currentUser &&
-          (this.currentUser.is_total_admin === true ||
-            this.currentUser.rbac_role === 'total_admin' ||
-            this.currentUser.role === 'super admin')
+          this.currentUser.is_total_admin === true
       )
     },
 
     canManageStaff() {
-      return Boolean(
-        this.isTotalAdmin ||
-          (this.currentUser &&
-            ['admin', 'super admin'].includes(this.currentUser.role))
-      )
+      return can(this.currentUser, 'hr.staff.view') || can(this.currentUser, 'hr.payroll.view')
     },
 
     menuGroups() {
@@ -202,9 +197,9 @@ export default {
       }
 
       const systemItems = []
-      if (this.isTotalAdmin) {
+      if (can(this.currentUser, 'system.user.view')) {
         systemItems.push({
-          title: 'navigation.users',
+          title: 'Usuarios y roles',
           icon: 'shield-check-icon',
           route: '/admin/users',
         })
@@ -231,7 +226,17 @@ export default {
         items: systemItems,
       })
 
-      return groups.filter((group) => group.items.length > 0)
+      const required = {
+        '/admin/dashboard': 'finance.view', '/admin/students': 'students.view_basic',
+        '/admin/customers': 'finance.view', '/admin/items': 'finance.view',
+        '/admin/estimates': 'finance.view', '/admin/invoices': 'finance.view',
+        '/admin/payments': 'finance.view', '/admin/expenses': 'finance.view',
+        '/admin/staff': 'hr.staff.view', '/admin/payroll': 'hr.payroll.view',
+        '/admin/reports': 'finance.report.view', '/admin/users': 'system.user.view',
+      }
+      return groups.map(group => ({ ...group, items: group.items.filter(item =>
+        !required[item.route] || can(this.currentUser, required[item.route]))
+      })).filter(group => group.items.length > 0)
     },
   },
 

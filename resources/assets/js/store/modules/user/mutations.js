@@ -6,11 +6,11 @@ export default {
   },
 
   [types.BOOTSTRAP_CURRENT_USER](state, user) {
-    state.currentUser = user
+    state.currentUser = { ...state.currentUser, ...user }
   },
 
   [types.UPDATE_CURRENT_USER](state, user) {
-    state.currentUser = user
+    state.currentUser = { ...state.currentUser, ...user }
   },
 
   [types.UPDATE_USER_AVATAR](state, data) {

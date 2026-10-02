@@ -55,9 +55,7 @@ export default {
       const currentUser = this.$store.state.user.currentUser
       return Boolean(
         currentUser &&
-          (currentUser.is_total_admin === true ||
-            currentUser.rbac_role === 'total_admin' ||
-            currentUser.role === 'super admin')
+          currentUser.is_total_admin === true
       )
     },
     isWholeInstitutionContext() {

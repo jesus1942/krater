@@ -120,47 +120,52 @@ class AccessManager
      */
     public function withinScope(User $user, string $permission, array $scope, ?int $schoolLevelId = null): bool
     {
-        $roles = $this->rolesFor($user, $schoolLevelId);
-
-        // Si alguno de sus roles vigentes es de alcance de nivel o global, no
-        // hace falta chequear recurso por recurso.
-        foreach ($roles as $role) {
-            if (in_array($role->scope_type, ['global', 'level'], true)) {
-                return true;
-            }
-        }
-
-        if (empty($roles)) {
-            return false;
-        }
-
-        // Alcance explicito. Sin filas asignadas, no alcanza a nada: el default
-        // es negar.
-        $has = DB::table('user_scopes')
-            ->where('user_id', $user->id)
-            ->where('company_id', $user->company_id)
-            ->where('scope_type', $scope['type'])
-            ->where('scope_id', $scope['id'])
-            ->exists();
-
-        if ($has) {
+        if ($this->isTotalAdmin($user)) {
             return true;
         }
-
-        // Un docente pedido sobre una division alcanza si tiene alguna seccion
-        // de esa division. Se resuelve la relacion en vez de exigir que el
-        // alcance este duplicado.
-        if ($scope['type'] === 'division') {
-            return DB::table('user_scopes')
-                ->join('course_sections', 'course_sections.id', '=', 'user_scopes.scope_id')
-                ->where('user_scopes.user_id', $user->id)
-                ->where('user_scopes.company_id', $user->company_id)
-                ->where('course_sections.company_id', $user->company_id)
-                ->where('user_scopes.scope_type', 'course_section')
-                ->where('course_sections.division_id', $scope['id'])
-                ->exists();
+        if (! $this->isActive($user)) {
+            return false;
         }
-
+        // Solo cuentan las asignaciones que otorgan ESTE permiso. Un rol de
+        // alcance amplio no amplifica los permisos de otro rol de division.
+        $assignments = $this->assignmentsWithPermission($user, $permission, $schoolLevelId)->get();
+        foreach ($assignments as $assignment) {
+            if (in_array($assignment->scope_type, ['global', 'level'], true)) {
+                return true;
+            }
+            if ($assignment->managed_scope) {
+                if ($scope['type'] === 'division' && (int) $assignment->division_id === (int) $scope['id']) {
+                    return true;
+                }
+                if ($scope['type'] === 'course_section' && (int) $assignment->course_section_id === (int) $scope['id']) {
+                    return true;
+                }
+                if ($scope['type'] === 'division' && $assignment->course_section_id && DB::table('course_sections')
+                    ->where('id', $assignment->course_section_id)->where('company_id', $user->company_id)
+                    ->where('division_id', $scope['id'])->exists()) {
+                    return true;
+                }
+            } else {
+                // Las asignaciones anteriores conservan su alcance explicito.
+                if ($scope['type'] === 'division') {
+                    $validDivision = DB::table('divisions')->where('id', $scope['id'])->where('company_id', $user->company_id)
+                        ->where('school_level_id', $assignment->school_level_id)->exists();
+                    if (! $validDivision) {
+                        continue;
+                    }
+                    if (DB::table('user_scopes')->join('course_sections', 'course_sections.id', '=', 'user_scopes.scope_id')
+                        ->where('user_scopes.user_id', $user->id)->where('user_scopes.company_id', $user->company_id)
+                        ->where('course_sections.company_id', $user->company_id)->where('user_scopes.scope_type', 'course_section')
+                        ->where('course_sections.division_id', $scope['id'])->exists()) {
+                        return true;
+                    }
+                }
+                $legacy = DB::table('user_scopes')->where('user_id', $user->id)->where('company_id', $user->company_id);
+                if ($legacy->where('scope_type', $scope['type'])->where('scope_id', $scope['id'])->exists()) {
+                    return true;
+                }
+            }
+        }
         return false;
     }
 
@@ -171,13 +176,14 @@ class AccessManager
      * para decidir si filtran por alcance. Vive aca y no en los controladores
      * para que la decision se tome en un solo lugar.
      */
-    public function hasLevelWideScope(User $user, ?int $schoolLevelId = null): bool
+    public function hasLevelWideScope(User $user, ?int $schoolLevelId = null, ?string $permission = null): bool
     {
         if ($this->isTotalAdmin($user)) {
             return true;
         }
 
-        foreach ($this->rolesFor($user, $schoolLevelId) as $role) {
+        $roles = $permission === null ? $this->rolesFor($user, $schoolLevelId) : $this->assignmentsWithPermission($user, $permission, $schoolLevelId)->get();
+        foreach ($roles as $role) {
             if (in_array($role->scope_type, ['global', 'level'], true)) {
                 return true;
             }
@@ -193,30 +199,56 @@ class AccessManager
      * seccion de materia en ellas. Devuelve array vacio si no alcanza ninguna,
      * y el llamador debe interpretarlo como "ninguna", no como "todas".
      */
-    public function scopedDivisionIds(User $user): array
+    public function scopedDivisionIds(User $user, ?string $permission = null, ?int $level = null): array
     {
-        // El filtro por empresa va en las dos consultas: un alcance de otra
-        // institucion no debe alcanzar nada aca, aunque la fila exista.
-        $directas = DB::table('user_scopes')
-            ->where('user_id', $user->id)
-            ->where('company_id', $user->company_id)
-            ->where('scope_type', 'division')
-            ->pluck('scope_id');
+        if (! $this->isActive($user)) {
+            return [];
+        }
+        $ids = [];
+        $assignments = $permission === null ? $this->currentAssignments($user)->select('role_user.*', 'roles.scope_type')
+            : $this->assignmentsWithPermission($user, $permission, $level);
+        foreach ($assignments->get() as $assignment) {
+            if (! in_array($assignment->scope_type, ['division', 'section'], true)) {
+                continue;
+            }
+            if ($assignment->managed_scope) {
+                $divisionIds = $assignment->division_id ? [$assignment->division_id] : DB::table('course_sections')
+                    ->where('id', $assignment->course_section_id)->where('company_id', $user->company_id)->pluck('division_id')->all();
+            } else {
+                $direct = DB::table('user_scopes')->where('user_id', $user->id)->where('company_id', $user->company_id)
+                    ->where('scope_type', 'division')->pluck('scope_id');
+                $sections = DB::table('user_scopes')->join('course_sections', 'course_sections.id', '=', 'user_scopes.scope_id')
+                    ->where('user_scopes.user_id', $user->id)->where('user_scopes.company_id', $user->company_id)
+                    ->where('course_sections.company_id', $user->company_id)->where('user_scopes.scope_type', 'course_section')
+                    ->pluck('course_sections.division_id');
+                $divisionIds = $direct->merge($sections)->all();
+            }
+            $valid = DB::table('divisions')->where('company_id', $user->company_id)
+                ->where('school_level_id', $assignment->school_level_id)->whereIn('id', $divisionIds)->pluck('id')->all();
+            $ids = array_merge($ids, $valid);
+        }
+        return array_values(array_unique(array_map('intval', $ids)));
+    }
 
-        $porSeccion = DB::table('user_scopes')
-            ->join('course_sections', 'course_sections.id', '=', 'user_scopes.scope_id')
-            ->where('user_scopes.user_id', $user->id)
-            ->where('user_scopes.company_id', $user->company_id)
-            ->where('course_sections.company_id', $user->company_id)
-            ->where('user_scopes.scope_type', 'course_section')
-            ->pluck('course_sections.division_id');
+    /** Asignaciones vigentes que originan un permiso, para inspeccion y alcance. */
+    public function assignmentsWithPermission(User $user, string $permission, ?int $level)
+    {
+        return $this->rolesQuery($user, $level)
+            ->join('permission_role', 'permission_role.role_id', '=', 'roles.id')
+            ->join('permissions', 'permissions.id', '=', 'permission_role.permission_id')
+            ->where('permissions.name', $permission)
+            ->select('role_user.*', 'roles.name', 'roles.label', 'roles.scope_type');
+    }
 
-        return $directas
-            ->merge($porSeccion)
-            ->map(fn ($id) => (int) $id)
-            ->unique()
-            ->values()
-            ->all();
+    /** Metadatos de sesion: nunca se deducen permisos del campo legacy role. */
+    public function frontendAccess(User $user): array
+    {
+        $levels = [];
+        foreach ($this->levelIds($user) as $id) {
+            $levels[$id] = $this->effectivePermissions($user, $id);
+        }
+        return ['is_total_admin' => $this->isTotalAdmin($user),
+            'permissions' => $this->effectivePermissions($user), 'permissions_by_level' => $levels];
     }
 
     /**
@@ -268,6 +300,7 @@ class AccessManager
         return DB::table('role_user')->join('roles', 'roles.id', '=', 'role_user.role_id')
             ->where('role_user.user_id', $user->id)
             ->where('role_user.company_id', $user->company_id)
+            ->whereNull('role_user.revoked_at')
             ->where('roles.company_id', $user->company_id)
             ->where(fn ($q) => $q->whereNull('role_user.starts_on')->orWhere('role_user.starts_on', '<=', $today))
             ->where(fn ($q) => $q->whereNull('role_user.ends_on')->orWhere('role_user.ends_on', '>=', $today));
@@ -324,6 +357,11 @@ class AccessManager
         }
         $targetAssignments = $this->currentAssignments($target)->pluck('role_user.school_level_id');
 
+        if ($targetAssignments->isEmpty() && (int) $target->creator_id === (int) $actor->id
+            && ! DB::table('role_user')->where('user_id', $target->id)->exists()) {
+            return true;
+        }
+
         return $targetAssignments->isNotEmpty()
             && ! $targetAssignments->contains(null)
             && $targetAssignments->diff($this->levelIds($actor))->isEmpty();
@@ -343,6 +381,9 @@ class AccessManager
         int $roleHierarchy,
         ?int $schoolLevelId = null
     ): bool {
+        if ($this->isTotalAdmin($actor)) {
+            return true;
+        }
         // Los roles protegidos solo los otorga la administracion total, tenga
         // quien tenga el permiso de asignar.
         if (in_array($roleName, RoleName::protectedRoles(), true)) {
@@ -356,7 +397,8 @@ class AccessManager
         // No se puede otorgar un rol de jerarquia igual o superior a la propia.
         // El "igual" tambien importa: si no, dos personas del mismo nivel
         // podrian ampliarse los permisos mutuamente.
-        return $this->hierarchyLevel($actor) < $roleHierarchy;
+        $hierarchy = $this->rolesQuery($actor, $schoolLevelId)->min('roles.hierarchy_level');
+        return $hierarchy !== null && (int) $hierarchy < $roleHierarchy;
     }
 
     /**
