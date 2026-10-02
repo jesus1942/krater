@@ -82,7 +82,7 @@ No usar `php artisan serve` como servidor de produccion.
 
 Railway tiene un entorno `staging` con MySQL y volumen propios, red privada y correo en `MAIL_DRIVER=log`. La web esta en https://krater-staging-staging.up.railway.app. La fila P esta operativa: esquema migrado, siembra RBAC y marca de instalacion verificadas; el navegador abre `/login`. Los servicios nuevos ya no heredan `railway.toml`, por lo que staging usa el predeploy explicito autorizado y documentado en `CLAUDE.md`.
 
-Desarrollo despliega solo staging; `produccion` recibe unicamente SHAs ya verificados. R1 esta operativa: tenant/permisos, cuentas activas, proteccion de usuarios y PDF firmados. R2/R2b agregan asignacion visual de roles y alcances, revocacion inmediata y alta delegada de alumnos. Las cuentas nuevas son `staff` sin permisos hasta recibir una asignacion. La navegacion muestra Alumnos y Configuracion/Mi perfil en español, segun permisos, aunque la cuenta tenga idioma ingles.
+Desarrollo despliega solo staging; `produccion` recibe unicamente SHAs ya verificados. R1 esta operativa: tenant/permisos, cuentas activas, proteccion de usuarios y PDF firmados. R2/R2b agregan asignacion visual de roles y alcances, revocacion inmediata y alta delegada de alumnos. Las cuentas nuevas son `staff` sin permisos hasta recibir una asignacion. La navegacion muestra Alumnos y Configuracion/Mi perfil en español, segun permisos, aunque la cuenta tenga idioma ingles. La app usa español por defecto y como respaldo (`APP_LOCALE=es`, `APP_FALLBACK_LOCALE=es`); las cuentas sin idioma guardado y las altas nuevas arrancan en español.
 
 ---
 

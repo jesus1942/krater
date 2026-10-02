@@ -160,3 +160,9 @@
 - Alumnos siempre aparece como Alumnos. La entrada de configuracion, dropdown del encabezado y titulo/breadcrumb de la pantalla usan Configuracion con `system.settings.manage`, Mi perfil sin ese permiso. Rutas y permisos se conservan, incluidos los accesos de lectura academica.
 - El ensayo DOM deja de reemplazar `$t/$tc` por la clave: usa VueI18n y catalogos reales. Verifica tres roles en `en/es` (seis recorridos), ambos menus y el encabezado; tambien comprueba todos los items de total admin y el cambio reactivo a Configuracion. Falla ante claves crudas o llamadas prohibidas.
 - Build de produccion completado, partes gzip regeneradas y descompresion comparada con JS publicado. Staging y promocion: en curso; se registran SHA/deploy/smoke al confirmar el resultado.
+
+### Ampliacion: español predeterminado y cuenta sin idioma
+
+- Jesus pide tambien `APP_LOCALE/config(app.locale)` y `fallback_locale` en es, con una cuenta sin idioma guardado en staging antes de promover. Se completa el arranque/backend, VueI18n, bootstrap, Mi perfil y nuevas altas; no se reescriben preferencias explicitas de cuentas existentes.
+- Catalogo español completo respecto del ingles; textos ingleses remanentes traducidos y mensajes Laravel de auth, paginacion, contraseñas y validacion en español.
+- DOM real: nueve recorridos por tres roles y en/es/sin preferencia. Smoke permanente ampliado: elimina/restaura unicamente la preferencia de la cuenta ficticia de staging, prueba idioma ausente/vacio y respuesta de validacion española. Resultado real de staging y produccion pendiente del nuevo SHA.

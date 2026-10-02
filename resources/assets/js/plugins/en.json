@@ -518,7 +518,9 @@
     "enter_email": "Enter email",
     "enter_password": "Enter Password",
     "retype_password": "Retype Password",
-    "login_placeholder": "mail@example.com"
+    "login_placeholder": "mail@example.com",
+    "login_successfully": "Logged in successfully.",
+    "reset_mail_sent": "Mail sent successfully!"
   },
   "users": {
     "title": "Users",

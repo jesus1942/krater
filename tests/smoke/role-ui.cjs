@@ -24,7 +24,7 @@ const icon = { functional: true, render: h => h('span') }
 for (const name of ['sw-transition', 'sw-list', 'sw-card', 'sw-page-header', 'sw-breadcrumb',
   'sw-breadcrumb-item', 'sw-dropdown', 'sw-dropdown-item', 'base-page', 'base-modal', 'base-notification', 'sw-select', 'sw-input-group', 'sw-avatar']) Vue.component(name, wrapper)
 Vue.component('sw-button', { functional: true, render: (h, c) => h('button', c.data, c.children) })
-Vue.component('sw-input', { props: ['value'], template: '<input :value="value" @input="$emit(\'input\', $event.target.value)" />' })
+Vue.component('sw-input', { props: ['value', 'placeholder'], template: '<input :value="value" :placeholder="placeholder" @input="$emit(\'input\', $event.target.value)" />' })
 Vue.component('sw-list-item', { props: ['to', 'title'], template: '<router-link :to="to">{{title}}</router-link>' })
 // Si el buscador se monta para estos roles, la llamada prohibida hace fallar el ensayo.
 Vue.component('global-search', { created() { window.axios.get('/api/v1/search') }, render: h => h('input') })
@@ -41,7 +41,7 @@ function load(file) {
     const compiled = compiler.compile(sfc.template.content)
     assert.deepStrictEqual(compiled.errors, [], file + ': template invalido')
   }
-  const code = babel.transformSync(sfc ? sfc.script.content : source, {
+  const code = babel.transformSync(sfc ? (sfc.script ? sfc.script.content : 'export default {}') : source, {
     babelrc: false, configFile: false, plugins: ['@babel/plugin-transform-modules-commonjs'],
   }).code
   const module = { exports: {} }
@@ -50,7 +50,7 @@ function load(file) {
     if (name.includes('TheSiteFooter') || name.includes('BaseModal')) return { default: wrapper, __esModule: true }
     if (name.startsWith('.')) {
       let target = path.resolve(path.dirname(file), name)
-      if (!path.extname(target)) target += '.js'
+      if (!path.extname(target)) target += fs.existsSync(target + '.js') ? '.js' : '.vue'
       return load(target)
     }
     return require(name)
@@ -85,7 +85,7 @@ async function exercise(role, locale) {
   const year = { id: 1, year: 2026, name: 'Ciclo ficticio', status: 'active' }
   const student = { id: 1, full_name: 'Alumno ficticio', first_name: 'Alumno', last_name: 'Ficticio', status: 'active', school_level_id: 1, can_edit: role === 'registrar', family_members: [] }
   const responses = {
-    '/api/v1/me': { user }, '/api/v1/me/settings': { language: 'es' }, '/api/v1/languages': { languages: [{ code: 'es', name: 'Español' }] },
+    '/api/v1/me': { user }, '/api/v1/me/settings': { language: locale || 'es' }, '/api/v1/languages': { languages: [{ code: 'es', name: 'Español' }, { code: 'en', name: 'English' }] },
     '/api/v1/school-levels': { levels: [{ id: 1, enabled: true, name: 'Primario' }] },
     '/api/v1/students': { students: { data: [student] }, summary: { total: 1, active: 1, pending: 0 }, can_view_all_levels: false },
     '/api/v1/academic-years': { data: [year] }, '/api/v1/grade-levels': { data: [{ id: 1, name: 'Curso' }] },
@@ -99,7 +99,8 @@ async function exercise(role, locale) {
     return { data: responses[url] }
   } }
   const store = new Vuex.Store({
-    getters: { isAppLoaded: () => true, isSidebarOpen: () => false, languages: () => [{ code: 'es', name: 'Español' }] }, actions: { bootstrap: () => {}, toggleSidebar: () => {}, fetchLanguages: () => window.axios.get('/api/v1/languages') },
+    getters: { isAppLoaded: () => true, isSidebarOpen: () => false, languages: () => responses['/api/v1/languages'].languages },
+    actions: { bootstrap: () => userMutations.SET_DEFAULT_LANGUAGE({}, locale), toggleSidebar: () => {}, fetchLanguages: () => window.axios.get('/api/v1/languages') },
     modules: {
       user: { namespaced: true, state: { currentUser: user }, getters: { currentUser: s => s.currentUser }, actions: { fetchCurrentUser: () => window.axios.get('/api/v1/me'), fetchUserSettings: () => window.axios.get('/api/v1/me/settings') } },
       company: { namespaced: true, getters: { getSelectedCompany: () => ({ id: 1 }) }, actions: { setSelectedCompany: () => {} } },
@@ -114,10 +115,18 @@ async function exercise(role, locale) {
     ] },
   ] }] })
   router.push('/admin/dashboard')
-  const i18n = new (require('vue-i18n'))({ locale, fallbackLocale: 'en', silentTranslationWarn: true,
-    messages: { en: require('../../resources/assets/js/plugins/en.json'), es: require('../../resources/assets/js/plugins/es.json') } })
+  // Usa la instancia y mutacion reales: no simula el valor predeterminado del frontend.
+  const i18n = load(path.join(root, 'resources/assets/js/plugins/i18n.js')).default
+  const userMutations = load(path.join(root, 'resources/assets/js/store/modules/user/mutations.js')).default
+  window.i18n = i18n
+  assert.equal(i18n.fallbackLocale, 'es')
   const app = new Vue({ store, router, i18n, render: h => h('router-view') }).$mount()
   document.body.append(app.$el); await flush()
+  assert.equal(i18n.locale, locale || 'es')
+  if (!locale) {
+    assert.equal(i18n.t('settings.preferences.select_language'), 'seleccione el idioma')
+    assert.equal(i18n.t('validation.required'), 'Se requiere campo')
+  }
   assert.equal(router.currentRoute.path, '/admin/students')
   assert.equal(storage.get('selectedSchoolLevel'), '1')
   assert(!calls.includes('/api/v1/dashboard')); assert(!calls.includes('/api/v1/search'))
@@ -145,6 +154,7 @@ async function exercise(role, locale) {
   }
   router.push('/admin/settings/user-profile'); await flush()
   assert(find(app, profile) && !find(app, profile).isRequestOnGoing)
+  assert.equal(find(app, profile).language.code, locale || 'es')
   const settingsScreen = find(app, settings)
   assert.equal(settingsScreen.settingsTitle, 'Mi perfil')
   for (const anchor of settingsScreen.$el.querySelectorAll('a')) assert(!/settings\.menu_title\.|navigation\./.test(anchor.textContent), anchor.textContent)
@@ -173,4 +183,25 @@ async function exercise(role, locale) {
   console.log(role + ' (' + locale + '): inicio, menus, lectura academica y acciones OK; sin llamadas prohibidas')
   app.$destroy(); app.$el.remove()
 }
-(async () => { for (const locale of ['en', 'es']) for (const role of ['preceptor', 'registrar', 'teacher']) await exercise(role, locale) })().catch(error => { console.error(error); process.exitCode = 1 })
+(async () => {
+  const i18n = load(path.join(root, 'resources/assets/js/plugins/i18n.js')).default
+  assert.equal(i18n.locale, 'es') // Pantallas anteriores al login/bootstrap.
+  const login = component('auth/Login')
+  const authStore = new Vuex.Store({ modules: { auth: { namespaced: true, actions: { login: () => {} } } } })
+  const authRouter = new Router({ mode: 'abstract', routes: [] })
+  const loginApp = new Vue({ i18n, store: authStore, router: authRouter, render: h => h(login) }).$mount()
+  await flush()
+  assert.equal(errors.length, 0)
+  assert(loginApp.$el.textContent.includes('Iniciar'))
+  assert.equal(loginApp.$el.querySelector('input[name="email"]').placeholder, 'correo@ejemplo.com')
+  loginApp.$destroy()
+  function verifyCatalog(source, prefix = '') {
+    for (const [key, value] of Object.entries(source)) {
+      const full = prefix + key
+      if (value && typeof value === 'object') verifyCatalog(value, full + '.')
+      else assert(i18n.te(full, 'es'), 'Falta traduccion española: ' + full)
+    }
+  }
+  verifyCatalog(require('../../resources/assets/js/plugins/en.json'))
+  for (const locale of ['en', 'es', undefined]) for (const role of ['preceptor', 'registrar', 'teacher']) await exercise(role, locale)
+})().catch(error => { console.error(error); process.exitCode = 1 })

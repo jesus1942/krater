@@ -9,6 +9,44 @@ use Illuminate\Support\Facades\DB;
 /** Usa las mismas cuentas y esquema de R1 para cubrir el flujo R2 completo. */
 class RoleAssignmentsTest extends LegacyRoutesSecurityTest
 {
+    public function test_accounts_without_language_use_spanish_in_bootstrap_and_profile(): void
+    {
+        require_once database_path('migrations/2017_05_06_173745_create_countries_table.php');
+        (new \CreateCountriesTable())->up();
+        $this->assertSame('es', config('app.locale'));
+        $this->assertSame('es', config('app.fallback_locale'));
+        foreach (['currency' => '1', 'moment_date_format' => 'DD/MM/YYYY', 'fiscal_year' => '1-12', 'time_zone' => 'America/Argentina/Buenos_Aires'] as $option => $value) {
+            DB::table('company_settings')->insert(['company_id' => 1, 'option' => $option, 'value' => $value]);
+        }
+        $this->loginAs($this->preceptor);
+        foreach ([null, '', 'unsupported', 'en', 'es'] as $language) {
+            DB::table('user_settings')->where('user_id', $this->preceptor->id)->delete();
+            if ($language !== null) $this->preceptor->setSettings(['language' => $language]);
+            $expected = in_array($language, ['en', 'es'], true) ? $language : 'es';
+            $this->getJson('/api/v1/bootstrap')->assertStatus(200)->assertJsonPath('default_language', $expected);
+            $this->getJson('/api/v1/me/settings?settings%5B0%5D=language')->assertStatus(200)->assertJsonPath('language', $expected);
+        }
+    }
+
+    public function test_new_accounts_start_in_spanish_even_if_company_has_legacy_english_setting(): void
+    {
+        DB::table('company_settings')->insert(['company_id' => 1, 'option' => 'language', 'value' => 'en']);
+        $this->loginAs($this->admin);
+        $new = $this->postJson('/api/v1/users', ['name' => 'Cuenta ficticia', 'email' => 'idioma@example.invalid',
+            'password' => 'clave-ficticia-1234'])->assertStatus(200)->json('user.id');
+        $this->assertSame('es', DB::table('user_settings')->where('user_id', $new)->where('key', 'language')->value('value'));
+    }
+
+    public function test_validation_messages_use_spanish_without_language_preference(): void
+    {
+        $this->loginAs($this->admin);
+        $this->postJson('/api/v1/users', [])->assertStatus(422)
+            ->assertJsonPath('message', 'Los datos ingresados no son válidos.')
+            ->assertJsonPath('errors.name.0', 'El campo nombre es obligatorio.');
+        $this->assertSame('Las credenciales no coinciden con nuestros registros.', __('auth.failed'));
+        $this->assertSame('Siguiente &raquo;', __('pagination.next'));
+    }
+
     private function payload(string $role = 'preceptor', ?int $level = 1, ?int $division = 1): array
     {
         return ['role_id' => DB::table('roles')->where('company_id', 1)->where('name', $role)->value('id'),

@@ -21,9 +21,7 @@ class BootstrapController extends Controller
     {
         $user = Auth::user();
 
-        $default_language = $user->getSettings(['language']);
-
-        $default_language = array_key_exists('language', $default_language) ? $default_language['language'] : 'en';
+        $default_language = $user->preferredLocale();
 
         $settings = [
             'moment_date_format',

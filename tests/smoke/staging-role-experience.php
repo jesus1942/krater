@@ -20,6 +20,7 @@ $secret = config('staging.admin_password');
 $server = new Process([PHP_BINARY, '-S', '127.0.0.1:18992', '-t', 'public', 'server.php'], base_path());
 $client = new GuzzleHttp\Client(['base_uri' => 'http://127.0.0.1:18992', 'http_errors' => false, 'timeout' => 15]);
 $tokens = []; $checks = []; $assignment = null; $directorToken = null;
+$languageRows = null; $languageUser = null;
 
 /** Solo registra metodo, ruta y estado; nunca respuestas con PII o tokens. */
 function callRoute($client, string $method, string $path, int $expected, array $options = []): array
@@ -55,6 +56,30 @@ try {
         $tokens[$key] = $login['token'];
     }
     $directorToken = $tokens['director'];
+    // Cuenta ficticia real sin idioma guardado. Se restaura solo su preferencia al terminar.
+    if (config('app.locale') !== 'es' || config('app.fallback_locale') !== 'es') {
+        throw new RuntimeException('La app no usa español como idioma predeterminado y respaldo.');
+    }
+    $languageUser = (int) DB::table('users')->where('company_id', $company)
+        ->where('email', 'preceptor.r2b.staging@example.invalid')->value('id');
+    $languageRows = DB::table('user_settings')->where('user_id', $languageUser)->where('key', 'language')
+        ->get()->map(fn ($row) => (array) $row)->all();
+    DB::table('user_settings')->where('user_id', $languageUser)->where('key', 'language')->delete();
+    foreach (['absent', 'empty'] as $case) {
+        if ($case === 'empty') {
+            DB::table('user_settings')->insert(['user_id' => $languageUser, 'key' => 'language', 'value' => '']);
+        }
+        $bootstrap = callRoute($client, 'GET', '/api/v1/bootstrap', 200, authOptions($tokens['preceptor']));
+        $profile = callRoute($client, 'GET', '/api/v1/me/settings?settings%5B0%5D=language', 200, authOptions($tokens['preceptor']));
+        if ($bootstrap['default_language'] !== 'es' || $profile['language'] !== 'es') {
+            throw new RuntimeException('La cuenta sin idioma no resolvio español.');
+        }
+    }
+    $validation = callRoute($client, 'POST', '/api/v1/auth/login', 422, ['headers' => ['Accept' => 'application/json'], 'json' => []]);
+    if (($validation['errors']['username'][0] ?? '') !== 'El campo usuario es obligatorio.'
+        || ($validation['message'] ?? '') !== 'Los datos ingresados no son válidos.') {
+        throw new RuntimeException('La validacion no esta traducida.');
+    }
     foreach (['preceptor', 'teacher'] as $key) {
         $options = authOptions($tokens[$key]);
         foreach (['bootstrap', 'me', 'me/settings?settings%5B0%5D=language', 'languages', 'school-levels', 'students', 'academic-years', 'grade-levels', 'subjects',
@@ -92,13 +117,19 @@ try {
     callRoute($client, 'POST', '/api/v1/role-assignments/'.$assignment.'/revoke', 200, authOptions($directorToken));
     $assignment = null;
     callRoute($client, 'POST', '/api/v1/students', 403, authOptions($tokens['registrar'], $payload));
-    echo 'R2b HTTP staging: '.json_encode(['passed' => true, 'checks' => $checks], JSON_UNESCAPED_SLASHES)."\n";
+    echo 'R2b HTTP staging: '.json_encode(['passed' => true, 'locale' => 'es', 'fallback_locale' => 'es',
+        'account_without_language' => true, 'empty_language' => true, 'validation_in_spanish' => true,
+        'checks' => $checks], JSON_UNESCAPED_SLASHES)."\n";
 } catch (Throwable $e) {
     // Las excepciones de transporte pueden incluir encabezados; no se imprimen.
     fwrite(STDERR, 'R2b HTTP staging fallo despues de '.count($checks).' verificaciones. Revisar estados, sin imprimir secretos.'."\n");
     fwrite(STDERR, json_encode(['checks' => $checks], JSON_UNESCAPED_SLASHES)."\n");
     $failed = true;
 } finally {
+    if ($languageRows !== null) {
+        DB::table('user_settings')->where('user_id', $languageUser)->where('key', 'language')->delete();
+        if ($languageRows) DB::table('user_settings')->insert($languageRows);
+    }
     if ($assignment && $directorToken) {
         try { callRoute($client, 'POST', '/api/v1/role-assignments/'.$assignment.'/revoke', 200, authOptions($directorToken)); }
         catch (Throwable $e) { $failed = true; }

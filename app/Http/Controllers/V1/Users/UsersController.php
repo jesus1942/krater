@@ -4,7 +4,6 @@ namespace Crater\Http\Controllers\V1\Users;
 
 use Crater\Http\Controllers\Controller;
 use Crater\Http\Requests\UserRequest;
-use Crater\Models\CompanySetting;
 use Crater\Models\User;
 use Crater\Services\Access\AccessManager;
 use Crater\Services\Access\TenantUsers;
@@ -31,7 +30,7 @@ class UsersController extends Controller
         abort_unless($access->canManageUser($request->user(), new User($data)), 403);
         $user = DB::transaction(function () use ($data) {
             $user = User::create($data);
-            $user->setSettings(['language' => CompanySetting::getSetting('language', $user->company_id) ?: 'es']);
+            $user->setSettings(['language' => config('app.locale')]);
 
             return $user;
         });

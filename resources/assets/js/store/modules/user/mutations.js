@@ -20,6 +20,7 @@ export default {
   },
 
   [types.SET_DEFAULT_LANGUAGE](state, data) {
-    window.i18n.locale = data
+    // Una preferencia ausente, vacia o no soportada nunca deja el locale indefinido.
+    window.i18n.locale = window.i18n.availableLocales.includes(data) ? data : 'es'
   },
 }

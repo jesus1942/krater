@@ -344,5 +344,13 @@ Jesus autoriza promover R2/R2b despues de corregir las etiquetas y verificar
 staging. Esta instruccion reemplaza el corte previo. `helpers/navigation.js`
 resuelve las etiquetas españolas del menu y Configuracion/Mi perfil segun
 `system.settings.manage`, tanto en sidebar como en encabezado y layout.
-El resto de la app conserva el idioma del perfil. El gate DOM usa VueI18n real,
-prueba en/es, roles limitados y total admin y rechaza claves crudas visibles.
+La app arranca en español: `APP_LOCALE=es`, `APP_FALLBACK_LOCALE=es`,
+`config/app.php` y VueI18n usan es como predeterminado y respaldo. Bootstrap y
+Mi perfil resuelven es sin escribir preferencias cuando falta el idioma o es
+vacio/no soportado; una preferencia explicita soportada se conserva. Las altas
+nuevas usan el idioma de la app, sin heredar el ingles legacy de la empresa.
+El gate DOM usa la instancia y mutacion de VueI18n reales: nueve recorridos
+en/es/sin idioma, roles limitados y total admin, y cobertura española de todas
+las claves del catalogo ingles. El smoke de staging retira/restaura solo el
+idioma de una cuenta ficticia y verifica bootstrap, Mi perfil y validacion
+española por HTTP. Nunca se ejecuta este ensayo en produccion.

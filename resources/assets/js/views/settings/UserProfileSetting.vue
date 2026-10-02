@@ -275,7 +275,7 @@ export default {
     onHandleUploadError() {
       this.showNotification({
         type: 'error',
-        message: 'Oops! Something went wrong...',
+        message: this.$t('validation.something_went_wrong'),
       })
     },
 

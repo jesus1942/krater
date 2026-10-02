@@ -432,6 +432,15 @@ class User extends Authenticatable implements HasMedia
         }
     }
 
+    /** Preferencia explicita si existe; cuentas legacy sin idioma usan el de la app. */
+    public function preferredLocale(): string
+    {
+        $language = $this->getSettings(['language'])['language'] ?? null;
+        $supported = array_column(config('crater.languages'), 'code');
+
+        return in_array($language, $supported, true) ? $language : config('app.locale');
+    }
+
     public function getSettings($settings)
     {
         $settings = $this->settings()->whereIn('key', $settings)->get();
