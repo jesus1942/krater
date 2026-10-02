@@ -326,3 +326,13 @@ la revision visual con sesion real. El ensayo HTTP de staging se ejecuta con
 `php tests/smoke/staging-role-experience.php`, solo en `staging/krater_staging`.
 Usa loopback temporal con parada garantizada y datos ficticios; no imprime
 claves/tokens ni habilita endpoints de depuracion. No promover a produccion.
+
+
+Predeploy exclusivo de staging para R2b (terminante, despues de migrar/sembrar):
+```sh
+/bin/sh -c 'php artisan migrate --force && php artisan db:seed --class=RbacSeeder --force && php artisan crater:mark-installed && php artisan ena:preparar-staging --matriz && php tests/smoke/staging-role-experience.php'
+```
+Deployment `aaf5c0c2-5044-4b48-bc37-c9a76599dd42`, codigo `cc9edaa`,
+SUCCESS; 63 comprobaciones HTTP en PHP 8.2/MySQL aprobadas. Evidencia sin
+secretos: `docs/audits/2026-10-02-r2b-smoke.json`. La revision visual autenticada
+sigue pendiente. Produccion permanece en su deployment final R1; no promover.
