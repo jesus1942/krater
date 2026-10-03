@@ -20,9 +20,7 @@ $customer = DB::table('users')->where('company_id', $company->id)->where('email'
 if (! $customer) { fwrite(STDERR, "Falta la familia ficticia.\n"); exit(1); }
 $fixture = InstitutionScenario::fixture((int) $company->id, (int) $customer);
 $server = new Process([PHP_BINARY, '-S', '127.0.0.1:18993', '-t', 'public', 'server.php'], base_path());
-// Evita que los logs HTTP llenen un pipe sin lector y bloqueen el servidor
-// durante el recorrido largo. El resultado registra rutas/estados por separado.
-$server->disableOutput();
+// El cliente drena los logs después de cada solicitud para no bloquear el pipe.
 $client = new GuzzleHttp\Client(['base_uri' => 'http://127.0.0.1:18993', 'http_errors' => false,
     'timeout' => 30, 'allow_redirects' => false,
     // Cliente ficticio de loopback distinto por ejecución: el smoke de roles
@@ -32,10 +30,21 @@ $client = new GuzzleHttp\Client(['base_uri' => 'http://127.0.0.1:18993', 'http_e
 // Conserva y devuelve los valores cifrados en memoria, sin alterar la configuración
 // ni el middleware de sesión/CSRF de la aplicación.
 $cookies = [];
-$callHttp = function ($method, $path, $options = []) use ($client, &$cookies) {
+$callHttp = function ($method, $path, $options = []) use ($client, $server, &$cookies) {
     if ($cookies) $options['headers']['Cookie'] = implode('; ', array_map(
         fn ($name, $value) => $name.'='.$value, array_keys($cookies), array_values($cookies)));
     $response = $client->request($method, $path, $options);
+    $logs = $server->getIncrementalErrorOutput();
+    $server->clearErrorOutput();
+    $server->clearOutput();
+    if ($response->getStatusCode() >= 500) {
+        preg_match_all('/(?:[A-Za-z_][A-Za-z0-9_]*\\\\)*[A-Za-z_][A-Za-z0-9_]*(?:Exception|Error)\b/', $logs, $classes);
+        preg_match_all('~(?:app|vendor)/[A-Za-z0-9_./-]+\.php[:(]\d+~', $logs, $frames);
+        $body = json_decode((string) $response->getBody(), true) ?: [];
+        fwrite(STDERR, 'Toda la institución servidor: '.json_encode(['path' => $path,
+            'classes' => array_values(array_unique($classes[0])), 'frames' => array_slice(array_values(array_unique($frames[0])), 0, 8),
+            'exception' => $body['exception'] ?? null], JSON_UNESCAPED_SLASHES)."\n");
+    }
     foreach ($response->getHeader('Set-Cookie') as $header) {
         $cookie = GuzzleHttp\Cookie\SetCookie::fromString($header);
         $cookies[$cookie->getName()] = $cookie->getValue();
