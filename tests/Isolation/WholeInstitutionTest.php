@@ -64,6 +64,19 @@ class WholeInstitutionTest extends TestCase
         }, $fixture, 1, 'institution-fixture');
         $this->assertTrue($result['passed']); $this->assertGreaterThan(250, $result['count']);
     }
+
+    /** La cola síncrona no debe renderizar un cobro antes de su hash firmado. */
+    public function test_payment_pdf_waits_for_persisted_document_hash(): void
+    {
+        $payment = \Crater\Models\Payment::create(['company_id' => 1, 'user_id' => User::first()->id,
+            'payment_number' => 'HASH-PRUEBA', 'payment_date' => '2026-10-02', 'amount' => 1000]);
+        Bus::assertNotDispatched(\Crater\Jobs\GeneratePaymentPdfJob::class);
+        $payment->unique_hash = 'hash-ficticio-listo';
+        $payment->save();
+        Bus::assertDispatched(\Crater\Jobs\GeneratePaymentPdfJob::class, fn ($job) =>
+            $job->payment->id === $payment->id && $job->payment->unique_hash === 'hash-ficticio-listo');
+        $this->getJson('/api/v1/payments', ['school-level' => ''])->assertStatus(200);
+    }
     /** Nivel inválido o ajeno no puede producir altas ni vínculos cruzados. */
     public function test_creation_validates_enabled_company_level_and_references(): void
     {

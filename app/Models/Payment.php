@@ -45,11 +45,13 @@ class Payment extends Model implements HasMedia
     protected static function booted()
     {
         static::created(function ($payment) {
-            GeneratePaymentPdfJob::dispatch($payment);
+            // createPayment guarda el hash después del insert. Con cola síncrona,
+            // el PDF necesita esperar ese save para poder generar su URL firmada.
+            if ($payment->unique_hash) GeneratePaymentPdfJob::dispatch($payment);
         });
 
         static::updated(function ($payment) {
-            GeneratePaymentPdfJob::dispatch($payment, true);
+            if ($payment->unique_hash) GeneratePaymentPdfJob::dispatch($payment, true);
         });
     }
 

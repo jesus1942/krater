@@ -18,6 +18,16 @@ $company = DB::table('companies')->where('unique_hash', 'suiteena-staging-fixtur
 if (! $company) { fwrite(STDERR, "Falta la institución ficticia.\n"); exit(1); }
 $customer = DB::table('users')->where('company_id', $company->id)->where('email', 'family.primary.staging@example.invalid')->value('id');
 if (! $customer) { fwrite(STDERR, "Falta la familia ficticia.\n"); exit(1); }
+// Completa exclusivamente hashes de altas ficticias interrumpidas de este smoke.
+// No borra cobros ni toca datos anteriores a la prueba o de otra institución.
+$repaired = 0;
+foreach (DB::table('payments')->where('company_id', $company->id)->whereNull('unique_hash')
+    ->where('payment_number', 'like', 'PAYINST-%')->get(['id']) as $row) {
+    DB::table('payments')->where('id', $row->id)->where('company_id', $company->id)->whereNull('unique_hash')
+        ->update(['unique_hash' => Vinkla\Hashids\Facades\Hashids::connection(Crater\Models\Payment::class)->encode($row->id)]);
+    $repaired++;
+}
+fwrite(STDOUT, 'Toda la institución: hashes de cobros ficticios completados '.$repaired."\n");
 $fixture = InstitutionScenario::fixture((int) $company->id, (int) $customer);
 $server = new Process([PHP_BINARY, '-S', '127.0.0.1:18993', '-t', 'public', 'server.php'], base_path(),
     ['LOG_CHANNEL' => 'single']);
