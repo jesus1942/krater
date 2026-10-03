@@ -19,7 +19,10 @@ if (! $company) { fwrite(STDERR, "Falta la institución ficticia.\n"); exit(1); 
 $customer = DB::table('users')->where('company_id', $company->id)->where('email', 'family.primary.staging@example.invalid')->value('id');
 if (! $customer) { fwrite(STDERR, "Falta la familia ficticia.\n"); exit(1); }
 $fixture = InstitutionScenario::fixture((int) $company->id, (int) $customer);
-$server = new Process([PHP_BINARY, '-S', '127.0.0.1:18993', '-t', 'public', 'server.php'], base_path());
+$server = new Process([PHP_BINARY, '-S', '127.0.0.1:18993', '-t', 'public', 'server.php'], base_path(),
+    ['LOG_CHANNEL' => 'single']);
+// Solo el proceso temporal registra excepciones en su archivo local, para que
+// un stack grande no bloquee stderr antes de devolver el estado HTTP.
 // El cliente drena los logs después de cada solicitud para no bloquear el pipe.
 $client = new GuzzleHttp\Client(['base_uri' => 'http://127.0.0.1:18993', 'http_errors' => false,
     'timeout' => 30, 'allow_redirects' => false,
@@ -38,6 +41,12 @@ $callHttp = function ($method, $path, $options = []) use ($client, $server, &$co
     $server->clearErrorOutput();
     $server->clearOutput();
     if ($response->getStatusCode() >= 500) {
+        $file = storage_path('logs/laravel.log');
+        if (is_file($file)) {
+            $handle = fopen($file, 'rb');
+            fseek($handle, max(0, filesize($file) - 65536));
+            $logs .= stream_get_contents($handle); fclose($handle);
+        }
         preg_match_all('/(?:[A-Za-z_][A-Za-z0-9_]*\\\\)*[A-Za-z_][A-Za-z0-9_]*(?:Exception|Error)\b/', $logs, $classes);
         preg_match_all('~(?:app|vendor)/[A-Za-z0-9_./-]+\.php[:(]\d+~', $logs, $frames);
         $body = json_decode((string) $response->getBody(), true) ?: [];
