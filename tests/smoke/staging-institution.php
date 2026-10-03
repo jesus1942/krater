@@ -20,6 +20,9 @@ $customer = DB::table('users')->where('company_id', $company->id)->where('email'
 if (! $customer) { fwrite(STDERR, "Falta la familia ficticia.\n"); exit(1); }
 $fixture = InstitutionScenario::fixture((int) $company->id, (int) $customer);
 $server = new Process([PHP_BINARY, '-S', '127.0.0.1:18993', '-t', 'public', 'server.php'], base_path());
+// Evita que los logs HTTP llenen un pipe sin lector y bloqueen el servidor
+// durante el recorrido largo. El resultado registra rutas/estados por separado.
+$server->disableOutput();
 $client = new GuzzleHttp\Client(['base_uri' => 'http://127.0.0.1:18993', 'http_errors' => false,
     'timeout' => 30, 'allow_redirects' => false,
     // Cliente ficticio separado del smoke de roles: sus seis ingresos no deben
