@@ -20,7 +20,7 @@ class ExpenseRequest extends FormRequest
      */
     public function rules()
     {
-        return [
+        return array_merge($this->schoolLevelRules(), [
             'expense_date' => [
                 'required',
             ],
@@ -36,6 +36,6 @@ class ExpenseRequest extends FormRequest
             'notes' => [
                 'nullable',
             ],
-        ];
+        ]);
     }
 }

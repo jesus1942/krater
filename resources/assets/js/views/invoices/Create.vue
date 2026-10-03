@@ -4,6 +4,7 @@
       v-if="!isLoadingInvoice && !isLoadingData"
       @submit.prevent="submitForm"
     >
+      <school-level-field v-model="newInvoice.school_level_id" :editing="isEdit" @input="onRecordLevelChange" />
       <sw-page-header :title="pageTitle">
         <sw-breadcrumb slot="breadcrumbs">
           <sw-breadcrumb-item
@@ -62,7 +63,7 @@
           <label class="block mb-4 text-sm">Alumno *
             <select v-model="newInvoice.student_id" required class="w-full h-10 px-3 mt-1 bg-white border border-gray-300 rounded" @change="onBillingStudentChange">
               <option :value="null">Seleccionar alumno</option>
-              <option v-for="student in billingStudents" :key="student.id" :value="student.id">
+              <option v-for="student in levelBillingStudents" :key="student.id" :value="student.id">
                 {{ student.full_name }} · {{ student.course || 'Sin curso' }}
               </option>
             </select>
@@ -411,6 +412,7 @@
 </template>
 
 <script>
+import recordLevel from '../../mixins/recordLevel'
 import draggable from 'vuedraggable'
 import InvoiceItem from './Item'
 import InvoiceStub from '../../stub/invoice'
@@ -447,11 +449,12 @@ export default {
     ShoppingCartIcon,
     HashtagIcon,
   },
-  mixins: [CustomFieldsMixin],
+  mixins: [CustomFieldsMixin, recordLevel],
 
   data() {
     return {
       newInvoice: {
+        school_level_id: window.Ls.get('selectedSchoolLevel') || null,
         invoice_date: null,
         due_date: null,
         invoice_number: null,
@@ -920,6 +923,7 @@ export default {
     },
 
     async submitForm() {
+      if (!this.requireRecordLevel(this.newInvoice)) return false
       // return
       let validate = await this.touchCustomField()
 

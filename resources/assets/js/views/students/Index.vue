@@ -30,8 +30,8 @@
     <div class="p-4 mb-5 bg-white rounded shadow">
       <div class="grid gap-3 md:grid-cols-4">
         <sw-input v-model="filters.search" placeholder="Buscar por nombre o DNI" @input="debouncedFetch" />
-        <select v-if="canViewAllLevels" v-model="filters.all_levels" class="h-10 px-3 bg-white border border-gray-300 rounded" @change="fetchStudents">
-          <option :value="false">Nivel activo</option>
+        <select v-if="canViewAllLevels && !selectedLevelId" v-model="filters.all_levels" class="h-10 px-3 bg-white border border-gray-300 rounded" @change="fetchStudents">
+
           <option :value="true">Todos los niveles · administración</option>
         </select>
         <div v-else class="flex items-center h-10 px-3 text-sm text-gray-600 bg-gray-50 border border-gray-200 rounded">{{ activeLevelName }}</div>
@@ -72,7 +72,7 @@
           </div>
         </div>
         <div class="flex justify-end gap-3 mt-4">
-          <button v-if="!filters.all_levels && student.can_edit" class="text-sm font-medium text-primary-500" @click="openEdit(student)">Editar</button>
+          <button v-if="student.can_edit" class="text-sm font-medium text-primary-500" @click="openEdit(student)">Editar</button>
           <button v-if="canRelocate" class="text-sm font-medium text-indigo-600" @click="openRelocate(student)">Reubicar</button>
         </div>
       </article>
@@ -85,25 +85,26 @@
           <button type="button" class="text-2xl text-gray-400" @click="closeForm">×</button>
         </div>
 
+        <school-level-field v-if="canManage" v-model="form.school_level_id" :editing="Boolean(form.id)" @input="onFormLevelChange" />
         <h3 class="mb-3 text-sm font-semibold tracking-wide text-gray-600 uppercase">Datos del alumno</h3>
         <div class="grid gap-4 md:grid-cols-2">
           <label class="text-sm">Nombre *<sw-input v-model="form.first_name" class="mt-1" required /></label>
           <label class="text-sm">Apellido *<sw-input v-model="form.last_name" class="mt-1" required /></label>
           <label class="text-sm">DNI<sw-input v-model="form.dni" class="mt-1" /></label>
           <label class="text-sm">Fecha de nacimiento<sw-input v-model="form.birth_date" type="date" class="mt-1" /></label>
-          <label v-if="canManage || !form.id" class="text-sm">Ciclo lectivo *
+          <label v-if="(canManage && form.school_level_id) || !form.id" class="text-sm">Ciclo lectivo *
             <select v-model="form.academic_year_id" required class="w-full h-10 px-3 mt-1 bg-white border border-gray-300 rounded" @change="onAcademicYearChange">
               <option value="">Seleccionar ciclo</option>
               <option v-for="year in academicYears" :key="year.id" :value="year.id">{{ year.name || year.year }}</option>
             </select>
           </label>
-          <label v-if="canManage || !form.id" class="text-sm">Curso/Año *
+          <label v-if="(canManage && form.school_level_id) || !form.id" class="text-sm">Curso/Año *
             <select v-model="form.grade_level_id" required class="w-full h-10 px-3 mt-1 bg-white border border-gray-300 rounded" @change="onGradeLevelChange">
               <option value="">Seleccionar curso</option>
               <option v-for="grade in gradeLevels" :key="grade.id" :value="grade.id">{{ grade.name }}</option>
             </select>
           </label>
-          <label v-if="canManage || !form.id" class="text-sm">División *
+          <label v-if="(canManage && form.school_level_id) || !form.id" class="text-sm">División *
             <select v-model="form.division_id" required class="w-full h-10 px-3 mt-1 bg-white border border-gray-300 rounded">
               <option value="">Seleccionar división</option>
               <option v-for="division in availableDivisions" :key="division.id" :value="division.id">{{ division.name }}</option>
@@ -240,6 +241,7 @@
 </template>
 
 <script>
+import SchoolLevelField from '../../components/SchoolLevelField.vue'
 import { can, landingPath } from '../../helpers/access'
 import { PlusSmIcon } from '@vue-hero-icons/solid'
 
@@ -279,7 +281,8 @@ const emptyForm = () => ({
 })
 
 export default {
-  components: { PlusSmIcon },
+  components: {
+    SchoolLevelField, PlusSmIcon },
   data() {
     return {
       students: [],
@@ -309,6 +312,7 @@ export default {
     this.fetchStudents()
   },
   computed: {
+    selectedLevelId() { return window.Ls.get('selectedSchoolLevel') || '' },
     homePath() { return landingPath(this.$store.state.user.currentUser) },
     canManage() { return can(this.$store.state.user.currentUser, 'students.manage') },
     canSensitive() { return this.canManage && can(this.$store.state.user.currentUser, 'students.view_sensitive') },
@@ -340,12 +344,17 @@ export default {
     },
   },
   methods: {
+    async onFormLevelChange() {
+      this.form.academic_year_id = ''; this.form.grade_level_id = ''; this.form.division_id = ''
+      this.academicYears = []; this.gradeLevels = []; this.divisions = []
+      if (this.form.school_level_id) await this.fetchPlacementOptions()
+    },
     async fetchSchoolLevels() {
       const response = await window.axios.get('/api/v1/school-levels')
       this.schoolLevels = response.data.levels.filter((level) => level.enabled)
     },
     async fetchPlacementOptions() {
-      const response = await window.axios.get('/api/v1/students/placement-options')
+      const response = await window.axios.get('/api/v1/students/placement-options', { params: { school_level_id: this.form.school_level_id || undefined } })
       this.academicYears = response.data.academic_years || []
       this.gradeLevels = response.data.grade_levels || []
       this.divisions = response.data.divisions || []
@@ -372,12 +381,14 @@ export default {
     },
     async openCreate() {
       this.form = emptyForm()
-      await this.fetchPlacementOptions()
+      this.academicYears = []; this.gradeLevels = []; this.divisions = []
+      if (this.form.school_level_id) await this.fetchPlacementOptions()
       this.error = ''
       this.showForm = true
     },
     async openEdit(student) {
-      if (this.canManage) await this.fetchPlacementOptions()
+      this.form = { ...emptyForm(), ...student }
+      if (this.canManage && this.form.school_level_id) await this.fetchPlacementOptions()
       const members = (student.family_members || []).map((member) => ({
         ...newFamilyMember(),
         id: member.id,

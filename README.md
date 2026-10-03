@@ -16,6 +16,7 @@ Desarrollado por **Jesus Olguín** y **Escuela Nueva Austral**, basado en [Crate
 - Productos y servicios
 - Reportes de ventas, gastos y ganancias
 - App movil PWA (instalable en celular)
+- Vista Toda la institución: edición conservando el nivel propio, alta con selección obligatoria e informes consolidados con filtro por nivel (validación en staging; sin promoción productiva).
 - Usuarios y roles: ficha de asignaciones por nivel, division o seccion, vigencia, revocacion e inspeccion de permisos (R2/R2b operativas, con registro delegado de alumnos).
 
 ---

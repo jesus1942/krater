@@ -29,7 +29,7 @@ class StudentsController extends Controller
         $limit = $request->get('limit', 15);
         $user = $request->user();
         $canViewAllLevels = $user && app(AccessManager::class)->isTotalAdmin($user);
-        $allLevels = $canViewAllLevels && $request->boolean('all_levels');
+        $allLevels = $canViewAllLevels && TenantContext::schoolLevelId() === null;
 
         if (! $allLevels && ! TenantContext::schoolLevelId()) {
             abort(422, 'Seleccioná un nivel institucional o usa la vista Todos los niveles si sos administrador total.');
@@ -80,9 +80,15 @@ class StudentsController extends Controller
     public function placementOptions(Request $request)
     {
         $companyId = TenantContext::companyId();
-        $schoolLevelId = (int) TenantContext::schoolLevelId();
-
-        abort_unless($schoolLevelId, 422, 'Seleccioná un nivel institucional antes de cargar un alumno.');
+        $schoolLevelId = TenantContext::schoolLevelId() ?? $request->query('school_level_id');
+        $request->validate(['school_level_id' => ['nullable', 'integer']]);
+        abort_unless($schoolLevelId && SchoolLevel::where('company_id', $companyId)->where('enabled', true)
+            ->whereKey($schoolLevelId)->exists(), 422, 'Seleccioná un nivel habilitado de la institución.');
+        if (TenantContext::schoolLevelId() !== null && $request->filled('school_level_id')) {
+            abort_unless((int) $request->query('school_level_id') === TenantContext::schoolLevelId(), 422,
+                'El nivel debe coincidir con el nivel activo.');
+        }
+        $schoolLevelId = (int) $schoolLevelId;
 
         $academicYears = AcademicYear::where('company_id', $companyId)
             ->where('school_level_id', $schoolLevelId)
@@ -126,7 +132,7 @@ class StudentsController extends Controller
         $validated = $request->validated();
         $familyMembers = $validated['family_members'] ?? [];
         unset($validated['family_members']);
-        $validated = $this->applyCanonicalPlacement($validated, $companyId);
+        $validated = $this->applyCanonicalPlacement($validated, $companyId, $validated['school_level_id'] ?? null);
 
         $student = DB::transaction(function () use ($validated, $familyMembers, $companyId) {
             $student = Student::create(array_merge($validated, [
@@ -162,7 +168,11 @@ class StudentsController extends Controller
         $hasFamilyPayload = array_key_exists('family_members', $validated);
         $familyMembers = $validated['family_members'] ?? [];
         unset($validated['family_members']);
-        $validated = $this->applyCanonicalPlacement($validated, $companyId);
+        if (! empty($validated['academic_year_id']) || ! empty($validated['grade_level_id']) || ! empty($validated['division_id'])) {
+            $validated = $this->applyCanonicalPlacement($validated, $companyId, $student->school_level_id === null ? null : (int) $student->school_level_id);
+        } else {
+            unset($validated['academic_year_id'], $validated['grade_level_id'], $validated['division_id']);
+        }
 
         DB::transaction(function () use ($student, $validated, $familyMembers, $hasFamilyPayload, $companyId) {
             $student->update($validated);
@@ -184,9 +194,11 @@ class StudentsController extends Controller
         abort(409, 'Los legajos de alumnos no se eliminan físicamente. Cambiá su estado o reubicación para preservar el historial.');
     }
 
-    private function applyCanonicalPlacement(array $validated, int $companyId): array
+    private function applyCanonicalPlacement(array $validated, int $companyId, ?int $recordLevelId): array
     {
-        $schoolLevelId = (int) TenantContext::schoolLevelId();
+        $schoolLevelId = TenantContext::schoolLevelId() ?? $recordLevelId;
+        abort_unless(! empty($validated['academic_year_id']) && ! empty($validated['grade_level_id'])
+            && ! empty($validated['division_id']), 422, 'Seleccioná ciclo, curso y división del nivel del alumno.');
 
         abort_unless($schoolLevelId, 422, 'Seleccioná un nivel institucional antes de guardar un alumno.');
 

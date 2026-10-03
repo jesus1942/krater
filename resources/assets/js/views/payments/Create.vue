@@ -1,6 +1,7 @@
 <template>
   <base-page class="relative payment-create">
     <form action="" @submit.prevent="submitPaymentData">
+      <school-level-field v-model="formData.school_level_id" :editing="isEdit" @input="onRecordLevelChange" />
       <sw-page-header :title="pageTitle" class="mb-5">
         <sw-breadcrumb slot="breadcrumbs">
           <sw-breadcrumb-item
@@ -80,7 +81,7 @@
           <sw-input-group label="Alumno" required>
             <select v-model="formData.student_id" required class="w-full h-10 px-3 mt-1 bg-white border border-gray-300 rounded" :disabled="isEdit" @change="onStudentChange">
               <option :value="null">Seleccionar alumno</option>
-              <option v-for="student in billingStudents" :key="student.id" :value="student.id">
+              <option v-for="student in levelBillingStudents" :key="student.id" :value="student.id">
                 {{ student.full_name }} · {{ student.course || 'Sin curso' }}
               </option>
             </select>
@@ -218,6 +219,7 @@
 </template>
 
 <script>
+import recordLevel from '../../mixins/recordLevel'
 import { mapActions, mapGetters } from 'vuex'
 import moment from 'moment'
 import { ShoppingCartIcon } from '@vue-hero-icons/solid'
@@ -227,11 +229,12 @@ const { required, between, numeric } = require('vuelidate/lib/validators')
 
 export default {
   components: { ShoppingCartIcon },
-  mixins: [CustomFieldsMixin],
+  mixins: [CustomFieldsMixin, recordLevel],
 
   data() {
     return {
       formData: {
+        school_level_id: window.Ls.get('selectedSchoolLevel') || null,
         user_id: null,
         student_id: null,
         family_member_id: null,
@@ -282,7 +285,7 @@ export default {
       return this.selectedBillingStudent ? (this.selectedBillingStudent.financial_responsibles || []) : []
     },
     studentInvoices() {
-      return this.invoiceList.filter((row) => Number(row.student_id) === Number(this.formData.student_id))
+      return this.levelInvoiceList.filter((row) => Number(row.student_id) === Number(this.formData.student_id))
     },
     amount: {
           required,
@@ -515,6 +518,7 @@ export default {
     async setInvoicePaymentData() {
       const data = await this.fetchInvoice(this.$route.params.id)
       const row = data.data.invoice
+      this.formData.school_level_id = row.school_level_id
       this.formData.invoice_id = row.id
       this.formData.student_id = row.student_id
       this.formData.family_member_id = row.family_member_id
@@ -529,6 +533,7 @@ export default {
       this.maxPayableAmount = data.data.invoice.due_amount
     },
     async submitPaymentData() {
+      if (!this.requireRecordLevel(this.formData)) return false
       let validate = await this.touchCustomField()
       this.$v.formData.$touch()
       if (this.$v.$invalid || validate.error) {

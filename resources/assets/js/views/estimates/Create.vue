@@ -4,6 +4,7 @@
       v-if="!isLoadingEstimate && !isLoadingData"
       @submit.prevent="submitForm"
     >
+      <school-level-field v-model="newEstimate.school_level_id" :editing="isEdit" @input="onRecordLevelChange" />
       <sw-page-header :title="pageTitle">
         <sw-breadcrumb slot="breadcrumbs">
           <sw-breadcrumb-item
@@ -400,6 +401,7 @@
 </template>
 
 <script>
+import recordLevel from '../../mixins/recordLevel'
 import draggable from 'vuedraggable'
 import EstimateItem from './Item'
 import EstimateStub from '../../stub/estimate'
@@ -436,11 +438,12 @@ export default {
     PlusSmIcon,
     HashtagIcon,
   },
-  mixins: [CustomFieldsMixin],
+  mixins: [CustomFieldsMixin, recordLevel],
 
   data() {
     return {
       newEstimate: {
+        school_level_id: window.Ls.get('selectedSchoolLevel') || null,
         estimate_date: null,
         expiry_date: null,
         estimate_number: null,
@@ -885,6 +888,7 @@ export default {
     },
 
     async submitForm() {
+      if (!this.requireRecordLevel(this.newEstimate)) return false
       let validate = await this.touchCustomField()
       if (!this.checkValid() || validate.error) {
         return false

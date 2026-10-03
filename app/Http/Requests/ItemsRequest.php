@@ -15,7 +15,7 @@ class ItemsRequest extends FormRequest
      */
     public function rules()
     {
-        return [
+        return array_merge($this->schoolLevelRules(), [
             'name' => [
                 'required',
             ],
@@ -28,6 +28,6 @@ class ItemsRequest extends FormRequest
             'description' => [
                 'nullable',
             ],
-        ];
+        ]);
     }
 }

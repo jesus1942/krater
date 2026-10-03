@@ -84,6 +84,6 @@ class InvoicesRequest extends FormRequest
             ];
         }
 
-        return $rules;
+        return array_merge($rules, $this->schoolLevelRules());
     }
 }

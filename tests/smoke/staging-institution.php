@@ -1,0 +1,68 @@
+<?php
+
+// Recorrido exclusivo de staging: MySQL real, sin endpoints de depuración.
+require __DIR__.'/../../vendor/autoload.php';
+$app = require __DIR__.'/../../bootstrap/app.php';
+$app->make(Illuminate\Contracts\Console\Kernel::class)->bootstrap();
+require __DIR__.'/../Support/InstitutionScenario.php';
+
+use Illuminate\Support\Facades\DB;
+use Symfony\Component\Process\Process;
+use Tests\Support\InstitutionScenario;
+
+// Corte antes de cualquier lectura/escritura; no existe --force.
+if (! app()->environment('staging') || DB::connection()->getDatabaseName() !== 'krater_staging') {
+    fwrite(STDERR, "El recorrido exige staging y krater_staging.\n"); exit(1);
+}
+$company = DB::table('companies')->where('unique_hash', 'suiteena-staging-fixture')->first();
+if (! $company) { fwrite(STDERR, "Falta la institución ficticia.\n"); exit(1); }
+$customer = DB::table('users')->where('company_id', $company->id)->where('email', 'family.primary.staging@example.invalid')->value('id');
+if (! $customer) { fwrite(STDERR, "Falta la familia ficticia.\n"); exit(1); }
+$fixture = InstitutionScenario::fixture((int) $company->id, (int) $customer);
+$server = new Process([PHP_BINARY, '-S', '127.0.0.1:18993', '-t', 'public', 'server.php'], base_path());
+$client = new GuzzleHttp\Client(['base_uri' => 'http://127.0.0.1:18993', 'http_errors' => false,
+    'timeout' => 30, 'cookies' => true, 'allow_redirects' => false]);
+$token = null; $failed = false;
+try {
+    $server->start();
+    for ($attempt = 0; $attempt < 50; $attempt++) {
+        try { if ($client->get('/ping')->getStatusCode() === 200) break; } catch (Throwable $e) {}
+        usleep(100000);
+    }
+    $secret = config('staging.admin_password');
+    $login = $client->post('/api/v1/auth/login', ['json' => ['username' => 'total-admin.staging@example.invalid',
+        'password' => $secret, 'device_name' => 'institution-smoke'], 'headers' => ['Accept' => 'application/json']]);
+    $token = (json_decode((string) $login->getBody(), true) ?: [])['token'] ?? null;
+    if ($login->getStatusCode() !== 200 || ! $token) throw new RuntimeException('Falló el ingreso API ficticio.');
+    // Los informes web exigen una sesión real además del token de API.
+    $html = (string) $client->get('/login')->getBody();
+    if (! preg_match('/name="csrf-token"\s+content="([^"]+)"/', $html, $csrf)) throw new RuntimeException('No se encontró el CSRF del ingreso.');
+    $web = $client->post('/login', ['form_params' => ['email' => 'total-admin.staging@example.invalid',
+        'password' => $secret, '_token' => $csrf[1]]]);
+    if ($web->getStatusCode() !== 302) throw new RuntimeException('Falló el ingreso web ficticio.');
+    $result = InstitutionScenario::run(function ($method, $path, $payload, $level) use ($client, $token, $company) {
+        $options = ['headers' => ['Accept' => str_starts_with($path, '/reports/') ? 'application/pdf' : 'application/json',
+            'company' => (string) $company->id, 'school-level' => $level === null ? '' : (string) $level,
+            'Authorization' => 'Bearer '.$token]];
+        if ($payload) $options['json'] = $payload;
+        // Mantiene el limitador real. Si el smoke anterior consumió el cupo,
+        // espera su Retry-After y repite una vez; nunca reintenta un 403.
+        usleep(400000);
+        $response = $client->request($method, $path, $options);
+        if ($response->getStatusCode() === 429) {
+            $seconds = max(1, min(60, (int) $response->getHeaderLine('Retry-After')));
+            usleep($seconds * 1000000);
+            $response = $client->request($method, $path, $options);
+        }
+        $body = (string) $response->getBody();
+        return ['status' => $response->getStatusCode(), 'json' => json_decode($body, true), 'body' => $body];
+    }, $fixture, (int) $company->id, $company->unique_hash);
+    echo 'Toda la institución HTTP staging: '.json_encode($result, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES)."\n";
+} catch (Throwable $e) {
+    $failed = true;
+    fwrite(STDERR, 'Toda la institución HTTP staging falló. '.(get_class($e) === RuntimeException::class ? $e->getMessage() : 'Revisar logs de aplicación; no se imprimen secretos.')."\n");
+} finally {
+    if ($token) DB::table('personal_access_tokens')->where('id', explode('|', $token, 2)[0])->where('name', 'institution-smoke')->delete();
+    $server->stop();
+}
+exit($failed ? 1 : 0);

@@ -62,6 +62,12 @@ class Handler extends ExceptionHandler
      */
     public function render($request, Throwable $exception)
     {
+        if ($request->is('reports/*') && ! $request->expectsJson()
+            && $exception instanceof \Symfony\Component\HttpKernel\Exception\HttpExceptionInterface
+            && in_array($exception->getStatusCode(), [403, 422])) {
+            return response()->view('errors.report', ['message' => $exception->getMessage()
+                ?: 'No se pudo abrir el informe. Revisá el nivel y tus permisos.'], $exception->getStatusCode());
+        }
         return parent::render($request, $exception);
     }
 }

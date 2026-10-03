@@ -15,7 +15,7 @@ use Illuminate\Http\Request;
  *
  * El hash de empresa identifica el recurso, pero NO es una credencial. Para
  * generar un reporte se exige usuario autenticado, empresa autorizada, nivel
- * institucional explicito y permiso finance.report.view. El contexto se fija
+ * institucional o consolidado exclusivo de administración total y permiso finance.report.view. El contexto se fija
  * antes de ejecutar el controlador para que los scopes por nivel funcionen en
  * Invoice, Expense y relaciones dependientes.
  */
@@ -37,21 +37,24 @@ class ReportTenant
         $isTotalAdmin = $this->access->isTotalAdmin($user);
 
         if (! $isTotalAdmin && (int) $user->company_id !== (int) $company->id) {
-            abort(403);
+            abort(403, 'No tenés acceso a los informes de esta institución.');
         }
 
-        $levelId = (int) $request->query('school_level_id', 0);
-        abort_if($levelId <= 0, 403);
+        $rawLevel = $request->query('school_level_id');
+        abort_if($rawLevel !== null && $rawLevel !== '' && (! is_scalar($rawLevel) || ! ctype_digit((string) $rawLevel) || (int) $rawLevel <= 0),
+            422, 'Elegí un nivel institucional válido.');
+        $levelId = $rawLevel === null || $rawLevel === '' ? null : (int) $rawLevel;
+        abort_if($levelId === null && ! $isTotalAdmin, 403, 'Seleccioná un nivel para ver sus informes.');
 
-        $levelExists = SchoolLevel::whereKey($levelId)
+        $levelExists = $levelId === null || SchoolLevel::whereKey($levelId)
             ->where('company_id', $company->id)
             ->where('enabled', true)
             ->exists();
 
-        abort_unless($levelExists, 403);
+        abort_unless($levelExists, 403, 'El nivel no está habilitado en esta institución.');
         abort_unless(
             $this->access->allows($user, Permission::FINANCE_REPORT_VIEW, $levelId),
-            403
+            403, 'No tenés permiso para consultar estos informes.'
         );
 
         TenantContext::set((int) $company->id, $levelId);

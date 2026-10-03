@@ -15,7 +15,7 @@ class SchoolBillingOptionsController extends Controller
         $schoolLevelId = (int) TenantContext::schoolLevelId();
 
         $students = Student::where('company_id', $companyId)
-            ->where('school_level_id', $schoolLevelId)
+            ->when($schoolLevelId, fn ($q) => $q->where('school_level_id', $schoolLevelId))
             ->whereIn('status', ['active', 'pending'])
             ->with([
                 'familyMembers' => function ($query) {
@@ -37,6 +37,7 @@ class SchoolBillingOptionsController extends Controller
 
                 return [
                     'id' => $student->id,
+                    'school_level_id' => $student->school_level_id,
                     'full_name' => $student->full_name,
                     'dni' => $student->dni,
                     'enrollment_id' => optional($enrollment)->id,

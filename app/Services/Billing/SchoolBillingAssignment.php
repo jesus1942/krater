@@ -18,7 +18,7 @@ class SchoolBillingAssignment
         }
 
         $companyId = (int) TenantContext::companyId();
-        $schoolLevelId = (int) TenantContext::schoolLevelId();
+        $schoolLevelId = TenantContext::schoolLevelId() ?? $request->input('school_level_id');
 
         $student = Student::where('company_id', $companyId)
             ->where('school_level_id', $schoolLevelId)
@@ -54,7 +54,7 @@ class SchoolBillingAssignment
     public function resolvePayment(Request $request): array
     {
         $companyId = (int) TenantContext::companyId();
-        $schoolLevelId = (int) TenantContext::schoolLevelId();
+        $schoolLevelId = TenantContext::schoolLevelId() ?? $request->input('school_level_id');
 
         if ($request->filled('invoice_id')) {
             $invoice = Invoice::where('company_id', $companyId)

@@ -381,3 +381,21 @@ lo invoca antes de su preparacion y sus 68 comprobaciones HTTP exclusivas.
 - `APP_LOCALE=es` y `APP_FALLBACK_LOCALE=es` explicitos en ambos servicios.
 - Evidencia y smoke publico: `docs/audits/2026-10-02-r2-r2b-production.json`.
   Las filas siguientes no se adelantan por esta promocion.
+
+
+### Toda la institución — validación antes de la fila 6
+
+El nivel del encabezado sigue siendo el contexto de lectura. `ResolvesSchoolLevel`
+valida el nivel de escritura desde el binding en edición y desde el formulario en
+alta global. No cambiar TenantContext para guardar ni aceptar reclasificación por
+PUT. Alumnos y facturación cargan opciones del nivel del registro; informes admiten
+consolidado exclusivamente para total admin, con filtro opcional por nivel.
+
+Gate: `php phpunit.phar -c phpunit-rbac.xml`, `node tests/smoke/institution-ui.cjs`
+y `node tests/smoke/role-ui.cjs`. El recorrido nuevo utiliza seis entidades y tres
+niveles, más los cinco informes PDF. Smoke de MySQL:
+`php tests/smoke/staging-institution.php`, exclusivamente en staging/krater_staging.
+Ejecutarlo después del smoke de roles, en el predeploy terminante autorizado de
+staging. No añadirlo a `pre-deploy.sh`, railway.toml ni al servicio productivo.
+Estado: gate local aprobado; pendiente verificación del despliegue de staging.
+Jesús exige detener antes de promover a `produccion`.

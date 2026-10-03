@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <phpunit bootstrap="tests/bootstrap-isolation.php" colors="true">
   <testsuites><testsuite name="RBAC R1 R2">
+    <file>tests/Isolation/WholeInstitutionTest.php</file>
     <file>tests/Isolation/RoleAssignmentsTest.php</file>
     <file>tests/Isolation/DelegatedStudentRegistrationTest.php</file>
     <file>tests/Isolation/RouteAuthorizationMatrixTest.php</file>

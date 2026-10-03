@@ -7,6 +7,16 @@ use Illuminate\Validation\Rule;
 
 class StudentRequest extends FormRequest
 {
+    use \Crater\Http\Requests\Concerns\ResolvesSchoolLevel;
+    protected function prepareForValidation(): void
+    {
+        if (app(\Crater\Services\Access\AccessManager::class)->allows($this->user(),
+            \Crater\Enums\Permission::STUDENT_MANAGE, \Crater\Support\TenantContext::schoolLevelId())
+            && ! $this->exists('school_level_id') && ($this->levelRecord() || \Crater\Support\TenantContext::schoolLevelId() !== null)) {
+            $this->merge(['school_level_id' => $this->writeLevelId()]);
+        }
+    }
+
     public function authorize()
     {
         return true;
@@ -61,6 +71,12 @@ class StudentRequest extends FormRequest
             'family_members.*.is_primary_contact' => ['nullable', 'boolean'],
         ];
 
+        if ($studentId) {
+            foreach (['academic_year_id', 'grade_level_id', 'division_id'] as $field) {
+                $rules[$field] = ['nullable', 'integer'];
+            }
+        }
+
         // La habilitacion delegada nunca usa el formulario completo del legajo.
         if (! app(\Crater\Services\Access\AccessManager::class)->allows($this->user(),
             \Crater\Enums\Permission::STUDENT_MANAGE, \Crater\Support\TenantContext::schoolLevelId())) {
@@ -71,6 +87,11 @@ class StudentRequest extends FormRequest
             }
             abort_if(array_diff(array_keys($this->all()), $allowed), 403, 'La habilitacion permite solo datos basicos.');
             $rules = array_intersect_key($rules, array_flip($allowed));
+        }
+        if (app(\Crater\Services\Access\AccessManager::class)->allows($this->user(),
+            \Crater\Enums\Permission::STUDENT_MANAGE, \Crater\Support\TenantContext::schoolLevelId())) {
+            $rules = array_merge($rules, $this->schoolLevelRules());
+            $rules['company_id'] = ['sometimes', 'integer', Rule::in([$companyId])];
         }
         return $rules;
     }
