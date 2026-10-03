@@ -2,12 +2,14 @@
 
 namespace Crater\Models;
 
+use Crater\Traits\Auditable;
 use App;
 use Barryvdh\DomPDF\Facade as PDF;
 use Carbon\Carbon;
 use Crater\Mail\SendEstimateMail;
 use Crater\Traits\GeneratesPdfTrait;
 use Crater\Traits\HasCustomFieldsTrait;
+use Crater\Traits\BelongsToSchoolLevel;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Auth;
@@ -17,10 +19,12 @@ use Vinkla\Hashids\Facades\Hashids;
 
 class Estimate extends Model implements HasMedia
 {
+    use Auditable;
     use HasFactory;
     use InteractsWithMedia;
     use GeneratesPdfTrait;
     use HasCustomFieldsTrait;
+    use BelongsToSchoolLevel;
 
     public const STATUS_DRAFT = 'DRAFT';
     public const STATUS_SENT = 'SENT';
@@ -67,13 +71,15 @@ class Estimate extends Model implements HasMedia
 
     public function getEstimatePdfUrlAttribute()
     {
-        return url('/estimates/pdf/'.$this->unique_hash);
+        return \Illuminate\Support\Facades\URL::temporarySignedRoute('documents.estimate', now()->addDay(), ['estimate' => $this->unique_hash]);
     }
 
     public static function getNextEstimateNumber($value)
     {
         // Get the last created order
-        $lastOrder = Estimate::where('estimate_number', 'LIKE', $value.'-%')
+        $lastOrder = Estimate::acrossLevels()
+            ->where('estimates.company_id', request()->header('company'))
+            ->where('estimate_number', 'LIKE', $value.'-%')
             ->orderBy('estimate_number', 'desc')
             ->first();
 
@@ -500,7 +506,7 @@ class Estimate extends Model implements HasMedia
             '{ESTIMATE_EXPIRY_DATE}' => $this->formattedExpiryDate,
             '{ESTIMATE_NUMBER}' => $this->estimate_number,
             '{ESTIMATE_REF_NUMBER}' => $this->reference_number,
-            '{ESTIMATE_LINK}' => url('/customer/estimates/pdf/'.$this->unique_hash),
+            '{ESTIMATE_LINK}' => \Illuminate\Support\Facades\URL::temporarySignedRoute('documents.customer.estimate', now()->addDays(7), ['estimate' => $this->unique_hash]),
         ];
     }
 }

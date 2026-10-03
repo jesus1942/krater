@@ -11,6 +11,11 @@ use Illuminate\Http\Request;
 
 class EstimatesController extends Controller
 {
+    public function __construct()
+    {
+        $this->middleware('tenant');
+    }
+
     public function index(Request $request)
     {
         $limit = $request->has('limit') ? $request->limit : 10;

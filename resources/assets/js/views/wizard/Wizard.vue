@@ -4,9 +4,9 @@
   >
     <img
       id="logo-crater"
-      src="/assets/img/crater-logo.png"
-      alt="Crater Logo"
-      class="h-12"
+      src="/images/ena-logo.svg"
+      alt="Escuela Nueva Austral"
+      class="h-12 max-w-xs"
     />
     <sw-wizard
       :steps="7"

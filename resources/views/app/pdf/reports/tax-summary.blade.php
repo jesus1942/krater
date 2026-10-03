@@ -23,7 +23,7 @@
         .heading-text {
             font-weight: bold;
             font-size: 24px;
-            color: #5851D8;
+            color: #102340;
             width: 100%;
             text-align: left;
             padding: 0px;
@@ -131,7 +131,7 @@
             font-weight: bold;
             font-size: 20px;
             line-height: 21px;
-            color: #5851D8;
+            color: #102340;
         }
     </style>
 </head>

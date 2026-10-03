@@ -1,6 +1,12 @@
 <template>
   <div class="grid gap-8 md:grid-cols-12">
     <div class="col-span-8 mt-12 md:col-span-4">
+      <label v-if="institutionReports" class="block mb-4 text-sm">Nivel del informe
+        <select v-model="reportLevelId" class="w-full h-10 px-3 mt-1 bg-white border border-gray-300 rounded" @change="getReports()">
+          <option value="">Toda la institución · consolidado</option>
+          <option v-for="level in reportLevels" :key="level.id" :value="level.id">{{ level.name }}</option>
+        </select>
+      </label>
       <div class="grid grid-cols-12">
         <sw-input-group
           :label="$t('reports.taxes.date_range')"
@@ -72,6 +78,7 @@
 </template>
 
 <script>
+import reportLevel from '../../mixins/reportLevel'
 import { mapGetters } from 'vuex'
 
 import { DocumentTextIcon } from '@vue-hero-icons/solid'
@@ -79,6 +86,7 @@ import moment from 'moment'
 const { required } = require('vuelidate/lib/validators')
 
 export default {
+  mixins: [reportLevel],
   components: {
     DocumentTextIcon,
   },
@@ -157,7 +165,7 @@ export default {
         this.formData.from_date
       ).format('YYYY-MM-DD')}&to_date=${moment(this.formData.to_date).format(
         'YYYY-MM-DD'
-      )}`
+      )}&school_level_id=${this.reportLevelId || ''}`
     },
   },
 

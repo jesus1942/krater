@@ -1,17 +1,18 @@
 <template>
-  <tr class="box-border bg-white border border-gray-200 border-solid rounded-b">
-    <td colspan="5" class="p-0 text-left align-top">
-      <table class="w-full">
-        <colgroup>
+  <tr class="block box-border mb-4 bg-white border border-gray-200 border-solid rounded md:table-row md:mb-0">
+    <td colspan="5" class="block p-0 text-left align-top md:table-cell">
+      <table class="block w-full md:table">
+        <colgroup class="hidden md:table-column-group">
           <col style="width: 40%" />
           <col style="width: 10%" />
           <col style="width: 15%" />
           <col v-if="discountPerItem === 'YES'" style="width: 15%" />
           <col style="width: 15%" />
         </colgroup>
-        <tbody>
-          <tr>
-            <td class="px-5 py-4 text-left align-top">
+        <tbody class="block md:table-row-group">
+          <tr class="block md:table-row">
+            <td class="block px-4 py-4 text-left align-top border-b border-gray-100 md:table-cell md:px-5">
+              <div class="mb-2 text-xs font-semibold tracking-wide text-gray-500 uppercase md:hidden">Concepto o arancel</div>
               <div class="flex justify-start">
                 <div
                   class="flex items-center justify-center w-12 h-5 mt-2 text-gray-400 cursor-move handle"
@@ -33,7 +34,8 @@
                 />
               </div>
             </td>
-            <td class="px-5 py-4 text-right align-top">
+            <td class="block px-4 py-4 text-left align-top border-b border-gray-100 md:table-cell md:px-5 md:text-right">
+              <div class="mb-2 text-xs font-semibold tracking-wide text-gray-500 uppercase md:hidden">Cantidad</div>
               <sw-input
                 v-model="item.quantity"
                 :invalid="$v.item.quantity.$error"
@@ -48,7 +50,8 @@
                 </span>
               </div>
             </td>
-            <td class="px-5 py-4 text-left align-top">
+            <td class="block px-4 py-4 text-left align-top border-b border-gray-100 md:table-cell md:px-5">
+              <div class="mb-2 text-xs font-semibold tracking-wide text-gray-500 uppercase md:hidden">Importe unitario</div>
               <div class="flex flex-col">
                 <div class="flex-auto flex-fill bd-highlight">
                   <div class="relative w-full">
@@ -69,8 +72,9 @@
             </td>
             <td
               v-if="discountPerItem === 'YES'"
-              class="px-5 py-4 text-left align-top"
+              class="block px-4 py-4 text-left align-top border-b border-gray-100 md:table-cell md:px-5"
             >
+              <div class="mb-2 text-xs font-semibold tracking-wide text-gray-500 uppercase md:hidden">Descuento</div>
               <div class="flex flex-col">
                 <div class="flex flex-auto" role="group">
                   <sw-input
@@ -109,8 +113,9 @@
                 </div>
               </div>
             </td>
-            <td class="px-5 py-4 text-right align-top">
-              <div class="flex items-center justify-end text-sm">
+            <td class="block px-4 py-4 text-left align-top md:table-cell md:px-5 md:text-right">
+              <div class="mb-2 text-xs font-semibold tracking-wide text-gray-500 uppercase md:hidden">Subtotal</div>
+              <div class="flex items-center justify-between text-sm md:justify-end">
                 <span>
                   <div v-html="$utils.formatMoney(total, currency)" />
                 </span>
@@ -127,9 +132,9 @@
               </div>
             </td>
           </tr>
-          <tr v-if="taxPerItem === 'YES'" class="tax-tr">
-            <td class="px-5 py-4 text-left align-top" />
-            <td colspan="4" class="px-5 py-4 text-left align-top">
+          <tr v-if="taxPerItem === 'YES'" class="block tax-tr md:table-row">
+            <td class="hidden px-5 py-4 text-left align-top md:table-cell" />
+            <td colspan="4" class="block px-4 py-4 text-left align-top md:table-cell md:px-5">
               <tax
                 v-for="(tax, index) in item.taxes"
                 :key="tax.id"

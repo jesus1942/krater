@@ -13,7 +13,10 @@ return [
     |
     */
 
-    'stateful' => explode(',', env('SANCTUM_STATEFUL_DOMAINS', 'localhost,127.0.0.1,127.0.0.1:8000,::1')),
+    'stateful' => array_filter(array_merge(
+        explode(',', env('SANCTUM_STATEFUL_DOMAINS', 'localhost,127.0.0.1,127.0.0.1:8000,::1')),
+        [parse_url(env('APP_URL', ''), PHP_URL_HOST)]
+    )),
 
     /*
     |--------------------------------------------------------------------------
@@ -26,7 +29,10 @@ return [
     |
     */
 
-    'expiration' => null,
+    // Antes era null: los tokens no vencian nunca. Un token filtrado servia
+    // para siempre. 480 minutos = 8 horas, una jornada laboral. La PWA renueva
+    // con el refresh; ver docs/09-plan-de-seguridad.md seccion 2.1.
+    'expiration' => env('SANCTUM_EXPIRATION', 480),
 
     /*
     |--------------------------------------------------------------------------

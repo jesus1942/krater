@@ -2,8 +2,8 @@
 
 namespace Crater\Http\Middleware;
 
-use Auth;
 use Closure;
+use Crater\Services\Access\AccessManager;
 
 class AdminMiddleware
 {
@@ -17,13 +17,8 @@ class AdminMiddleware
      */
     public function handle($request, Closure $next, $guard = null)
     {
-        if (Auth::guard($guard)->guest() || ! Auth::user()->isSuperAdminOrAdmin()) {
-            if ($request->ajax() || $request->wantsJson()) {
-                return response('Unauthorized.', 401);
-            } else {
-                return response()->json(['error' => 'user_is_not_admin'], 404);
-            }
-        }
+        abort_unless($request->user(), 401);
+        abort_unless(app(AccessManager::class)->hasActiveRole($request->user()), 403);
 
         return $next($request);
     }

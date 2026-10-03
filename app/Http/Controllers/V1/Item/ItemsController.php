@@ -11,6 +11,15 @@ use Illuminate\Http\Request;
 
 class ItemsController extends Controller
 {
+    public function __construct()
+    {
+        // El módulo económico heredado vive dentro del grupo `admin`, que no
+        // fija TenantContext. Sin este middleware, Item::BelongsToSchoolLevel
+        // no sabe qué nivel está activo y los conceptos se filtran solo por
+        // empresa, apareciendo en Primaria, Secundaria y Terciario a la vez.
+        $this->middleware('tenant');
+    }
+
     /**
      * Retrieve a list of existing Items.
      *

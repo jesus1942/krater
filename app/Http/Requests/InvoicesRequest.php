@@ -13,10 +13,7 @@ class InvoicesRequest extends FormRequest
      *
      * @return bool
      */
-    public function authorize()
-    {
-        return true;
-    }
+    use \Crater\Http\Requests\Concerns\ValidatesFinanceTenant;
 
     /**
      * Get the validation rules that apply to the request.s
@@ -32,9 +29,10 @@ class InvoicesRequest extends FormRequest
             'due_date' => [
                 'required',
             ],
-            'user_id' => [
-                'required',
-            ],
+            'user_id' => ['nullable', 'integer'],
+            'student_id' => ['nullable', 'integer'],
+            'enrollment_id' => ['nullable', 'integer'],
+            'family_member_id' => ['nullable', 'integer'],
             'invoice_number' => [
                 'required',
                 new UniqueNumber(Invoice::class),
@@ -86,6 +84,6 @@ class InvoicesRequest extends FormRequest
             ];
         }
 
-        return $rules;
+        return array_merge($rules, $this->schoolLevelRules());
     }
 }

@@ -28,7 +28,7 @@ class CompanyController extends Controller
         ]);
 
         return response()->json([
-            'user' => $user,
+            'user' => array_merge($user->toArray(), app(\Crater\Services\Access\AccessManager::class)->frontendAccess($user)),
         ]);
     }
 
@@ -46,7 +46,7 @@ class CompanyController extends Controller
         $user->update($request->validated());
 
         return response()->json([
-            'user' => $user,
+            'user' => array_merge($user->toArray(), app(\Crater\Services\Access\AccessManager::class)->frontendAccess($user)),
             'success' => true,
         ]);
     }
@@ -58,7 +58,7 @@ class CompanyController extends Controller
      */
     public function updateCompany(CompanyRequest $request)
     {
-        $company = Auth::user()->company;
+        $company = Company::findOrFail(\Crater\Support\TenantContext::companyId());
 
         $company->update($request->only('name'));
 
@@ -120,7 +120,7 @@ class CompanyController extends Controller
         }
 
         return response()->json([
-            'user' => $user,
+            'user' => array_merge($user->toArray(), app(\Crater\Services\Access\AccessManager::class)->frontendAccess($user)),
             'success' => true,
         ]);
     }

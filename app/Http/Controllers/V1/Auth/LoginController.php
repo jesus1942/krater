@@ -28,6 +28,11 @@ class LoginController extends Controller
      */
     protected $redirectTo = RouteServiceProvider::HOME;
 
+    protected function credentials(\Illuminate\Http\Request $request)
+    {
+        return array_merge($request->only($this->username(), 'password'), ['is_active' => true]);
+    }
+
     /**
      * Create a new controller instance.
      *

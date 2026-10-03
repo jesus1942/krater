@@ -257,7 +257,7 @@ export default {
       return this.$t('general.descending')
     },
     shareableLink() {
-      return `/payments/pdf/${this.payment.unique_hash}`
+      return this.payment.paymentPdfUrl
     },
   },
 
@@ -362,7 +362,7 @@ export default {
       })
     },
     copyPdfUrl() {
-      let pdfUrl = `${window.location.origin}/payments/pdf/${this.payment.unique_hash}`
+      let pdfUrl = this.payment.paymentPdfUrl
 
       let response = this.$utils.copyTextToClipboard(pdfUrl)
       this.showNotification({

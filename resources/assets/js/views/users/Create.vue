@@ -101,6 +101,7 @@
 </template>
 
 <script>
+import { can } from '../../helpers/access'
 import { mapActions, mapGetters } from 'vuex'
 const {
   required,
@@ -130,7 +131,7 @@ export default {
   computed: {
     ...mapGetters('user', ['currentUser']),
     isSuperAdmin() {
-      return this.currentUser.role == 'super admin'
+      return can(this.currentUser, 'system.user.manage')
     },
 
     pageTitle() {
@@ -276,15 +277,15 @@ export default {
                 type: 'success',
                 message: this.$tc('users.created_message'),
               })
-              this.$router.push('/admin/users')
+              this.$router.push(`/admin/users/${response.data.user.id}/access`)
               return true
             }
           }
         }
       } catch (err) {
-        if (err.response.data.errors.email) {
-          this.isLoading = false
-        }
+        this.isLoading = false
+        const data = (err.response && err.response.data) || {}
+        this.showNotification({ type: 'error', message: Object.values(data.errors || {}).flat().join(' ') || data.message || 'No se pudo guardar la cuenta.' })
       }
     },
   },

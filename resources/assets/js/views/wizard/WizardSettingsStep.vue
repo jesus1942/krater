@@ -232,7 +232,7 @@ export default {
         (currency) => currency.id === 1
       )
       this.settingData.language = this.languages.find(
-        (language) => language.code === 'en'
+        (language) => language.code === 'es'
       )
       this.settingData.dateFormat = this.dateFormats.find(
         (dateFormat) => dateFormat.carbon_format_value == 'd M Y'

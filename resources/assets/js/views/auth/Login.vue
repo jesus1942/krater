@@ -8,7 +8,7 @@
     >
       <sw-input
         :invalid="$v.loginData.email.$error"
-        :placeholder="$t(login.login_placeholder)"
+        :placeholder="$t('login.login_placeholder')"
         v-model="loginData.email"
         focus
         type="email"
@@ -161,7 +161,7 @@ export default {
         this.$router.push('/admin/dashboard')
         this.showNotification({
           type: 'success',
-          message: 'Logged in successfully.',
+          message: this.$t('login.login_successfully'),
         })
         this.isLoading = false
       } catch (error) {

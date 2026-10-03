@@ -101,6 +101,11 @@ window.axios.interceptors.request.use(
       config.headers.common['company'] = companyId
     }
 
+    const schoolLevelId = Ls.get('selectedSchoolLevel')
+    if (schoolLevelId) {
+      config.headers.common['school-level'] = schoolLevelId
+    }
+
     return config
   },
   function (error) {
@@ -127,7 +132,8 @@ global.axios.interceptors.response.use(undefined, function (err) {
     if (
       err.response.data &&
       err.config.url !== '/api/v1/auth/check' &&
-      (err.response.statusText === 'Unauthorized' ||
+      (err.response.status === 401 ||
+        err.response.statusText === 'Unauthorized' ||
         err.response.data === ' Unauthorized.')
     ) {
       console.log(err.response)
