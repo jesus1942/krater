@@ -43,6 +43,14 @@ $callHttp = function ($method, $path, $options = []) use ($client, &$cookies) {
     return $response;
 };
 $token = null; $failed = false; $lastRequest = 'preparación'; $requestCount = 0;
+register_shutdown_function(function () use (&$lastRequest, &$requestCount) {
+    $error = error_get_last();
+    if ($error && in_array($error['type'], [E_ERROR, E_PARSE, E_CORE_ERROR, E_COMPILE_ERROR], true)) {
+        fwrite(STDERR, 'Toda la institución fatal: '.json_encode(['type' => $error['type'],
+            'file' => basename($error['file']), 'line' => $error['line'],
+            'count' => $requestCount, 'last' => $lastRequest], JSON_UNESCAPED_SLASHES)."\n");
+    }
+});
 try {
     $server->start();
     for ($attempt = 0; $attempt < 50; $attempt++) {
@@ -60,9 +68,11 @@ try {
     $web = $callHttp('POST', '/login', ['form_params' => ['email' => 'total-admin.staging@example.invalid',
         'password' => $secret, '_token' => $csrf[1]]]);
     if ($web->getStatusCode() !== 302) throw new RuntimeException('Falló el ingreso web ficticio: HTTP '.$web->getStatusCode().'.');
+    fwrite(STDOUT, "Toda la institución: ingresos API y web aprobados.\n");
     $result = InstitutionScenario::run(function ($method, $path, $payload, $level) use ($callHttp, $token, $company, &$lastRequest, &$requestCount) {
         $lastRequest = $method.' '.$path;
         $requestCount++;
+        if ($requestCount % 25 === 0) fwrite(STDOUT, 'Toda la institución: solicitud '.$requestCount.' '.$lastRequest."\n");
         $options = ['headers' => ['Accept' => str_starts_with($path, '/reports/') ? 'application/pdf' : 'application/json',
             'company' => (string) $company->id, 'school-level' => $level === null ? '' : (string) $level,
             'Authorization' => 'Bearer '.$token]];
@@ -79,7 +89,13 @@ try {
         $body = (string) $response->getBody();
         return ['status' => $response->getStatusCode(), 'json' => json_decode($body, true), 'body' => $body];
     }, $fixture, (int) $company->id, $company->unique_hash);
-    echo 'Toda la institución HTTP staging: '.json_encode($result, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES)."\n";
+    // Líneas acotadas para que la plataforma conserve la evidencia completa.
+    foreach (array_chunk($result['checks'], 40) as $index => $checks) {
+        fwrite(STDOUT, 'Toda la institución checks: '.json_encode(['offset' => $index * 40, 'checks' => $checks],
+            JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES)."\n");
+    }
+    unset($result['checks']);
+    fwrite(STDOUT, 'Toda la institución HTTP staging: '.json_encode($result, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES)."\n");
 } catch (Throwable $e) {
     $failed = true;
     $detail = get_class($e) === RuntimeException::class ? $e->getMessage() : get_class($e);
