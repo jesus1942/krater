@@ -39,7 +39,7 @@ $callHttp = function ($method, $path, $options = []) use ($client, &$cookies) {
     }
     return $response;
 };
-$token = null; $failed = false;
+$token = null; $failed = false; $lastRequest = 'preparación'; $requestCount = 0;
 try {
     $server->start();
     for ($attempt = 0; $attempt < 50; $attempt++) {
@@ -57,7 +57,9 @@ try {
     $web = $callHttp('POST', '/login', ['form_params' => ['email' => 'total-admin.staging@example.invalid',
         'password' => $secret, '_token' => $csrf[1]]]);
     if ($web->getStatusCode() !== 302) throw new RuntimeException('Falló el ingreso web ficticio: HTTP '.$web->getStatusCode().'.');
-    $result = InstitutionScenario::run(function ($method, $path, $payload, $level) use ($callHttp, $token, $company) {
+    $result = InstitutionScenario::run(function ($method, $path, $payload, $level) use ($callHttp, $token, $company, &$lastRequest, &$requestCount) {
+        $lastRequest = $method.' '.$path;
+        $requestCount++;
         $options = ['headers' => ['Accept' => str_starts_with($path, '/reports/') ? 'application/pdf' : 'application/json',
             'company' => (string) $company->id, 'school-level' => $level === null ? '' : (string) $level,
             'Authorization' => 'Bearer '.$token]];
@@ -77,7 +79,9 @@ try {
     echo 'Toda la institución HTTP staging: '.json_encode($result, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES)."\n";
 } catch (Throwable $e) {
     $failed = true;
-    fwrite(STDERR, 'Toda la institución HTTP staging falló. '.(get_class($e) === RuntimeException::class ? $e->getMessage() : 'Revisar logs de aplicación; no se imprimen secretos.')."\n");
+    $detail = get_class($e) === RuntimeException::class ? $e->getMessage() : get_class($e);
+    if (preg_match('/cURL error (\d+)/', $e->getMessage(), $curl)) $detail .= ' (cURL '.$curl[1].')';
+    fwrite(STDERR, 'Toda la institución HTTP staging falló tras '.$requestCount.' solicitudes; última: '.$lastRequest.'. '.$detail."\n");
 } finally {
     if ($token) DB::table('personal_access_tokens')->where('id', explode('|', $token, 2)[0])->where('name', 'institution-smoke')->delete();
     $server->stop();
