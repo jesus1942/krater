@@ -21,7 +21,21 @@ if (! $customer) { fwrite(STDERR, "Falta la familia ficticia.\n"); exit(1); }
 $fixture = InstitutionScenario::fixture((int) $company->id, (int) $customer);
 $server = new Process([PHP_BINARY, '-S', '127.0.0.1:18993', '-t', 'public', 'server.php'], base_path());
 $client = new GuzzleHttp\Client(['base_uri' => 'http://127.0.0.1:18993', 'http_errors' => false,
-    'timeout' => 30, 'cookies' => true, 'allow_redirects' => false]);
+    'timeout' => 30, 'allow_redirects' => false]);
+// El servidor de ensayo es loopback HTTP; las cookies de staging son Secure.
+// Conserva y devuelve los valores cifrados en memoria, sin alterar la configuración
+// ni el middleware de sesión/CSRF de la aplicación.
+$cookies = [];
+$callHttp = function ($method, $path, $options = []) use ($client, &$cookies) {
+    if ($cookies) $options['headers']['Cookie'] = implode('; ', array_map(
+        fn ($name, $value) => $name.'='.$value, array_keys($cookies), array_values($cookies)));
+    $response = $client->request($method, $path, $options);
+    foreach ($response->getHeader('Set-Cookie') as $header) {
+        $cookie = GuzzleHttp\Cookie\SetCookie::fromString($header);
+        $cookies[$cookie->getName()] = $cookie->getValue();
+    }
+    return $response;
+};
 $token = null; $failed = false;
 try {
     $server->start();
@@ -35,12 +49,12 @@ try {
     $token = (json_decode((string) $login->getBody(), true) ?: [])['token'] ?? null;
     if ($login->getStatusCode() !== 200 || ! $token) throw new RuntimeException('Falló el ingreso API ficticio.');
     // Los informes web exigen una sesión real además del token de API.
-    $html = (string) $client->get('/login')->getBody();
+    $html = (string) $callHttp('GET', '/login')->getBody();
     if (! preg_match('/name="csrf-token"\s+content="([^"]+)"/', $html, $csrf)) throw new RuntimeException('No se encontró el CSRF del ingreso.');
-    $web = $client->post('/login', ['form_params' => ['email' => 'total-admin.staging@example.invalid',
+    $web = $callHttp('POST', '/login', ['form_params' => ['email' => 'total-admin.staging@example.invalid',
         'password' => $secret, '_token' => $csrf[1]]]);
-    if ($web->getStatusCode() !== 302) throw new RuntimeException('Falló el ingreso web ficticio.');
-    $result = InstitutionScenario::run(function ($method, $path, $payload, $level) use ($client, $token, $company) {
+    if ($web->getStatusCode() !== 302) throw new RuntimeException('Falló el ingreso web ficticio: HTTP '.$web->getStatusCode().'.');
+    $result = InstitutionScenario::run(function ($method, $path, $payload, $level) use ($callHttp, $token, $company) {
         $options = ['headers' => ['Accept' => str_starts_with($path, '/reports/') ? 'application/pdf' : 'application/json',
             'company' => (string) $company->id, 'school-level' => $level === null ? '' : (string) $level,
             'Authorization' => 'Bearer '.$token]];
@@ -48,11 +62,11 @@ try {
         // Mantiene el limitador real. Si el smoke anterior consumió el cupo,
         // espera su Retry-After y repite una vez; nunca reintenta un 403.
         usleep(400000);
-        $response = $client->request($method, $path, $options);
+        $response = $callHttp($method, $path, $options);
         if ($response->getStatusCode() === 429) {
             $seconds = max(1, min(60, (int) $response->getHeaderLine('Retry-After')));
             usleep($seconds * 1000000);
-            $response = $client->request($method, $path, $options);
+            $response = $callHttp($method, $path, $options);
         }
         $body = (string) $response->getBody();
         return ['status' => $response->getStatusCode(), 'json' => json_decode($body, true), 'body' => $body];
