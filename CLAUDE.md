@@ -397,5 +397,11 @@ niveles, más los cinco informes PDF. Smoke de MySQL:
 `php tests/smoke/staging-institution.php`, exclusivamente en staging/krater_staging.
 Ejecutarlo después del smoke de roles, en el predeploy terminante autorizado de
 staging. No añadirlo a `pre-deploy.sh`, railway.toml ni al servicio productivo.
-Estado: gate local aprobado; pendiente verificación del despliegue de staging.
+Estado: probado en staging, código `152a40f`, deployment `013cfefa-06be-417c-9126-c1e388feb74c` SUCCESS. Gate local 70 tests/578 aserciones; MySQL 280 comprobaciones institucionales y 68 de roles aprobadas. Evidencia: `docs/audits/2026-10-03-institution-staging.json`. Producción permanece en `1289f3c`.
 Jesús exige detener antes de promover a `produccion`.
+
+El smoke institucional conserva evidencia en bloques de 40 solicitudes. El servidor
+temporal drena sus logs y registra stacks en un archivo efímero; imprimir solo clases
+y ubicaciones. Las cookies Secure se devuelven cifradas en memoria por loopback y el
+cupo de ingreso se separa con una IP ficticia por ejecución. Nunca desactivar CSRF
+ni autorización. Los jobs de cobro esperan el hash persistido antes de generar PDF.

@@ -33,7 +33,7 @@ Solo **Operativo** equivale a DONE.
 - [x] Bloqueo duro de `reset:app` en produccion incluso con `--force`.
 - [x] Auditoría de datos potencialmente ocultos por `school_level_id` nulo o incorrecto en estimates, invoices, payments, expenses, items y students. Primera corrida productiva 01/10/2026: `PRE-000001` del 16/08/2026 existe y tiene `school_level_id = NULL`; sin evidencia única para reasignación automática.
 - [x] Herramienta de reconciliación para registros globales/huérfanos por nivel: dry-run, aplicación transaccional, auditoría atómica y UI total-admin.
-- [ ] Completar Toda la institución antes de fila 6: edición en nivel propio, alta con nivel habilitado e informes consolidados; gate local aprobado (69 tests/569 aserciones), pendiente verificar staging. Sin autorización de promoción.
+- [ ] Completar Toda la institución antes de fila 6: edición en nivel propio, alta con nivel habilitado e informes consolidados; estado Probado en staging (70 tests/578 aserciones, 280 HTTP institucionales y 68 de roles; código 152a40f, deployment 013cfefa SUCCESS). Producción sigue en 1289f3c; promoción detenida por pedido de Jesús. Evidencia: docs/audits/2026-10-03-institution-staging.json. La fila 6 sigue pendiente.
 - [ ] Backups automáticos y política de retención.
 - [ ] Prueba periódica de restauración en ambiente aislado.
 - [ ] Soft delete o baja lógica para entidades donde borrar físicamente sea riesgoso.
