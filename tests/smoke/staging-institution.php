@@ -25,9 +25,9 @@ $server = new Process([PHP_BINARY, '-S', '127.0.0.1:18993', '-t', 'public', 'ser
 $server->disableOutput();
 $client = new GuzzleHttp\Client(['base_uri' => 'http://127.0.0.1:18993', 'http_errors' => false,
     'timeout' => 30, 'allow_redirects' => false,
-    // Cliente ficticio separado del smoke de roles: sus seis ingresos no deben
-    // consumir el cupo del formulario web (5/15). El limitador sigue activo.
-    'headers' => ['X-Forwarded-For' => '127.0.0.2']]);
+    // Cliente ficticio de loopback distinto por ejecución: el smoke de roles
+    // y despliegues anteriores no consumen su cupo web. El limitador sigue activo.
+    'headers' => ['X-Forwarded-For' => '127.'.random_int(1, 254).'.'.random_int(1, 254).'.'.random_int(1, 254)]]);
 // El servidor de ensayo es loopback HTTP; las cookies de staging son Secure.
 // Conserva y devuelve los valores cifrados en memoria, sin alterar la configuración
 // ni el middleware de sesión/CSRF de la aplicación.
