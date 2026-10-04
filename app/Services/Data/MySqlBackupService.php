@@ -134,7 +134,7 @@ class MySqlBackupService
             $credentials = $this->credentials($directory, $connection);
             $this->run([config('ena-operations.dump_binary'), '--defaults-extra-file='.$credentials,
                 '--single-transaction', '--quick', '--skip-lock-tables', '--no-tablespaces',
-                '--routines', '--events', '--triggers', '--hex-blob', '--skip-comments',
+                '--routines', '--events', '--triggers', '--hex-blob', '--skip-comments', '--set-gtid-purged=OFF', '--column-statistics=0',
                 '--result-file='.$sql, $connection['database']]);
             chmod($sql, 0600);
             if (! is_file($sql) || filesize($sql) < 100 || $before !== $this->fingerprints()) {

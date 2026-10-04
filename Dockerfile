@@ -1,3 +1,5 @@
+FROM mysql:9.7.2 AS mysql_tools
+
 FROM php:8.2-fpm-bookworm
 
 ARG user=www
@@ -24,6 +26,11 @@ RUN docker-php-ext-install pdo_mysql mbstring zip exif pcntl bcmath gd
 
 # Composer
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
+
+# Dump y restauracion con los clientes de la misma version exacta del servidor.
+COPY --from=mysql_tools /usr/bin/mysql /usr/local/bin/mysql
+COPY --from=mysql_tools /usr/bin/mysqldump /usr/local/bin/mysqldump
+RUN mysql --version && mysqldump --version
 
 # Crear usuario del sistema
 RUN useradd -G www-data,root -u $uid -d /home/$user $user \
