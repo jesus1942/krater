@@ -20,11 +20,14 @@ ejecución y luego se repusieron las agendas. Config as Code está deprecado par
 servicios nuevos; las opciones se configuran mediante Railway y se comprueban
 con get-service-config. `dockerfilePath= Dockerfile` selecciona DOCKERFILE:
 redeploy con el builder RAILPACK por defecto falla al interpretar el rango PHP
-de Composer. Las nuevas corridas del commit d08c638 tomaron DOCKERFILE y
+de Composer. Las corridas finales del commit 2938725 tomaron DOCKERFILE y
 terminaron SUCCESS con las agendas repuestas. Staging observa cambios de
 código, configuración, Docker/frontend y tests; editar solo documentación no
-dispara otra corrida de fixtures. La verificación adicional de restauración se
-ejecutó una vez como predeploy del worker y luego se quitó ese comando.
+dispara otra corrida de fixtures. El ensayo conjunto de smoke y restauración
+se ejecutó como predeploy temporal del worker. La configuración quedó luego
+con preDeployCommand vacío y startCommand de restauración; los cambios de
+configuración se aplican al siguiente deploy. No reutilizar el snapshot de un
+redeploy anterior para asumir que tomó campos nuevos.
 
 ## Referencias, sin copiar claves
 
@@ -107,6 +110,13 @@ nulos, inexistentes ni ajenos. Evidencia:
 
 Repetida con comprobación de UUID el 04/10/2026 13:43 UTC, deployment
 5eeaa3c0-ce14-4953-8f0f-6da2770b1736, mismo archivo y 80 huellas idénticas.
+
+Verificación final de 2938725: web eb26191a-93d4-4a36-98bf-cd089533dce4
+SUCCESS, 280 verificaciones institucionales y 68 de roles. Después de ese
+SUCCESS, worker 953474fc-ed2a-48bc-9949-fbc5489740af: conteos sin pérdidas,
+7 comprobaciones HTTP/archivos aprobadas a las 14:08 UTC y restauración de las
+80 tablas en MySQL 9.7.2, UUID distinto, auditoría y pérdida/rollback aprobados.
+Backup diario 1db0b1c2-ea3e-43f2-9d6a-f326c3fda420 SUCCESS con agenda repuesta.
 
 ## Smoke antes y después del deploy
 

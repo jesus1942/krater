@@ -1,6 +1,6 @@
 {
   "verified_at": "2026-10-04T13:28:00+00:00",
-  "code_revision": "d08c6383c134d042de1ec0958c4fc35c47e62539",
+  "code_revision": "2938725af46f261c29cc29577a2913bf541a52a3",
   "backup_deployment_id": "7b0ee556-e6f8-4210-bcbb-d6d6016596a9",
   "restore_deployment_id": "7b701a88-f5cd-438d-9e75-ff3f3b37ca4d",
   "backup": {
@@ -151,7 +151,7 @@
     "restore": "0 7 1 * *"
   },
   "credentials": "Railway references only; no keys copied",
-  "final_verified_at": "2026-10-04T13:43:48+00:00",
+  "final_verified_at": "2026-10-04T14:08:18+00:00",
   "identity_checked_restore_deployment_id": "5eeaa3c0-ce14-4953-8f0f-6da2770b1736",
   "identity_checked_restore": {
     "passed": true,
@@ -283,12 +283,339 @@
   },
   "scheduled_worker_deployments": {
     "backup": {
-      "id": "9d0ae399-01da-45f6-8738-82bd8cd4bc36",
+      "id": "1db0b1c2-ea3e-43f2-9d6a-f326c3fda420",
       "status": "SUCCESS"
     },
     "restore": {
-      "id": "5eeaa3c0-ce14-4953-8f0f-6da2770b1736",
+      "id": "953474fc-ed2a-48bc-9949-fbc5489740af",
       "status": "SUCCESS"
+    }
+  },
+  "final_verification": {
+    "code_revision": "2938725af46f261c29cc29577a2913bf541a52a3",
+    "local_gate": {
+      "tests": 84,
+      "assertions": 639,
+      "passed": true
+    },
+    "staging_web": {
+      "deployment_id": "eb26191a-93d4-4a36-98bf-cd089533dce4",
+      "status": "SUCCESS",
+      "revision": "2938725af46f261c29cc29577a2913bf541a52a3",
+      "institution": {
+        "passed": true,
+        "count": 280,
+        "levels": 3,
+        "preserved_levels": true,
+        "required_creation_level": true,
+        "real_report_pdfs": true
+      },
+      "roles_checks": 68,
+      "unexpected_403": 0,
+      "deploy_smoke": {
+        "snapshot_id": 8,
+        "previous_id": 7,
+        "passed": true,
+        "baseline": false,
+        "counts": {
+          "enrollments:1:1": 22,
+          "enrollments:1:2": 1,
+          "enrollments:1:3": 0,
+          "enrollments:1:all": 23,
+          "enrollments:1:null": 0,
+          "enrollments:all:all": 23,
+          "estimates:1:1": 7,
+          "estimates:1:2": 6,
+          "estimates:1:3": 6,
+          "estimates:1:all": 19,
+          "estimates:1:null": 0,
+          "estimates:all:all": 19,
+          "expenses:1:1": 6,
+          "expenses:1:2": 6,
+          "expenses:1:3": 6,
+          "expenses:1:all": 18,
+          "expenses:1:null": 0,
+          "expenses:all:all": 18,
+          "invoices:1:1": 11,
+          "invoices:1:2": 6,
+          "invoices:1:3": 6,
+          "invoices:1:all": 23,
+          "invoices:1:null": 0,
+          "invoices:all:all": 23,
+          "items:1:1": 7,
+          "items:1:2": 6,
+          "items:1:3": 6,
+          "items:1:all": 19,
+          "items:1:null": 0,
+          "items:all:all": 19,
+          "payments:1:1": 7,
+          "payments:1:2": 6,
+          "payments:1:3": 6,
+          "payments:1:all": 19,
+          "payments:1:null": 0,
+          "payments:all:all": 19,
+          "staff_members:1:1": 0,
+          "staff_members:1:2": 0,
+          "staff_members:1:3": 0,
+          "staff_members:1:all": 0,
+          "staff_members:1:null": 0,
+          "staff_members:all:all": 0,
+          "students:1:1": 29,
+          "students:1:2": 8,
+          "students:1:3": 7,
+          "students:1:all": 44,
+          "students:1:null": 0,
+          "students:all:all": 44
+        },
+        "losses": [],
+        "declarations": []
+      }
+    },
+    "post_deploy": {
+      "deployment_id": "953474fc-ed2a-48bc-9949-fbc5489740af",
+      "status": "SUCCESS",
+      "revision": "2938725af46f261c29cc29577a2913bf541a52a3",
+      "deploy_smoke": {
+        "snapshot_id": 10,
+        "previous_id": 9,
+        "passed": true,
+        "baseline": false,
+        "counts": {
+          "enrollments:1:1": 23,
+          "enrollments:1:2": 1,
+          "enrollments:1:3": 0,
+          "enrollments:1:all": 24,
+          "enrollments:1:null": 0,
+          "enrollments:all:all": 24,
+          "estimates:1:1": 8,
+          "estimates:1:2": 7,
+          "estimates:1:3": 7,
+          "estimates:1:all": 22,
+          "estimates:1:null": 0,
+          "estimates:all:all": 22,
+          "expenses:1:1": 7,
+          "expenses:1:2": 7,
+          "expenses:1:3": 7,
+          "expenses:1:all": 21,
+          "expenses:1:null": 0,
+          "expenses:all:all": 21,
+          "invoices:1:1": 12,
+          "invoices:1:2": 7,
+          "invoices:1:3": 7,
+          "invoices:1:all": 26,
+          "invoices:1:null": 0,
+          "invoices:all:all": 26,
+          "items:1:1": 8,
+          "items:1:2": 7,
+          "items:1:3": 7,
+          "items:1:all": 22,
+          "items:1:null": 0,
+          "items:all:all": 22,
+          "payments:1:1": 8,
+          "payments:1:2": 7,
+          "payments:1:3": 7,
+          "payments:1:all": 22,
+          "payments:1:null": 0,
+          "payments:all:all": 22,
+          "staff_members:1:1": 0,
+          "staff_members:1:2": 0,
+          "staff_members:1:3": 0,
+          "staff_members:1:all": 0,
+          "staff_members:1:null": 0,
+          "staff_members:all:all": 0,
+          "students:1:1": 31,
+          "students:1:2": 9,
+          "students:1:3": 8,
+          "students:1:all": 48,
+          "students:1:null": 0,
+          "students:all:all": 48
+        },
+        "losses": [],
+        "declarations": []
+      },
+      "http_smoke": {
+        "passed": true,
+        "checks": [
+          {
+            "path": "/ping",
+            "expected": 200,
+            "actual": 200
+          },
+          {
+            "path": "/login",
+            "expected": 200,
+            "actual": 200
+          },
+          {
+            "path": "/api/v1/bootstrap",
+            "expected": 401,
+            "actual": 401
+          },
+          {
+            "path": "/api/v1/students",
+            "expected": 401,
+            "actual": 401
+          },
+          {
+            "path": "/api/v1/backups",
+            "expected": 401,
+            "actual": 401
+          },
+          {
+            "path": "/assets/js/app.js?id=35bce386f9c99d89800c",
+            "actual": 200,
+            "matches_build": true
+          },
+          {
+            "path": "/assets/css/crater.css?id=0b090d6c6a3202e87168",
+            "actual": 200,
+            "matches_build": true
+          }
+        ]
+      },
+      "restore": {
+        "passed": true,
+        "created_at": "2026-10-04T14:08:18+00:00",
+        "key": "suiteena/staging/20261004T132543Z-1dc1f66a04a2.zip",
+        "source_environment": "staging",
+        "target_database": "krater_restore_test_20261004_140816_67cb647d",
+        "mysql_version": "9.7.2",
+        "table_fingerprints_match": true,
+        "tables": 80,
+        "archive_sha256": "a3fb37e3a29137925c7acf669089cba4604c4b0a9ff3a9f955dee5860e28b5ec",
+        "audit": [
+          {
+            "company_id": 1,
+            "models": {
+              "StudyPlan": {
+                "table": "study_plans",
+                "total": 0,
+                "valid_level": 0,
+                "null_level": 0,
+                "missing_level": 0,
+                "foreign_company_level": 0
+              },
+              "CourseSection": {
+                "table": "course_sections",
+                "total": 1,
+                "valid_level": 1,
+                "null_level": 0,
+                "missing_level": 0,
+                "foreign_company_level": 0
+              },
+              "GradeLevel": {
+                "table": "grade_levels",
+                "total": 5,
+                "valid_level": 5,
+                "null_level": 0,
+                "missing_level": 0,
+                "foreign_company_level": 0
+              },
+              "Estimate": {
+                "table": "estimates",
+                "total": 13,
+                "valid_level": 13,
+                "null_level": 0,
+                "missing_level": 0,
+                "foreign_company_level": 0
+              },
+              "AcademicYear": {
+                "table": "academic_years",
+                "total": 3,
+                "valid_level": 3,
+                "null_level": 0,
+                "missing_level": 0,
+                "foreign_company_level": 0
+              },
+              "Student": {
+                "table": "students",
+                "total": 36,
+                "valid_level": 36,
+                "null_level": 0,
+                "missing_level": 0,
+                "foreign_company_level": 0
+              },
+              "Division": {
+                "table": "divisions",
+                "total": 6,
+                "valid_level": 6,
+                "null_level": 0,
+                "missing_level": 0,
+                "foreign_company_level": 0
+              },
+              "Item": {
+                "table": "items",
+                "total": 13,
+                "valid_level": 13,
+                "null_level": 0,
+                "missing_level": 0,
+                "foreign_company_level": 0
+              },
+              "Enrollment": {
+                "table": "enrollments",
+                "total": 21,
+                "valid_level": 21,
+                "null_level": 0,
+                "missing_level": 0,
+                "foreign_company_level": 0
+              },
+              "Payment": {
+                "table": "payments",
+                "total": 13,
+                "valid_level": 13,
+                "null_level": 0,
+                "missing_level": 0,
+                "foreign_company_level": 0
+              },
+              "Invoice": {
+                "table": "invoices",
+                "total": 17,
+                "valid_level": 17,
+                "null_level": 0,
+                "missing_level": 0,
+                "foreign_company_level": 0
+              },
+              "Expense": {
+                "table": "expenses",
+                "total": 12,
+                "valid_level": 12,
+                "null_level": 0,
+                "missing_level": 0,
+                "foreign_company_level": 0
+              },
+              "Subject": {
+                "table": "subjects",
+                "total": 1,
+                "valid_level": 1,
+                "null_level": 0,
+                "missing_level": 0,
+                "foreign_company_level": 0
+              }
+            }
+          }
+        ],
+        "deploy_guard": {
+          "baseline_passed": true,
+          "simulated_loss_exit_code": 1,
+          "rollback_counts_match": true,
+          "recovery_exit_code": 0
+        },
+        "distinct_mysql_server_verified": true
+      }
+    },
+    "worker_configuration": {
+      "backup_start": "php artisan ena:backup",
+      "restore_start": "php artisan ena:restore-test",
+      "restore_pre_deploy": [],
+      "builder": "DOCKERFILE",
+      "restart_policy": "NEVER",
+      "configured_after_verification": true
+    },
+    "production": {
+      "revision": "f7618902abc4d86d752b37514df7145520ad5583",
+      "deployment_id": "cbfe545a-4dd0-418e-ad83-1407a44dac40",
+      "status": "SUCCESS",
+      "row6_promoted": false
     }
   }
 }

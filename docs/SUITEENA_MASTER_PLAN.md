@@ -48,6 +48,8 @@ de conteos/HTTP implementados y probados. Restauración real: 80 tablas con
 conteos/huellas idénticos; auditoría de niveles y rechazo/recuperación de pérdida
 simulada aprobados. Gate local 84 tests/639 aserciones. Pendientes antes de cerrar:
 pin exacto de los dos MySQL existentes y backup nativo de volumen staging.
+Código final 2938725: web staging eb26191a SUCCESS y ensayo postdeploy
+953474fc SUCCESS a las 14:08 UTC (conteos, 7 checks HTTP/assets y restauración).
 No promovida. Ver docs/operations/BACKUPS_Y_SMOKE.md y
 docs/audits/2026-10-04-backups-staging.json.
 

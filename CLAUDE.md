@@ -446,3 +446,10 @@ para archivos productivos futuros usar APP_ENV=restore-test, source=production
 y un MySQL destino dedicado. APP_ENV=production siempre rechaza restaurar,
 staging solo admite su propia fuente krater_staging. El destino requiere host
 de restauración designado y UUID distinto. No se ensayaron archivos productivos.
+
+Código final probado: 2938725, web staging eb26191a SUCCESS. Smoke después
+de SUCCESS y restore final: 953474fc SUCCESS, 04/10/2026 14:08 UTC, 7 checks
+HTTP/assets, 80 tablas idénticas, UUID distinto y pérdida/rollback aprobados.
+Se retiró el predeploy temporal en configuración del worker (próximo deploy);
+la agenda mensual conserva start ena:restore-test. Los pins existentes y el
+backup nativo siguen pendientes por falta de sesión autenticada en Railway.
