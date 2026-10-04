@@ -1,0 +1,80 @@
+{
+  "base": "https://krater-production.up.railway.app",
+  "passed": true,
+  "checks": [
+    {
+      "path": "/ping",
+      "expected": 200,
+      "actual": 200
+    },
+    {
+      "path": "/login",
+      "expected": 200,
+      "actual": 200
+    },
+    {
+      "path": "/api/v1/bootstrap",
+      "expected": 401,
+      "actual": 401
+    },
+    {
+      "path": "/api/v1/students",
+      "expected": 401,
+      "actual": 401
+    },
+    {
+      "path": "/api/v1/students/placement-options",
+      "expected": 401,
+      "actual": 401
+    },
+    {
+      "path": "/api/v1/users",
+      "expected": 401,
+      "actual": 401
+    },
+    {
+      "path": "/api/v1/backups",
+      "expected": 401,
+      "actual": 401
+    },
+    {
+      "path": "/api/v1/roles",
+      "expected": 401,
+      "actual": 401
+    },
+    {
+      "path": "/api/v1/users/1/role-assignments",
+      "expected": 401,
+      "actual": 401
+    },
+    {
+      "path": "/invoices/pdf/smoke-sin-firma",
+      "expected": 403,
+      "actual": 403
+    },
+    {
+      "path": "/storage/Invoices/smoke.pdf",
+      "expected": 403,
+      "actual": 403
+    }
+  ],
+  "assets": [
+    {
+      "path": "/assets/js/app.js?id=35bce386f9c99d89800c",
+      "status": 200,
+      "sha256": "932622567035b01b2967cc61c98aa0adbf58c430b8ef099f7702e9ab72f749df",
+      "matches_build": true
+    },
+    {
+      "path": "/assets/css/crater.css?id=0b090d6c6a3202e87168",
+      "status": 200,
+      "sha256": "7775f28aa35cc236d39cea0874a17f772aeb7a5c85fb4023d9cefed05adba255",
+      "matches_build": true
+    }
+  ],
+  "revision": "f7618902abc4d86d752b37514df7145520ad5583",
+  "deployment_id": "cbfe545a-4dd0-418e-ad83-1407a44dac40",
+  "deployment_status": "SUCCESS",
+  "verified_at": "2026-10-03T03:10:00Z",
+  "scope": "Public HTTP smoke; authenticated CRUD verified in staging, not exercised against production records"
+}

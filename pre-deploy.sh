@@ -5,6 +5,8 @@ set -eu
 
 echo 'SuiteEna predeploy: migraciones'
 php artisan migrate --force
+echo 'SuiteEna predeploy: conteos institucionales'
+php artisan ena:smoke
 echo 'SuiteEna predeploy: catalogo de permisos y roles'
 php artisan db:seed --class=RbacSeeder --force
 php artisan crater:mark-installed
