@@ -124,12 +124,14 @@ class MySqlBackupService
 
     public function backup(): array
     {
+        logger()->info('SuiteEna backup: verificando configuracion y MySQL');
         $disk = $this->disk();
         $version = $this->version();
         $directory = $this->workspace();
         try {
             $connection = config('database.connections.'.config('database.default'));
             $before = $this->fingerprints();
+            logger()->info('SuiteEna backup: creando dump transaccional');
             $sql = $directory.'/database.sql';
             $credentials = $this->credentials($directory, $connection);
             $this->run([config('ena-operations.dump_binary'), '--defaults-extra-file='.$credentials,
@@ -161,6 +163,7 @@ class MySqlBackupService
                 throw new BackupOperationException('No se pudo finalizar el backup cifrado.');
             }
             chmod($archive, 0600);
+            logger()->info('SuiteEna backup: subiendo archivo AES-256 al bucket privado');
             $key = trim(config('ena-operations.backup_prefix'), '/').'/'.now()->utc()->format('Ymd\THis\Z').'-'.bin2hex(random_bytes(6)).'.zip';
             $stream = fopen($archive, 'rb');
             try {
@@ -174,6 +177,7 @@ class MySqlBackupService
             $manifest['archive_sha256'] = hash_file('sha256', $archive);
             $manifest['bytes'] = filesize($archive);
             $this->download($key, $directory.'/remote.zip', $manifest['archive_sha256']);
+            logger()->info('SuiteEna backup: descarga y checksum verificados');
             // Manifest publicado al final: solo los objetos verificados son backups validos.
             if (! $disk->put($key.'.json', json_encode($manifest, JSON_UNESCAPED_SLASHES), ['visibility' => 'private'])) {
                 throw new BackupOperationException('No se pudo publicar el manifest del backup.');
@@ -245,6 +249,7 @@ class MySqlBackupService
 
     public function restoreTest(): array
     {
+        logger()->info('SuiteEna restore test: comprobando aislamiento');
         // Ninguna opcion permite restaurar sobre la base operativa.
         $source = config('database.connections.'.config('database.default'));
         $target = config('ena-operations.restore_connection');
@@ -263,6 +268,7 @@ class MySqlBackupService
         $directory = $this->workspace();
         $original = config('database.default');
         try {
+            logger()->info('SuiteEna restore test: descargando ultimo backup verificado');
             $this->download($record['key'], $directory.'/backup.zip', $record['archive_sha256']);
             $zip = new ZipArchive();
             if ($zip->open($directory.'/backup.zip') !== true) {
@@ -290,6 +296,7 @@ class MySqlBackupService
             config(['database.connections.ena_restore' => $target, 'database.default' => 'ena_restore']);
             DB::purge('ena_restore');
             $version = $this->version();
+            logger()->info('SuiteEna restore test: importando en MySQL aislado de la misma version');
             $database = 'krater_restore_test_'.gmdate('Ymd_His').'_'.bin2hex(random_bytes(4));
             DB::statement('CREATE DATABASE `'.$database.'` CHARACTER SET utf8mb4');
             config(['database.connections.ena_restore.database' => $database]);
@@ -314,9 +321,11 @@ class MySqlBackupService
             foreach ($audit['companies'] as $company) {
                 $summary[] = ['company_id' => $company['company']['id'], 'models' => $company['models']];
             }
+            $guard = $this->verifyDeployGuard();
             $report = ['passed' => true, 'created_at' => now()->utc()->toIso8601String(), 'key' => $record['key'],
                 'target_database' => $database, 'mysql_version' => $version, 'table_fingerprints_match' => true,
-                'tables' => count($actual), 'archive_sha256' => $record['archive_sha256'], 'audit' => $summary];
+                'tables' => count($actual), 'archive_sha256' => $record['archive_sha256'], 'audit' => $summary,
+                'deploy_guard' => $guard];
             if (! $this->disk()->put(trim(config('ena-operations.backup_prefix'), '/').'/restore-tests/'.gmdate('Ymd\THis\Z').'.json',
                 json_encode($report, JSON_UNESCAPED_SLASHES), ['visibility' => 'private'])) {
                 throw new BackupOperationException('No se pudo registrar la evidencia de restauracion.');
@@ -327,6 +336,42 @@ class MySqlBackupService
             config(['database.default' => $original]);
             DB::purge('ena_restore');
             $this->cleanup($directory);
+        }
+    }
+
+    protected function verifyDeployGuard(): array
+    {
+        // Solo la copia restaurada: perdida simulada en transaccion, siempre rollback.
+        $environment = app()->environment();
+        app()->instance('env', 'restore-test');
+        try {
+            if (Artisan::call('ena:smoke') !== 0) {
+                throw new BackupOperationException('No se pudo crear la foto de la copia restaurada.');
+            }
+            $before = app(DeploySnapshotService::class)->capture();
+            $table = null;
+            $row = null;
+            foreach (DeploySnapshotService::TABLES as $candidate) {
+                $row = DB::table($candidate)->whereNotNull('school_level_id')->first();
+                if ($row) { $table = $candidate; break; }
+            }
+            if (! $row) {
+                return ['baseline_passed' => true, 'loss_simulation' => 'no_scoped_records'];
+            }
+            DB::beginTransaction();
+            try {
+                DB::table($table)->where('id', $row->id)->update(['school_level_id' => null]);
+                $rejected = Artisan::call('ena:smoke') === 1;
+            } finally {
+                DB::rollBack();
+            }
+            if (! $rejected || $before !== app(DeploySnapshotService::class)->capture() || Artisan::call('ena:smoke') !== 0) {
+                throw new BackupOperationException('El smoke no rechazo la perdida simulada o no recupero sus conteos.');
+            }
+
+            return ['baseline_passed' => true, 'simulated_loss_exit_code' => 1, 'rollback_counts_match' => true, 'recovery_exit_code' => 0];
+        } finally {
+            app()->instance('env', $environment);
         }
     }
 }

@@ -1,7 +1,0 @@
-[build]
-builder = "dockerfile"
-
-[deploy]
-startCommand = "php artisan ena:backup"
-cronSchedule = "0 6 * * *"
-restartPolicyType = "never"
