@@ -405,3 +405,36 @@ temporal drena sus logs y registra stacks en un archivo efímero; imprimir solo 
 y ubicaciones. Las cookies Secure se devuelven cifradas en memoria por loopback y el
 cupo de ingreso se separa con una IP ficticia por ejecución. Nunca desactivar CSRF
 ni autorización. Los jobs de cobro esperan el hash persistido antes de generar PDF.
+
+
+### Toda la institución promovida y fila 6 en staging (04/10/2026)
+
+Jesús aprobó la revisión de Claude de 152a40f/f761890 y autorizó promover.
+Producción de la app quedó en f7618902abc4d86d752b37514df7145520ad5583,
+Railway cbfe545a-4dd0-418e-ad83-1407a44dac40 SUCCESS; predeploy y smoke público
+aprobados. Evidencia: docs/audits/2026-10-03-institution-production.json.
+El corte anterior de promoción queda reemplazado solo para esa funcionalidad.
+
+Fila 6: ena:backup, ena:restore-test, ena:smoke y post-deploy-smoke.sh. Backup
+cifrado AES-256 a bucket backups-staging con referencias (sin copiar claves),
+retención 7 diarios/4 semanales/6 mensuales. Dos workers separados, Dockerfile
+explícito (dockerfilePath selecciona builder DOCKERFILE), sin predeploy,
+restart NEVER; cron 0 6 * * * y 0 7 1 * * UTC. Los servicios nuevos no aceptan
+railwayConfigFile: configurar opciones con el conector/UI, no nuevos toml.
+
+MySQL-restore-test usa mysql:9.7.2, red privada y base nueva por corrida.
+Backup real de 80 tablas descargado/restaurado el 04/10/2026; huellas idénticas,
+auditoría sin niveles nulos/ajenos/inexistentes; smoke detectó pérdida de nivel
+simulada en transacción con exit 1, rollback conservó conteos y volvió a exit 0.
+La restauración se limita a staging/krater_staging y host distinto al operativo.
+APP_KEY debe conservarse mientras existan archivos cifrados con esa clave.
+
+Gate local 82 tests/635 aserciones. Staging 280 HTTP institucionales + 68 roles,
+smoke de conteos y HTTP aprobados. Ver docs/operations/BACKUPS_Y_SMOKE.md y
+docs/audits/2026-10-04-backups-staging.json. Pendientes: pin existente de
+MySQL-staging/MySQL a mysql:9.7.2 y verificar/activar backup nativo del volumen
+staging. Ambas bases ya ejecutan 9.7.2 (producción fue actualizada por Railway
+vuln-remediation); no degradar a 9.4. El conector no expone cambios de imagen
+de servicio existente ni backups nativos; no hay sesión web autenticada.
+La fila 6 NO está promovida ni Operativa; completar pendientes y parar antes
+de promover. Jesús creará bucket de producción después de aprobar fila 6.

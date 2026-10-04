@@ -209,3 +209,20 @@
 - Smoke público posterior: ping/login 200; bootstrap, alumnos y placement-options sin sesión 401. JS/CSS 200 e idénticos byte por byte al build; SHA256 JS 932622567035b01b2967cc61c98aa0adbf58c430b8ef099f7702e9ab72f749df.
 - Evidencia completa y sin secretos: docs/audits/2026-10-03-institution-staging.json. Los ajustes del ensayo corrigen cookies Secure en loopback, cupos de ingreso compartidos, bloqueo del pipe por stacks de error y conservación de logs en bloques; no desactivan CSRF, autorización ni el limitador. UI automatizada sobre componentes Vue/JSDOM; no se declara una inspección visual manual autenticada.
 - Producción reverificada: rama produccion y Railway fd03f25b-e03c-447e-b51d-d66841389054 conservan 1289f3cf0335d90df120d0a1b36bb72c735e3497, SUCCESS. No se promueve. La funcionalidad queda Probada en staging; no se marca Operativa ni se inicia la fila 6.
+
+
+## 2026-10-03 — Promoción autorizada de Toda la institución
+
+- Jesús aprueba la revisión de Claude de 152a40f/f761890 y pide promover.
+- Producción avanzó por fast-forward a f761890; deployment cbfe545a-4dd0-418e-ad83-1407a44dac40 SUCCESS. Logs confirman migraciones, 76 permisos, 14 roles y predeploy completo. Smoke público y JS/CSS idénticos aprobados. Evidencia: docs/audits/2026-10-03-institution-production.json. No se ensayaron operaciones CRUD sobre registros productivos.
+
+## 2026-10-04 — Fila 6: backup y restauración real en staging
+
+- Jesús aporta bucket backups-staging, exige referencias sin copiar claves y añade pin exacto de ambos MySQL. Producción fue redeployada por vuln-remediation: mysql:9.4 pasó a mysql:9 y ejecuta 9.7.2. Staging también ejecuta 9.7.2; la copia aislada y los clientes se fijan a esa versión.
+- Backup transaccional, AES-256, privado S3 HTTPS, descarga/SHA-256 antes de publicar manifest y poda acotada 7/4/6. Servicio diario aparte, sin dependencia de colas. El archivo SQL no incorpora .env y las credenciales no se incluyen en argumentos ni logs.
+- ena:smoke después de migrate: conteos por empresa/nivel + NULL/totales, staff deduplicado, fotos válidas/fallidas y migraciones declaradas acotadas/no reutilizables. Exit 1 aborta predeploy ante pérdida. Postdeploy verifica conteos y HTTP/assets del mismo commit.
+- Backup real: suiteena/staging/20261004T132543Z-1dc1f66a04a2.zip (49.759 bytes), SHA256 a3fb37e3a29137925c7acf669089cba4604c4b0a9ff3a9f955dee5860e28b5ec, 80 tablas. Deployment de ejecución 7b0ee556-e6f8-4210-bcbb-d6d6016596a9.
+- Restauración real desde el bucket: 7b701a88-f5cd-438d-9e75-ff3f3b37ca4d; 80 tablas con conteos/huellas idénticos en krater_restore_test_20261004_132756_0d60b808, MySQL 9.7.2. Auditoría sin nulos/ajenos/inexistentes. En esa copia, pérdida de nivel transaccional detectada con exit 1, rollback con conteos idénticos y recuperación exit 0. Evidencia: docs/audits/2026-10-04-backups-staging.json.
+- Gate local 82 tests/635 aserciones, incluyendo cifrado y corrupción de descarga. Staging ac392884-c8dc-4ae6-af2d-d59d1c3b59d6 SUCCESS: smoke de conteos y 280 HTTP institucionales + 68 de roles.
+- Las agendas se repusieron después de las corridas de una sola ejecución. Un redeploy tomó el builder RAILPACK por defecto y falló al resolver el rango PHP; dockerfilePath explícito seleccionó DOCKERFILE. El encadenado del worker de restauración usa /bin/sh -c para ejecutar ambos comandos.
+- Corte: fila 6 no promovida, producción de la aplicación en f761890. Falta fijar tags de MySQL-staging/MySQL a 9.7.2 y verificar/activar backup nativo de volumen staging. Conector sin operaciones para esas opciones, navegador sin sesión. Detalles operativos y referencias: docs/operations/BACKUPS_Y_SMOKE.md. No cerrar como Operativa; Jesús creará bucket productivo después de aprobar.

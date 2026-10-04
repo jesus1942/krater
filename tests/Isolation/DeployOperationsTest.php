@@ -5,11 +5,13 @@ namespace Tests\Isolation;
 use Crater\Services\Data\BackupRetention;
 use Crater\Services\Data\DeploySnapshotService;
 use Crater\Services\Data\MySqlBackupService;
+use Crater\Services\Data\BackupOperationException;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Foundation\Testing\TestCase;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\Storage;
 use Tests\CreatesApplication;
 
 class DeployOperationsTest extends TestCase
@@ -164,5 +166,69 @@ class DeployOperationsTest extends TestCase
         DB::enableQueryLog(); DB::flushQueryLog();
         $this->assertSame(1, Artisan::call('ena:backup'));
         $this->assertSame([], DB::getQueryLog());
+    }
+
+    protected function archiveService(bool $changed = false): MySqlBackupService
+    {
+        Storage::fake('ena_backups');
+        config(['filesystems.disks.ena_backups' => ['driver' => 's3', 'endpoint' => 'https://bucket.example.invalid',
+            'bucket' => 'test', 'region' => 'test', 'key' => 'ficticia', 'secret' => 'ficticia'],
+            'ena-operations.encryption_key' => str_repeat('clave-ficticia-', 4),
+            'ena-operations.backup_prefix' => 'suiteena/testing']);
+
+        return new class($changed) extends MySqlBackupService {
+            private $changed;
+            private $calls = 0;
+            public function __construct($changed) { $this->changed = $changed; }
+            public function version(): string { return '9.7.2'; }
+            public function fingerprints(): array {
+                return ['students' => ['count' => $this->changed && $this->calls++ ? 0 : 1, 'sha256' => hash('sha256', 'fixture')]];
+            }
+            protected function run(array $arguments, $input = null): void {
+                foreach ($arguments as $argument) {
+                    if (strpos($argument, '--result-file=') === 0) {
+                        file_put_contents(substr($argument, strlen('--result-file=')), str_repeat('SQL FICTICIO; ', 20));
+                    }
+                }
+            }
+            public function verifyDownload($key, $path, $hash): void { $this->download($key, $path, $hash); }
+        };
+    }
+
+    public function test_remote_archive_is_encrypted_and_download_detects_tampering(): void
+    {
+        $service = $this->archiveService();
+        $report = $service->backup();
+        $disk = Storage::disk('ena_backups');
+        $this->assertTrue($report['passed']);
+        $this->assertTrue($disk->exists($report['key'].'.json'));
+        $zip = new \ZipArchive();
+        $this->assertTrue($zip->open($disk->path($report['key'])) === true);
+        $this->assertFalse($zip->getFromName('database.sql'));
+        $zip->setPassword(config('ena-operations.encryption_key'));
+        $this->assertSame(str_repeat('SQL FICTICIO; ', 20), $zip->getFromName('database.sql'));
+        $zip->close();
+        $disk->put($report['key'], $disk->get($report['key']).'alterado');
+        $path = tempnam(sys_get_temp_dir(), 'ena-check-');
+        try {
+            $this->expectException(BackupOperationException::class);
+            $this->expectExceptionMessage('checksum');
+            $service->verifyDownload($report['key'], $path, $report['archive_sha256']);
+        } finally { unlink($path); }
+    }
+
+    public function test_changed_data_during_dump_does_not_publish_a_backup_or_delete_old_objects(): void
+    {
+        $service = $this->archiveService(true);
+        $disk = Storage::disk('ena_backups');
+        $disk->put('otra-institucion/backup.zip', 'conservar');
+        $disk->put('suiteena/testing/preexistente.zip', 'conservar');
+        try {
+            $service->backup();
+            $this->fail('No debe aceptar un dump cuyos datos cambiaron.');
+        } catch (BackupOperationException $e) {
+            $this->assertStringContainsString('cambiaron', $e->getMessage());
+        }
+        $this->assertEqualsCanonicalizing(['otra-institucion/backup.zip', 'suiteena/testing/preexistente.zip'], $disk->allFiles());
     }
 }

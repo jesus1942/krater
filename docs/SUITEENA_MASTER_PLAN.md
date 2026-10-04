@@ -33,7 +33,7 @@ Solo **Operativo** equivale a DONE.
 - [x] Bloqueo duro de `reset:app` en produccion incluso con `--force`.
 - [x] Auditoría de datos potencialmente ocultos por `school_level_id` nulo o incorrecto en estimates, invoices, payments, expenses, items y students. Primera corrida productiva 01/10/2026: `PRE-000001` del 16/08/2026 existe y tiene `school_level_id = NULL`; sin evidencia única para reasignación automática.
 - [x] Herramienta de reconciliación para registros globales/huérfanos por nivel: dry-run, aplicación transaccional, auditoría atómica y UI total-admin.
-- [ ] Completar Toda la institución antes de fila 6: edición en nivel propio, alta con nivel habilitado e informes consolidados; estado Probado en staging (70 tests/578 aserciones, 280 HTTP institucionales y 68 de roles; código 152a40f, deployment 013cfefa SUCCESS). Producción sigue en 1289f3c; promoción detenida por pedido de Jesús. Evidencia: docs/audits/2026-10-03-institution-staging.json. La fila 6 sigue pendiente.
+- [x] Toda la institución Operativa: revisión de Claude aprobada por Jesús para 152a40f/f761890; promoción autorizada a f761890, Railway cbfe545a SUCCESS y smoke público aprobado. Edición en nivel propio, alta con nivel habilitado e informes consolidados; 280 HTTP institucionales y 68 de roles probados en staging. Evidencia: docs/audits/2026-10-03-institution-production.json.
 - [ ] Backups automáticos y política de retención.
 - [ ] Prueba periódica de restauración en ambiente aislado.
 - [ ] Soft delete o baja lógica para entidades donde borrar físicamente sea riesgoso.
@@ -41,6 +41,15 @@ Solo **Operativo** equivale a DONE.
 - [ ] Smoke test post-deploy con conteos críticos por empresa/nivel.
 - [ ] Registro de migraciones de datos con resultado y cantidad afectada.
 - [ ] Revisión del incidente: presupuesto cargado el 16/08/2026 que dejó de aparecer después de activar aislamiento por nivel.
+
+Fila 6 en curso (04/10/2026): backup diario cifrado en bucket staging por
+referencias, retención 7/4/6, restauración mensual aislada en MySQL 9.7.2 y smoke
+de conteos/HTTP implementados y probados. Restauración real: 80 tablas con
+conteos/huellas idénticos; auditoría de niveles y rechazo/recuperación de pérdida
+simulada aprobados. Gate local 82 tests/635 aserciones. Pendientes antes de cerrar:
+pin exacto de los dos MySQL existentes y backup nativo de volumen staging.
+No promovida. Ver docs/operations/BACKUPS_Y_SMOKE.md y
+docs/audits/2026-10-04-backups-staging.json.
 
 ## Invariantes
 

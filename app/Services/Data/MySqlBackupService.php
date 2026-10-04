@@ -257,6 +257,7 @@ class MySqlBackupService
             || empty($target['host']) || $target['host'] === $source['host'] || empty($target['username']) || empty($target['password'])) {
             throw new BackupOperationException('La restauracion requiere staging y un servidor MySQL aislado.');
         }
+        $sourceUuid = (string) DB::selectOne('SELECT @@server_uuid AS uuid')->uuid;
         $records = $this->records();
         if (! $records) {
             throw new BackupOperationException('No hay un backup verificado para restaurar.');
@@ -296,6 +297,10 @@ class MySqlBackupService
             config(['database.connections.ena_restore' => $target, 'database.default' => 'ena_restore']);
             DB::purge('ena_restore');
             $version = $this->version();
+            $targetUuid = (string) DB::selectOne('SELECT @@server_uuid AS uuid')->uuid;
+            if ($sourceUuid === '' || $targetUuid === '' || hash_equals($sourceUuid, $targetUuid)) {
+                throw new BackupOperationException('El destino debe ser otro servidor, incluso si usa un alias DNS diferente.');
+            }
             logger()->info('SuiteEna restore test: importando en MySQL aislado de la misma version');
             $database = 'krater_restore_test_'.gmdate('Ymd_His').'_'.bin2hex(random_bytes(4));
             DB::statement('CREATE DATABASE `'.$database.'` CHARACTER SET utf8mb4');
@@ -325,7 +330,7 @@ class MySqlBackupService
             $report = ['passed' => true, 'created_at' => now()->utc()->toIso8601String(), 'key' => $record['key'],
                 'target_database' => $database, 'mysql_version' => $version, 'table_fingerprints_match' => true,
                 'tables' => count($actual), 'archive_sha256' => $record['archive_sha256'], 'audit' => $summary,
-                'deploy_guard' => $guard];
+                'deploy_guard' => $guard, 'distinct_mysql_server_verified' => true];
             if (! $this->disk()->put(trim(config('ena-operations.backup_prefix'), '/').'/restore-tests/'.gmdate('Ymd\THis\Z').'.json',
                 json_encode($report, JSON_UNESCAPED_SLASHES), ['visibility' => 'private'])) {
                 throw new BackupOperationException('No se pudo registrar la evidencia de restauracion.');
