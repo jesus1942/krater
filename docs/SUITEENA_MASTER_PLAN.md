@@ -46,7 +46,7 @@ Fila 6 en curso (04/10/2026): backup diario cifrado en bucket staging por
 referencias, retención 7/4/6, restauración mensual aislada en MySQL 9.7.2 y smoke
 de conteos/HTTP implementados y probados. Restauración real: 80 tablas con
 conteos/huellas idénticos; auditoría de niveles y rechazo/recuperación de pérdida
-simulada aprobados. Gate local 82 tests/635 aserciones. Pendientes antes de cerrar:
+simulada aprobados. Gate local 84 tests/639 aserciones. Pendientes antes de cerrar:
 pin exacto de los dos MySQL existentes y backup nativo de volumen staging.
 No promovida. Ver docs/operations/BACKUPS_Y_SMOKE.md y
 docs/audits/2026-10-04-backups-staging.json.

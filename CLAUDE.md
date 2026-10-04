@@ -429,7 +429,7 @@ simulada en transacción con exit 1, rollback conservó conteos y volvió a exit
 La restauración se limita a staging/krater_staging y host distinto al operativo.
 APP_KEY debe conservarse mientras existan archivos cifrados con esa clave.
 
-Gate local 82 tests/635 aserciones. Staging 280 HTTP institucionales + 68 roles,
+Gate local 84 tests/639 aserciones. Staging 280 HTTP institucionales + 68 roles,
 smoke de conteos y HTTP aprobados. Ver docs/operations/BACKUPS_Y_SMOKE.md y
 docs/audits/2026-10-04-backups-staging.json. Pendientes: pin existente de
 MySQL-staging/MySQL a mysql:9.7.2 y verificar/activar backup nativo del volumen
@@ -438,3 +438,11 @@ vuln-remediation); no degradar a 9.4. El conector no expone cambios de imagen
 de servicio existente ni backups nativos; no hay sesión web autenticada.
 La fila 6 NO está promovida ni Operativa; completar pendientes y parar antes
 de promover. Jesús creará bucket de producción después de aprobar fila 6.
+
+El worker mensual ejecuta solo ena:restore-test; el smoke HTTP postdeploy se
+ejecuta por separado, con shell explícita cuando se verifica junto al restore.
+BACKUP_SOURCE_ENVIRONMENT distingue el entorno del archivo y el del worker;
+para archivos productivos futuros usar APP_ENV=restore-test, source=production
+y un MySQL destino dedicado. APP_ENV=production siempre rechaza restaurar,
+staging solo admite su propia fuente krater_staging. El destino requiere host
+de restauración designado y UUID distinto. No se ensayaron archivos productivos.

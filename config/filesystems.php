@@ -53,6 +53,8 @@ return [
             'secret' => env('BACKUP_SECRET_ACCESS_KEY'),
             'use_path_style_endpoint' => true,
             'visibility' => 'private',
+            'http' => ['connect_timeout' => 15, 'timeout' => 300],
+            'retries' => 2,
         ],
 
         // Comprobantes: se entregan solo mediante las rutas firmadas.

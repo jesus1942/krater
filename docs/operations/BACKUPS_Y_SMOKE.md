@@ -10,7 +10,7 @@ verificación/activación del backup nativo de volumen. No promover esta fila.
 |---|---|---|
 | Bucket backups-staging | d6bde044-c856-4bfc-ad52-ed0af97bbec9 | privado, región sjc |
 | backups-staging-cron | 5bedae2c-4338-4617-aeee-dd1972b252f8 | `php artisan ena:backup`, `0 6 * * *` UTC, restart NEVER |
-| restore-test-staging-cron | 55750072-39f6-4dd5-a26c-478b5ea9fb86 | shell terminante para smoke HTTP + restauración, `0 7 1 * *` UTC |
+| restore-test-staging-cron | 55750072-39f6-4dd5-a26c-478b5ea9fb86 | `php artisan ena:restore-test`, `0 7 1 * *` UTC |
 | MySQL-restore-test | dbb16a4d-c3c2-4fb9-8f49-fea15b515435 | `mysql:9.7.2`, red privada, sin dominio público |
 
 Ambos workers usan el Dockerfile del repositorio, sin predeploy de migración
@@ -20,7 +20,11 @@ ejecución y luego se repusieron las agendas. Config as Code está deprecado par
 servicios nuevos; las opciones se configuran mediante Railway y se comprueban
 con get-service-config. `dockerfilePath= Dockerfile` selecciona DOCKERFILE:
 redeploy con el builder RAILPACK por defecto falla al interpretar el rango PHP
-de Composer. Ese fallo se corrigió antes del cierre de la verificación.
+de Composer. Las nuevas corridas del commit d08c638 tomaron DOCKERFILE y
+terminaron SUCCESS con las agendas repuestas. Staging observa cambios de
+código, configuración, Docker/frontend y tests; editar solo documentación no
+dispara otra corrida de fixtures. La verificación adicional de restauración se
+ejecutó una vez como predeploy del worker y luego se quitó ese comando.
 
 ## Referencias, sin copiar claves
 
@@ -78,8 +82,12 @@ backup de adjuntos externos que no se guardan en la base.
 
 ## Restauración mensual
 
-`ena:restore-test` solo admite staging + base fuente krater_staging + un host
-MySQL distinto. No admite una opción para restaurar sobre la base operativa.
+`ena:restore-test` exige staging + base fuente krater_staging, o un worker con
+APP_ENV=restore-test y BACKUP_SOURCE_ENVIRONMENT explícito (staging/production).
+El entorno production no puede ejecutarlo. El host de destino debe coincidir
+con el MySQL de restauración configurado y ser distinto al origen, comprobado
+también mediante @@server_uuid antes de crear la base destino. No admite una
+opción para restaurar sobre la base operativa.
 Descarga el último backup válido, verifica SHA-256, descifra y exige la misma
 versión exacta. Crea una base nueva con nombre único en MySQL-restore-test.
 Importa, compara conteos y huellas de **todas** las tablas y ejecuta
@@ -96,6 +104,9 @@ Corrida real aprobada: backup `20261004T132543Z-1dc1f66a04a2.zip`, restauración
 del 04/10/2026 13:28 UTC, 80 tablas idénticas, MySQL 9.7.2. Auditoría: sin niveles
 nulos, inexistentes ni ajenos. Evidencia:
 `docs/audits/2026-10-04-backups-staging.json`.
+
+Repetida con comprobación de UUID el 04/10/2026 13:43 UTC, deployment
+5eeaa3c0-ce14-4953-8f0f-6da2770b1736, mismo archivo y 80 huellas idénticas.
 
 ## Smoke antes y después del deploy
 
@@ -116,8 +127,10 @@ el comando aplica la regla estricta solicitada, no presume que sea legítima.
 
 Después de Railway SUCCESS, correr `sh post-deploy-smoke.sh` desde un worker
 del mismo commit. Comprueba conteos, ping, login, APIs protegidas sin sesión y
-SHA-256 de JS/CSS servidos. El worker mensual usa shell explícita para que
-smoke y restauración se ejecuten y cualquier fallo corte la secuencia.
+SHA-256 de JS/CSS servidos. Para la verificación conjunta usar shell explícita
+`/bin/sh -c 'sh post-deploy-smoke.sh && php artisan ena:restore-test'`. La agenda
+mensual ejecuta solo restauración, así puede probar recuperación aunque la web
+esté caída. Su guardia de conteos se prueba sobre la copia, con rollback.
 
 ## Pin y segunda línea pendientes
 
@@ -140,9 +153,13 @@ registrar su ID. La segunda línea productiva queda para la aprobación de fila 
 ## Corte de promoción
 
 Producción de la aplicación permanece en f761890, cuya promoción fue aprobada
-por Jesús. La fila 6 permanece en la rama de trabajo. Gate local: 82 tests / 635
+por Jesús. La fila 6 permanece en la rama de trabajo. Gate local: 84 tests / 639
 aserciones. Staging: 280 HTTP institucionales y 68 de roles, más backup y
 restauración real. Antes de aprobar/promover: completar los pendientes de
 infraestructura anteriores y revisar el código/evidencia. Después de aprobar:
 crear bucket propio de producción, conectar referencias, configurar cron
 productivo y verificar primer backup antes de cerrar la fila como Operativa.
+El ensayo de archivos productivos usará un worker APP_ENV=restore-test,
+BACKUP_SOURCE_ENVIRONMENT=production, BACKUP_PREFIX=suiteena/production,
+referencias al bucket/clave/base fuente productivos y un MySQL destino dedicado.
+No se probaron ni se copiaron datos productivos en esta fase.

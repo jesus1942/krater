@@ -1,6 +1,6 @@
 {
   "verified_at": "2026-10-04T13:28:00+00:00",
-  "code_revision": "6e945795933989a8c19297feded952a19ad589ec",
+  "code_revision": "d08c6383c134d042de1ec0958c4fc35c47e62539",
   "backup_deployment_id": "7b0ee556-e6f8-4210-bcbb-d6d6016596a9",
   "restore_deployment_id": "7b701a88-f5cd-438d-9e75-ff3f3b37ca4d",
   "backup": {
@@ -150,5 +150,145 @@
     "backup": "0 6 * * *",
     "restore": "0 7 1 * *"
   },
-  "credentials": "Railway references only; no keys copied"
+  "credentials": "Railway references only; no keys copied",
+  "final_verified_at": "2026-10-04T13:43:48+00:00",
+  "identity_checked_restore_deployment_id": "5eeaa3c0-ce14-4953-8f0f-6da2770b1736",
+  "identity_checked_restore": {
+    "passed": true,
+    "created_at": "2026-10-04T13:43:48+00:00",
+    "key": "suiteena/staging/20261004T132543Z-1dc1f66a04a2.zip",
+    "target_database": "krater_restore_test_20261004_134346_d5b315dd",
+    "mysql_version": "9.7.2",
+    "table_fingerprints_match": true,
+    "tables": 80,
+    "archive_sha256": "a3fb37e3a29137925c7acf669089cba4604c4b0a9ff3a9f955dee5860e28b5ec",
+    "audit": [
+      {
+        "company_id": 1,
+        "models": {
+          "StudyPlan": {
+            "table": "study_plans",
+            "total": 0,
+            "valid_level": 0,
+            "null_level": 0,
+            "missing_level": 0,
+            "foreign_company_level": 0
+          },
+          "CourseSection": {
+            "table": "course_sections",
+            "total": 1,
+            "valid_level": 1,
+            "null_level": 0,
+            "missing_level": 0,
+            "foreign_company_level": 0
+          },
+          "GradeLevel": {
+            "table": "grade_levels",
+            "total": 5,
+            "valid_level": 5,
+            "null_level": 0,
+            "missing_level": 0,
+            "foreign_company_level": 0
+          },
+          "Estimate": {
+            "table": "estimates",
+            "total": 13,
+            "valid_level": 13,
+            "null_level": 0,
+            "missing_level": 0,
+            "foreign_company_level": 0
+          },
+          "AcademicYear": {
+            "table": "academic_years",
+            "total": 3,
+            "valid_level": 3,
+            "null_level": 0,
+            "missing_level": 0,
+            "foreign_company_level": 0
+          },
+          "Student": {
+            "table": "students",
+            "total": 36,
+            "valid_level": 36,
+            "null_level": 0,
+            "missing_level": 0,
+            "foreign_company_level": 0
+          },
+          "Division": {
+            "table": "divisions",
+            "total": 6,
+            "valid_level": 6,
+            "null_level": 0,
+            "missing_level": 0,
+            "foreign_company_level": 0
+          },
+          "Item": {
+            "table": "items",
+            "total": 13,
+            "valid_level": 13,
+            "null_level": 0,
+            "missing_level": 0,
+            "foreign_company_level": 0
+          },
+          "Enrollment": {
+            "table": "enrollments",
+            "total": 21,
+            "valid_level": 21,
+            "null_level": 0,
+            "missing_level": 0,
+            "foreign_company_level": 0
+          },
+          "Payment": {
+            "table": "payments",
+            "total": 13,
+            "valid_level": 13,
+            "null_level": 0,
+            "missing_level": 0,
+            "foreign_company_level": 0
+          },
+          "Invoice": {
+            "table": "invoices",
+            "total": 17,
+            "valid_level": 17,
+            "null_level": 0,
+            "missing_level": 0,
+            "foreign_company_level": 0
+          },
+          "Expense": {
+            "table": "expenses",
+            "total": 12,
+            "valid_level": 12,
+            "null_level": 0,
+            "missing_level": 0,
+            "foreign_company_level": 0
+          },
+          "Subject": {
+            "table": "subjects",
+            "total": 1,
+            "valid_level": 1,
+            "null_level": 0,
+            "missing_level": 0,
+            "foreign_company_level": 0
+          }
+        }
+      }
+    ],
+    "deploy_guard": {
+      "baseline_passed": true,
+      "simulated_loss_exit_code": 1,
+      "rollback_counts_match": true,
+      "recovery_exit_code": 0
+    },
+    "distinct_mysql_server_verified": true
+  },
+  "scheduled_worker_deployments": {
+    "backup": {
+      "id": "9d0ae399-01da-45f6-8738-82bd8cd4bc36",
+      "status": "SUCCESS"
+    },
+    "restore": {
+      "id": "5eeaa3c0-ce14-4953-8f0f-6da2770b1736",
+      "status": "SUCCESS"
+    }
+  }
 }

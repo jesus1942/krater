@@ -125,6 +125,9 @@ class MySqlBackupService
     public function backup(): array
     {
         logger()->info('SuiteEna backup: verificando configuracion y MySQL');
+        if (config('ena-operations.backup_source_environment') !== app()->environment()) {
+            throw new BackupOperationException('El backup debe usar el prefijo y entorno de su propia fuente.');
+        }
         $disk = $this->disk();
         $version = $this->version();
         $directory = $this->workspace();
@@ -199,7 +202,7 @@ class MySqlBackupService
         foreach ($disk->files(trim($prefix, '/')) as $path) {
             if (preg_match('#^'.preg_quote($prefix, '#').'[0-9]{8}T[0-9]{6}Z-[a-f0-9]{12}\.zip\.json$#', $path)) {
                 $record = json_decode($disk->get($path), true, 512, JSON_THROW_ON_ERROR);
-                if (($record['key'] ?? null) !== substr($path, 0, -5) || ($record['environment'] ?? '') !== app()->environment()
+                if (($record['key'] ?? null) !== substr($path, 0, -5) || ($record['environment'] ?? '') !== config('ena-operations.backup_source_environment')
                     || ! isset($record['created_at'], $record['archive_sha256'], $record['mysql_version'])) {
                     throw new BackupOperationException('Manifest remoto invalido: se cancela la retencion.');
                 }
@@ -253,7 +256,11 @@ class MySqlBackupService
         // Ninguna opcion permite restaurar sobre la base operativa.
         $source = config('database.connections.'.config('database.default'));
         $target = config('ena-operations.restore_connection');
-        if (! app()->environment('staging', 'restore-test') || ($source['database'] ?? '') !== 'krater_staging'
+        $sourceEnvironment = config('ena-operations.backup_source_environment');
+        if (! app()->environment('staging', 'restore-test')
+            || ! in_array($sourceEnvironment, ['staging', 'production'], true)
+            || (app()->environment('staging') && (($source['database'] ?? '') !== 'krater_staging' || $sourceEnvironment !== 'staging'))
+            || strtolower((string) ($target['host'] ?? '')) !== strtolower((string) config('ena-operations.restore_allowed_host'))
             || empty($target['host']) || $target['host'] === $source['host'] || empty($target['username']) || empty($target['password'])) {
             throw new BackupOperationException('La restauracion requiere staging y un servidor MySQL aislado.');
         }
@@ -328,6 +335,7 @@ class MySqlBackupService
             }
             $guard = $this->verifyDeployGuard();
             $report = ['passed' => true, 'created_at' => now()->utc()->toIso8601String(), 'key' => $record['key'],
+                'source_environment' => $sourceEnvironment,
                 'target_database' => $database, 'mysql_version' => $version, 'table_fingerprints_match' => true,
                 'tables' => count($actual), 'archive_sha256' => $record['archive_sha256'], 'audit' => $summary,
                 'deploy_guard' => $guard, 'distinct_mysql_server_verified' => true];

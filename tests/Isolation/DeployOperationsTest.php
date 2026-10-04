@@ -174,6 +174,7 @@ class DeployOperationsTest extends TestCase
         config(['filesystems.disks.ena_backups' => ['driver' => 's3', 'endpoint' => 'https://bucket.example.invalid',
             'bucket' => 'test', 'region' => 'test', 'key' => 'ficticia', 'secret' => 'ficticia'],
             'ena-operations.encryption_key' => str_repeat('clave-ficticia-', 4),
+            'ena-operations.backup_source_environment' => 'testing',
             'ena-operations.backup_prefix' => 'suiteena/testing']);
 
         return new class($changed) extends MySqlBackupService {
@@ -230,5 +231,26 @@ class DeployOperationsTest extends TestCase
             $this->assertStringContainsString('cambiaron', $e->getMessage());
         }
         $this->assertEqualsCanonicalizing(['otra-institucion/backup.zip', 'suiteena/testing/preexistente.zip'], $disk->allFiles());
+    }
+
+    public function test_staging_cannot_restore_production_backups_or_query_the_source(): void
+    {
+        $this->app['env'] = 'staging';
+        config(['ena-operations.backup_source_environment' => 'production']);
+        DB::enableQueryLog(); DB::flushQueryLog();
+        $this->assertSame(1, Artisan::call('ena:restore-test'));
+        $this->assertSame([], DB::getQueryLog());
+    }
+
+    public function test_restore_refuses_a_host_other_than_the_designated_restore_server(): void
+    {
+        $this->app['env'] = 'staging';
+        config(['ena-operations.backup_source_environment' => 'staging',
+            'database.connections.sqlite.database' => 'krater_staging', 'database.connections.sqlite.host' => 'mysql-staging',
+            'ena-operations.restore_connection.host' => 'mysql.railway.internal',
+            'ena-operations.restore_connection.username' => 'root', 'ena-operations.restore_connection.password' => 'ficticia']);
+        DB::enableQueryLog(); DB::flushQueryLog();
+        $this->assertSame(1, Artisan::call('ena:restore-test'));
+        $this->assertSame([], DB::getQueryLog());
     }
 }
