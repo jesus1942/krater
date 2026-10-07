@@ -3,9 +3,11 @@
 namespace Crater\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Crater\Traits\Auditable;
 
 class StaffAssignment extends Model
 {
+    use Auditable;
     protected $fillable = [
         'company_id',
         'staff_member_id',

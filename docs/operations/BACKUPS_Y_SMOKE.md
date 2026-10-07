@@ -1,6 +1,9 @@
 # Fila 6: backups y smoke de integridad
 
-Estado al 04/10/2026: código probado y restauración real aprobada en staging.
+Estado al 07/10/2026: revisión de fila 6 en curso; no promover.
+El smoke acepta cambios auditados, permite una aceptación manual autenticada y los
+backups usan clave propia. La copia a Google Drive requiere carpeta y OAuth de la escuela.
+La evidencia del 04/10 corresponde a la implementación anterior.
 La fila no está cerrada: faltan el pin de los dos MySQL existentes y la
 verificación/activación del backup nativo de volumen. No promover esta fila.
 
@@ -37,7 +40,8 @@ BACKUP_BUCKET=${{backups-staging.BUCKET}}
 BACKUP_REGION=${{backups-staging.REGION}}
 BACKUP_ACCESS_KEY_ID=${{backups-staging.ACCESS_KEY_ID}}
 BACKUP_SECRET_ACCESS_KEY=${{backups-staging.SECRET_ACCESS_KEY}}
-BACKUP_ENCRYPTION_KEY=${{krater-staging.APP_KEY}}
+BACKUP_ENCRYPTION_KEY=<clave aleatoria propia, conservada fuera de Railway>
+BACKUP_ENCRYPTION_KEY_ID=backup-v1
 BACKUP_PREFIX=suiteena/staging
 APP_KEY=${{krater-staging.APP_KEY}}
 DB_HOST=${{krater-staging.DB_HOST}}
@@ -59,10 +63,26 @@ de cola para el backup. APP_URL referencia la URL pública de krater-staging.
 El archivo SQL y el manifest interno se cifran con ZIP AES-256. Los temporales
 se crean en un directorio 0700, las credenciales del cliente en 0600, nunca en
 argumentos de proceso ni logs; se eliminan en finally. No se incluye `.env`.
-La referencia a APP_KEY mantiene la clave en Railway: **no rotar/eliminar esa
-clave mientras se necesiten los archivos cifrados con ella**. La recuperación
-requiere conservar ese valor en el gestor seguro del operador. Producción
-deberá usar su propia clave y el bucket que Jesús creará tras la aprobación.
+BACKUP_ENCRYPTION_KEY nunca reutiliza APP_KEY ni la toma como fallback. Guardarla
+en el gestor seguro de la escuela y una copia offline **fuera de Railway**.
+Rotar APP_KEY no cambia el cifrado ni la recuperación de los backups.
+Producción usará otra clave y su propio bucket tras aprobación.
+
+Antes de cambiar la APP_KEY antigua o crear nuevos backups, ejecutar una vez
+`php artisan ena:backup:separar-clave`. Lee la clave antigua en memoria y conserva
+`keyring/legacy.key.enc` privado, cifrado y autenticado con la nueva clave.
+Descarga el sobre y verifica su descifrado antes de aprobar. No imprime claves,
+no copia credenciales del bucket y las corridas siguientes no sobrescriben el
+sobre. El comando requiere que la clave antigua siga siendo la usada por los
+ZIP legacy. Si ya se rotó, proporcionar la antigua mediante
+BACKUP_PREVIOUS_ENCRYPTION_KEYS (JSON id→clave, protegido).
+La nueva clave también debe conservarse antes de configurar Railway. Para
+recuperar archivos legacy, conservar el sobre junto con los ZIP y la nueva clave;
+el manifest de la copia externa legacy incluye el sobre cifrado.
+
+Cada ZIP nuevo identifica encryption_key_id. Rotar BACKUP_ENCRYPTION_KEY es una
+operación distinta: preservar todas las claves históricas y volver a envolver
+el keyring con la nueva clave antes de retirarla. Nunca reemplazarla sin escrow.
 
 ## Backup y retención
 
@@ -132,8 +152,26 @@ Para una migración de datos revisada, declarar en config/deploy-data-changes.ph
 el archivo de migración existente, el motivo y la disminución máxima de cada
 clave afectada (incluidos totales). Solo vale si la migración está ejecutada y
 no figuraba en la foto previa; no puede reutilizarse. No hay --force.
-Una caída por reubicación/deletes entre deploys también requiere revisión:
-el comando aplica la regla estricta solicitada, no presume que sea legítima.
+Las bajas explicadas por auditoría desde la foto aprobada se aceptan y se
+informan como explained_losses. Se guarda el cursor de auditoría y las identidades
+por empresa/nivel: eventos viejos, duplicados, de otra identidad o empresa no
+justifican otra pérdida. Se siguen cadenas de level_reassigned, student_relocated,
+actualizaciones académicas y bajas de modelos. Los cambios de cargos se auditan.
+Las revocaciones de roles se informan, sin habilitar eliminación de datos.
+Las tablas faltantes, auditoría inválida y pérdidas sin explicación siguen fallando.
+Para fotos anteriores sin cursor/identidades se consideran solo eventos
+posteriores a created_at, con identidad y estado final comprobables; la próxima
+foto aprobada incorpora el formato completo.
+
+Para revisar una pérdida no explicada sin otro deploy:
+`php artisan ena:smoke:aceptar 42 --motivo="Baja revisada" --usuario=admin@escuela`
+La contraseña se pide oculta en una consola interactiva. Exige cuenta activa y
+rol total_admin global vigente; un rol revocado, expirado o de otra empresa no
+autoriza. Solo acepta la última foto fallida del entorno y exige que conteos e
+identidades actuales coincidan. Si cambiaron, ejecutar smoke y revisar esa foto.
+No muta la foto fallida: crea otra línea de base y deploy_snapshot_accepted en
+la misma transacción. Si falla la auditoría, revierte todo. Exige motivo, conserva
+autor, pérdidas revisadas y fecha. No tiene --force ni contraseña por argumento.
 
 Después de Railway SUCCESS, correr `sh post-deploy-smoke.sh` desde un worker
 del mismo commit. Comprueba conteos, ping, login, APIs protegidas sin sesión y
@@ -141,6 +179,33 @@ SHA-256 de JS/CSS servidos. Para la verificación conjunta usar shell explícita
 `/bin/sh -c 'sh post-deploy-smoke.sh && php artisan ena:restore-test'`. La agenda
 mensual ejecuta solo restauración, así puede probar recuperación aunque la web
 esté caída. Su guardia de conteos se prueba sobre la copia, con rollback.
+
+
+## Copia semanal a Google Drive de la escuela
+
+Worker separado, misma rama/imagen y referencias al bucket y clave del worker
+de backup. Inicio: `php artisan ena:backup:externo`. Agenda: `30 6 * * 0` UTC
+(domingo 03:30 en Argentina), después del dump diario; restart NEVER, sin
+predeploy, sin dominio público. La configuración está en
+`railway-backup-external.toml`; aplicar al crear el servicio.
+
+Variables del worker: BACKUP_DRIVE_FOLDER_ID, BACKUP_DRIVE_CLIENT_ID,
+BACKUP_DRIVE_CLIENT_SECRET y BACKUP_DRIVE_REFRESH_TOKEN. Cuenta de la escuela,
+OAuth con acceso a esa carpeta y permiso de crear/descargar archivos; soporta
+unidades compartidas. No usar credenciales del ChatGPT personal ni un token
+temporal del navegador. No enviar los secretos por chat ni guardarlos en Git.
+
+Selecciona el último manifest del prefijo del entorno; descarga el ZIP y exige
+su SHA-256 antes de subir. Sube exactamente el ZIP AES-256 mediante upload
+resumable, lo vuelve a descargar de Drive y compara SHA-256. Solo entonces
+publica el manifest de verificación en Drive y evidencia en external-copies/ del
+bucket. No descifra el SQL, no elimina el backup fuente ni copias anteriores.
+Fallo de autenticación, subida, descarga, checksum o manifest: exit 1 y ninguna
+evidencia aprobada. Un fallo de Drive no bloquea el deploy web ni el cron diario.
+No se declara operativo hasta una copia real verificada con carpeta/OAuth.
+
+Referencia API oficial: https://developers.google.com/workspace/drive/api/guides/manage-uploads
+y https://developers.google.com/workspace/drive/api/guides/manage-downloads.
 
 ## Pin y segunda línea pendientes
 

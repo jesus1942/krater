@@ -67,15 +67,25 @@ class MySqlBackupService
                 throw new BackupOperationException('Falta configurar el bucket de backups.');
             }
         }
-        if (strlen((string) config('ena-operations.encryption_key')) < 32) {
-            throw new BackupOperationException('Falta la clave de cifrado del backup.');
-        }
+        $this->encryptionKey();
         if (! preg_match('#^[a-zA-Z0-9_/-]+$#', config('ena-operations.backup_prefix'))
             || strpos(config('ena-operations.backup_prefix'), '..') !== false) {
             throw new BackupOperationException('Prefijo de backups invalido.');
         }
 
         return Storage::disk($name);
+    }
+
+    /** Nunca usa APP_KEY como fallback ni permite reutilizarla para nuevos archivos. */
+    public function encryptionKey(): string
+    {
+        $key = (string) config('ena-operations.encryption_key');
+        $appKey = (string) config('app.key');
+        $decode = function ($value) { return strpos($value, 'base64:') === 0 ? base64_decode(substr($value, 7), true) : $value; };
+        if (strlen((string) $decode($key)) < 32 || ($appKey !== '' && hash_equals((string) $decode($appKey), (string) $decode($key)))) {
+            throw new BackupOperationException('BACKUP_ENCRYPTION_KEY debe ser propia, de al menos 32 bytes e independiente de APP_KEY.');
+        }
+        return $key;
     }
 
     protected function workspace(): string
@@ -148,14 +158,14 @@ class MySqlBackupService
             $manifest = ['format' => 1, 'created_at' => now()->utc()->toIso8601String(),
                 'environment' => app()->environment(), 'mysql_version' => $version,
                 'revision' => config('ena-operations.revision'), 'tables' => $before,
-                'sql_sha256' => hash_file('sha256', $sql)];
+                'sql_sha256' => hash_file('sha256', $sql), 'encryption_key_id' => config('ena-operations.encryption_key_id')];
             file_put_contents($directory.'/manifest.json', json_encode($manifest, JSON_UNESCAPED_SLASHES));
             $archive = $directory.'/backup.zip';
             $zip = new ZipArchive();
             if ($zip->open($archive, ZipArchive::CREATE | ZipArchive::OVERWRITE) !== true) {
                 throw new BackupOperationException('No se pudo crear el backup cifrado.');
             }
-            $zip->setPassword(config('ena-operations.encryption_key'));
+            $zip->setPassword($this->encryptionKey());
             foreach (['database.sql', 'manifest.json'] as $file) {
                 if (! $zip->addFile($directory.'/'.$file, $file) || ! $zip->setEncryptionName($file, ZipArchive::EM_AES_256)) {
                     $zip->close();
@@ -250,6 +260,71 @@ class MySqlBackupService
         }
     }
 
+    /** Copia el ultimo archivo ya cifrado, verificando fuente y descarga externa. */
+    public function externalCopy(GoogleDriveBackupDestination $destination): array
+    {
+        $destination->validate();
+        $records = $this->records();
+        if (! $records) { throw new BackupOperationException('No hay un backup verificado para copiar.'); }
+        $record = $records[0];
+        $directory = $this->workspace();
+        try {
+            $this->download($record['key'], $directory.'/backup.zip', $record['archive_sha256']);
+            // El sobre conserva recuperacion de archivos legacy fuera de Railway.
+            if (($record['encryption_key_id'] ?? 'legacy') === 'legacy' && $this->disk()->exists($this->legacyKeyPath())) {
+                $record['encrypted_recovery_key'] = $this->disk()->get($this->legacyKeyPath());
+            }
+            $report = $destination->copy($directory.'/backup.zip', $record, $directory);
+            if (! $this->disk()->put(trim(config('ena-operations.backup_prefix'), '/').'/external-copies/'.gmdate('Ymd\THis\Z').'-'.bin2hex(random_bytes(4)).'.json',
+                json_encode($report, JSON_UNESCAPED_SLASHES), ['visibility' => 'private'])) {
+                throw new BackupOperationException('No se pudo registrar la evidencia de copia externa.');
+            }
+            return $report;
+        } finally { $this->cleanup($directory); }
+    }
+
+    /** Seleccion explicita de clave historica: no depende de la APP_KEY actual. */
+    public function restoreEncryptionKey(array $record): string
+    {
+        $id = $record['encryption_key_id'] ?? 'legacy';
+        if ($id === config('ena-operations.encryption_key_id')) { return $this->encryptionKey(); }
+        $keys = config('ena-operations.previous_encryption_keys', []);
+        if (isset($keys[$id]) && strlen((string) $keys[$id]) >= 32) { return $keys[$id]; }
+        if ($id === 'legacy' && $this->disk()->exists($this->legacyKeyPath())) {
+            return $this->keyEncrypter()->decryptString($this->disk()->get($this->legacyKeyPath()));
+        }
+        throw new BackupOperationException('Falta la clave historica del backup. Conservarla fuera de Railway.');
+    }
+
+    protected function legacyKeyPath(): string
+    {
+        return trim(config('ena-operations.backup_prefix'), '/').'/keyring/legacy.key.enc';
+    }
+
+    /** Cifrado autenticado para conservar la clave antigua sin depender de APP_KEY. */
+    protected function keyEncrypter(): \Illuminate\Encryption\Encrypter
+    {
+        return new \Illuminate\Encryption\Encrypter(hash('sha256', $this->encryptionKey(), true), 'AES-256-CBC');
+    }
+
+    public function separateLegacyKey(): array
+    {
+        $disk = $this->disk();
+        $path = $this->legacyKeyPath();
+        if ($disk->exists($path)) {
+            $this->keyEncrypter()->decryptString($disk->get($path));
+            return ['passed' => true, 'legacy_key_preserved' => true, 'already_preserved' => true];
+        }
+        $legacy = (string) config('app.key');
+        if (strlen($legacy) < 32) { throw new BackupOperationException('Falta la clave antigua para preservar los backups existentes.'); }
+        $wrapped = $this->keyEncrypter()->encryptString($legacy);
+        if (! $disk->put($path, $wrapped, ['visibility' => 'private'])
+            || ! hash_equals($legacy, $this->keyEncrypter()->decryptString($disk->get($path)))) {
+            throw new BackupOperationException('No se pudo verificar la preservacion de la clave antigua.');
+        }
+        return ['passed' => true, 'legacy_key_preserved' => true, 'already_preserved' => false];
+    }
+
     public function restoreTest(): array
     {
         logger()->info('SuiteEna restore test: comprobando aislamiento');
@@ -282,7 +357,7 @@ class MySqlBackupService
             if ($zip->open($directory.'/backup.zip') !== true) {
                 throw new BackupOperationException('No se pudo abrir el archivo remoto.');
             }
-            $zip->setPassword(config('ena-operations.encryption_key'));
+            $zip->setPassword($this->restoreEncryptionKey($record));
             foreach (['database.sql', 'manifest.json'] as $file) {
                 $stream = $zip->getStream($file);
                 if (! is_resource($stream)) {
@@ -355,6 +430,12 @@ class MySqlBackupService
     protected function verifyDeployGuard(): array
     {
         // Solo la copia restaurada: perdida simulada en transaccion, siempre rollback.
+        // Un ZIP legacy conserva el esquema original. La fidelidad se comprobo
+        // antes; actualizar solo el esquema del smoke en la copia para ensayarlo.
+        if (! \Illuminate\Support\Facades\Schema::hasColumn('deploy_snapshots', 'audit_cursor')) {
+            require_once database_path('migrations/2026_10_07_000000_extend_deploy_snapshots_audit.php');
+            (new \ExtendDeploySnapshotsAudit())->up();
+        }
         $environment = app()->environment();
         app()->instance('env', 'restore-test');
         try {

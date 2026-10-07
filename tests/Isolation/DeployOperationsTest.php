@@ -39,6 +39,10 @@ class DeployOperationsTest extends TestCase
         });
         require_once database_path('migrations/2026_10_04_000000_create_deploy_snapshots.php');
         (new \CreateDeploySnapshots())->up();
+        require_once database_path('migrations/2026_10_07_000000_extend_deploy_snapshots_audit.php');
+        (new \ExtendDeploySnapshotsAudit())->up();
+        require_once database_path('migrations/2026_09_01_000500_create_audit_logs_table.php');
+        (new \CreateAuditLogsTable())->up();
         DB::table('companies')->insert([['id' => 1], ['id' => 2]]);
         DB::table('school_levels')->insert([
             ['id' => 1, 'company_id' => 1], ['id' => 2, 'company_id' => 1],
@@ -125,6 +129,241 @@ class DeployOperationsTest extends TestCase
         Schema::drop('payments');
         $this->assertSame(1, Artisan::call('ena:smoke'));
         $this->assertSame(0, DB::table('deploy_snapshots')->count());
+    }
+
+    /** Emite evidencia ficticia con el mismo formato de la auditoria real. */
+    private function auditChange(string $action, string $model, int $id, array $old = [], array $new = [], int $company = 1): int
+    {
+        return DB::table('audit_logs')->insertGetId(['company_id' => $company, 'school_level_id' => $new['school_level_id'] ?? $old['school_level_id'] ?? null,
+            'action' => $action, 'auditable_type' => 'Crater\\Models\\'.$model, 'auditable_id' => $id,
+            'old_values' => json_encode($old), 'new_values' => json_encode($new), 'created_at' => now()]);
+    }
+
+    public function test_audited_deletion_passes_and_is_reported_once(): void
+    {
+        Artisan::call('ena:smoke');
+        $this->auditChange('invoice.deleted', 'Invoice', 1, ['school_level_id' => 1]);
+        DB::table('invoices')->where('id', 1)->delete();
+        $report = app(DeploySnapshotService::class)->check();
+        $this->assertTrue($report['passed']);
+        $this->assertSame(1, $report['explained_losses']['invoices:all:all']['audited']);
+        DB::table('invoices')->where('id', 2)->delete();
+        $this->assertFalse(app(DeploySnapshotService::class)->check()['passed']);
+    }
+
+    public function test_reassignments_and_student_relocations_follow_multiple_hops(): void
+    {
+        DB::table('students')->insert(['id' => 1, 'company_id' => 1, 'school_level_id' => 1]);
+        Artisan::call('ena:smoke');
+        $this->auditChange('level_reassigned', 'Invoice', 1, ['school_level_id' => 1], ['school_level_id' => 2]);
+        DB::table('invoices')->where('id', 1)->update(['school_level_id' => 2]);
+        foreach ([[1, 2], [2, 3]] as [$from, $to]) {
+            $this->auditChange('student_relocated', 'Student', 1, ['school_level_id' => $from], ['school_level_id' => $to]);
+        }
+        DB::table('students')->where('id', 1)->update(['school_level_id' => 3]);
+        $report = app(DeploySnapshotService::class)->check();
+        $this->assertTrue($report['passed']);
+        $this->assertCount(2, $report['explained_losses']['students:1:1']['evidence'][0]['audit_ids']);
+        $this->assertArrayHasKey('invoices:1:1', $report['explained_losses']);
+    }
+
+    public function test_old_wrong_record_wrong_company_and_duplicate_events_cannot_cover_loss(): void
+    {
+        $this->auditChange('invoice.deleted', 'Invoice', 1, ['school_level_id' => 1]);
+        Artisan::call('ena:smoke'); // consume el evento anterior
+        $this->auditChange('invoice.deleted', 'Invoice', 2, ['school_level_id' => 1]); // otra identidad
+        $this->auditChange('invoice.deleted', 'Invoice', 1, ['school_level_id' => 1], [], 2); // otra empresa
+        DB::table('invoices')->where('id', 1)->delete();
+        $this->assertFalse(app(DeploySnapshotService::class)->check()['passed']);
+        $this->auditChange('invoice.deleted', 'Invoice', 1, ['school_level_id' => 1]);
+        $this->auditChange('invoice.deleted', 'Invoice', 1, ['school_level_id' => 1]);
+        DB::table('invoices')->where('id', 3)->delete();
+        $report = app(DeploySnapshotService::class)->check();
+        $this->assertFalse($report['passed']);
+        $this->assertSame(1, $report['losses']['invoices:all:all']['unexplained']);
+    }
+
+    public function test_revocation_is_informational_and_never_allows_unrelated_data_loss(): void
+    {
+        Artisan::call('ena:smoke');
+        $this->auditChange('role_revoked', 'User', 1);
+        $report = app(DeploySnapshotService::class)->check();
+        $this->assertTrue($report['passed']);
+        $this->assertSame('role_revoked', $report['audit_events'][0]['action']);
+        DB::table('invoices')->where('id', 1)->delete();
+        $this->assertFalse(app(DeploySnapshotService::class)->check()['passed']);
+    }
+
+    /** Esquema minimo con autoridad real de AccessManager, sin falsificar el resolutor. */
+    private function actor(): \Crater\Models\User
+    {
+        Schema::create('currencies', function (Blueprint $t) { $t->increments('id'); });
+        Schema::create('users', function (Blueprint $t) {
+            $t->increments('id'); $t->integer('company_id'); $t->integer('currency_id')->nullable();
+            $t->string('email'); $t->string('password'); $t->boolean('is_active')->default(true);
+        });
+        Schema::create('roles', function (Blueprint $t) {
+            $t->increments('id'); $t->integer('company_id'); $t->string('name'); $t->string('scope_type');
+        });
+        Schema::create('role_user', function (Blueprint $t) {
+            $t->increments('id'); $t->integer('user_id'); $t->integer('role_id'); $t->integer('company_id');
+            $t->integer('school_level_id')->nullable(); $t->timestamp('revoked_at')->nullable();
+            $t->date('starts_on')->nullable(); $t->date('ends_on')->nullable();
+        });
+        DB::table('users')->insert(['id' => 1, 'company_id' => 1, 'email' => 'admin@example.invalid',
+            'password' => bcrypt('clave-ficticia-1234')]);
+        DB::table('roles')->insert(['id' => 1, 'company_id' => 1, 'name' => 'total_admin', 'scope_type' => 'global']);
+        DB::table('role_user')->insert(['user_id' => 1, 'role_id' => 1, 'company_id' => 1]);
+        return \Crater\Models\User::find(1);
+    }
+
+    public function test_acceptance_requires_current_total_admin_and_audits_a_new_baseline(): void
+    {
+        $actor = $this->actor();
+        $service = app(DeploySnapshotService::class);
+        $service->check();
+        DB::table('invoices')->where('id', 1)->delete();
+        $failed = $service->check();
+        DB::table('role_user')->update(['revoked_at' => now()]);
+        try { $service->accept($failed['snapshot_id'], $actor, 'Revision manual'); $this->fail('No debe aceptar un rol revocado.'); }
+        catch (\RuntimeException $e) { $this->assertStringContainsString('administracion total', $e->getMessage()); }
+        DB::table('role_user')->update(['revoked_at' => null]);
+        $accepted = $service->accept($failed['snapshot_id'], $actor, 'Baja revisada por administracion');
+        $this->assertGreaterThan($failed['snapshot_id'], $accepted['snapshot_id']);
+        $this->assertFalse((bool) DB::table('deploy_snapshots')->where('id', $failed['snapshot_id'])->value('passed'));
+        $audit = DB::table('audit_logs')->where('action', 'deploy_snapshot_accepted')->first();
+        $this->assertSame(1, (int) $audit->user_id);
+        $this->assertSame('Baja revisada por administracion', json_decode($audit->new_values, true)['reason']);
+        $this->assertTrue($service->check()['passed']);
+    }
+
+    public function test_acceptance_rejects_stale_foreign_and_missing_reason(): void
+    {
+        $actor = $this->actor(); $service = app(DeploySnapshotService::class); $service->check();
+        DB::table('invoices')->where('id', 4)->delete();
+        $failed = $service->check();
+        foreach (['', 'Revision manual'] as $reason) {
+            try { $service->accept($failed['snapshot_id'], $actor, $reason); $this->fail('No debe aceptar.'); }
+            catch (\RuntimeException $e) { $this->assertNotSame('', $e->getMessage()); }
+        }
+        $this->assertSame(0, DB::table('audit_logs')->where('action', 'deploy_snapshot_accepted')->count());
+        DB::table('invoices')->where('id', 1)->delete();
+        try { $service->accept($failed['snapshot_id'], $actor, 'Revision manual'); $this->fail('Foto desactualizada.'); }
+        catch (\RuntimeException $e) { $this->assertStringContainsString('cambiaron', $e->getMessage()); }
+        $this->assertSame(1, Artisan::call('ena:smoke:aceptar', ['snapshot' => $failed['snapshot_id'], '--motivo' => 'Revision', '--usuario' => 'admin@example.invalid', '--no-interaction' => true]));
+    }
+
+    public function test_audit_failure_rolls_back_baseline_acceptance(): void
+    {
+        $actor = $this->actor(); $service = app(DeploySnapshotService::class); $service->check();
+        DB::table('invoices')->where('id', 1)->delete(); $failed = $service->check();
+        \Crater\Models\AuditLog::creating(function ($log) { if ($log->action === 'deploy_snapshot_accepted') { throw new \RuntimeException('auditoria caida'); } });
+        try { $service->accept($failed['snapshot_id'], $actor, 'Revision'); $this->fail('Debe revertir.'); }
+        catch (\RuntimeException $e) { $this->assertSame('auditoria caida', $e->getMessage()); }
+        finally { \Crater\Models\AuditLog::flushEventListeners(); }
+        $this->assertSame(2, DB::table('deploy_snapshots')->count());
+        $this->assertFalse($service->check()['passed']);
+    }
+
+    public function test_rotating_app_key_does_not_change_backup_or_historical_decryption(): void
+    {
+        $service = $this->archiveService();
+        $report = $service->backup();
+        config(['app.key' => 'base64:'.base64_encode(random_bytes(32))]);
+        $record = json_decode(Storage::disk('ena_backups')->get($report['key'].'.json'), true);
+        $zip = new \ZipArchive(); $zip->open(Storage::disk('ena_backups')->path($report['key']));
+        $zip->setPassword($service->restoreEncryptionKey($record));
+        $this->assertSame(str_repeat('SQL FICTICIO; ', 20), $zip->getFromName('database.sql')); $zip->close();
+        config(['ena-operations.previous_encryption_keys' => ['legacy' => str_repeat('antigua-', 8)]]);
+        $this->assertSame(str_repeat('antigua-', 8), $service->restoreEncryptionKey([]));
+    }
+
+    public function test_backup_refuses_missing_or_reused_app_key(): void
+    {
+        $service = $this->archiveService();
+        foreach (['', str_repeat('a', 32), 'base64:'.base64_encode(str_repeat('a', 32))] as $key) {
+            config(['app.key' => 'base64:'.base64_encode(str_repeat('a', 32)), 'ena-operations.encryption_key' => $key]);
+            try { $service->encryptionKey(); $this->fail('No debe reutilizar APP_KEY.'); }
+            catch (BackupOperationException $e) { $this->assertStringContainsString('independiente', $e->getMessage()); }
+        }
+    }
+
+    public function test_legacy_key_is_preserved_once_and_survives_app_key_rotation(): void
+    {
+        $service = $this->archiveService(); $old = 'base64:'.base64_encode(random_bytes(32));
+        config(['app.key' => $old]);
+        $this->assertTrue($service->separateLegacyKey()['passed']);
+        $wrapped = Storage::disk('ena_backups')->get('suiteena/testing/keyring/legacy.key.enc');
+        $this->assertStringNotContainsString($old, $wrapped);
+        config(['app.key' => 'base64:'.base64_encode(random_bytes(32))]);
+        $this->assertSame($old, $service->restoreEncryptionKey([]));
+        $this->assertTrue($service->separateLegacyKey()['already_preserved']);
+        $this->assertSame($wrapped, Storage::disk('ena_backups')->get('suiteena/testing/keyring/legacy.key.enc'));
+    }
+
+    /** Simula Drive pero conserva las requests reales y la descarga en disco. */
+    private function drive(bool $corrupt = false, int $failure = 0): array
+    {
+        config(['ena-operations.external_drive' => ['folder_id' => 'escuela_fixture', 'client_id' => 'fixture',
+            'client_secret' => 'secreto-ficticio', 'refresh_token' => 'token-ficticio']]);
+        $requests = new \ArrayObject(); $archive = '';
+        $handler = function ($request, array $options) use ($requests, &$archive, $corrupt, $failure) {
+            $requests[] = ['method' => $request->getMethod(), 'url' => (string) $request->getUri()];
+            $n = count($requests);
+            if ($n === $failure) { return \GuzzleHttp\Promise\promise_for(new \GuzzleHttp\Psr7\Response(403, [], 'secret-provider-error')); }
+            if ($n === 1) { $response = new \GuzzleHttp\Psr7\Response(200, [], '{"access_token":"fixture"}'); }
+            elseif ($n === 2) { $response = new \GuzzleHttp\Psr7\Response(200, [], '{"mimeType":"application/vnd.google-apps.folder","capabilities":{"canAddChildren":true}}'); }
+            elseif ($n === 3 || $n === 6) { $response = new \GuzzleHttp\Psr7\Response(200, ['Location' => 'https://www.googleapis.com/upload/drive/v3/files?upload_id=fixture']); }
+            elseif ($n === 4) { $archive = (string) $request->getBody(); $response = new \GuzzleHttp\Psr7\Response(200, [], '{"id":"zip_fixture"}'); }
+            elseif ($n === 5) {
+                file_put_contents($options['sink'], $corrupt ? 'corrupto' : $archive);
+                $response = new \GuzzleHttp\Psr7\Response(200, [], $corrupt ? 'corrupto' : $archive);
+            } else { $response = new \GuzzleHttp\Psr7\Response(200, [], '{"id":"manifest_fixture"}'); }
+            return \GuzzleHttp\Promise\promise_for($response);
+        };
+        return [new \Crater\Services\Data\GoogleDriveBackupDestination(new \GuzzleHttp\Client(['handler' => $handler, 'http_errors' => false])), $requests];
+    }
+
+    public function test_external_copy_transfers_latest_ciphertext_and_verifies_download_sha256(): void
+    {
+        $service = $this->archiveService();
+        \Carbon\Carbon::setTestNow('2026-10-07 06:00:00');
+        try {
+            $first = $service->backup();
+            \Carbon\Carbon::setTestNow('2026-10-08 06:00:00');
+            $last = $service->backup(); [$drive, $requests] = $this->drive();
+            $report = $service->externalCopy($drive);
+            $this->assertTrue($report['passed']); $this->assertSame($last['key'], $report['key']);
+            $this->assertSame($last['archive_sha256'], $report['archive_sha256']);
+            $this->assertSame('manifest_fixture', $report['manifest_file_id']);
+            $this->assertCount(7, $requests);
+            $this->assertTrue(Storage::disk('ena_backups')->exists($first['key']));
+            $this->assertCount(1, Storage::disk('ena_backups')->files('suiteena/testing/external-copies'));
+        } finally { \Carbon\Carbon::setTestNow(); }
+    }
+
+    public function test_corrupted_external_copy_and_drive_denial_never_publish_success(): void
+    {
+        foreach ([[true, 0], [false, 2], [false, 7]] as [$corrupt, $failure]) {
+            $service = $this->archiveService(); $backup = $service->backup(); [$drive, $requests] = $this->drive($corrupt, $failure);
+            try { $service->externalCopy($drive); $this->fail('No debe publicar evidencia aprobada.'); }
+            catch (BackupOperationException $e) { $this->assertStringNotContainsString('secret-provider-error', $e->getMessage()); }
+            $this->assertSame([], Storage::disk('ena_backups')->files('suiteena/testing/external-copies'));
+            $this->assertTrue(Storage::disk('ena_backups')->exists($backup['key']));
+            if ($corrupt) { $this->assertCount(5, $requests); }
+        }
+    }
+
+    public function test_external_copy_requires_drive_configuration_and_valid_source_checksum(): void
+    {
+        $service = $this->archiveService(); $backup = $service->backup(); [$drive, $requests] = $this->drive();
+        Storage::disk('ena_backups')->put($backup['key'], 'corrupto');
+        try { $service->externalCopy($drive); $this->fail('No debe subir una fuente corrupta.'); }
+        catch (BackupOperationException $e) { $this->assertStringContainsString('checksum', $e->getMessage()); }
+        $this->assertCount(0, $requests);
+        config(['ena-operations.external_drive.folder_id' => null]);
+        $this->expectException(BackupOperationException::class);
+        $service->externalCopy($drive);
     }
 
     public function test_retention_keeps_seven_daily_four_weekly_and_six_monthly_representatives(): void
