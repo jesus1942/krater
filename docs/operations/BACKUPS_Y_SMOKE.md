@@ -1,6 +1,6 @@
 # Fila 6: backups y smoke de integridad
 
-Estado al 07/10/2026: revisión de fila 6 en curso; no promover.
+Estado al 07/10/2026: correcciones de revisión implementadas y probadas en staging; no promover.
 El smoke acepta cambios auditados, permite una aceptación manual autenticada y los
 backups usan clave propia. La copia a Google Drive requiere carpeta y OAuth de la escuela.
 La evidencia del 04/10 corresponde a la implementación anterior.
@@ -165,7 +165,8 @@ foto aprobada incorpora el formato completo.
 
 Para revisar una pérdida no explicada sin otro deploy:
 `php artisan ena:smoke:aceptar 42 --motivo="Baja revisada" --usuario=admin@escuela`
-La contraseña se pide oculta en una consola interactiva. Exige cuenta activa y
+La contraseña se pide oculta en una consola interactiva. --usuario es opcional:
+si se omite, el comando solicita el email antes de autenticar. Exige cuenta activa y
 rol total_admin global vigente; un rol revocado, expirado o de otra empresa no
 autoriza. Solo acepta la última foto fallida del entorno y exige que conteos e
 identidades actuales coincidan. Si cambiaron, ejecutar smoke y revisar esa foto.
@@ -219,18 +220,21 @@ por vuln-remediation de mysql:9.4 a mysql:9; **no intentar bajar a 9.4**.
 
 Cambiar únicamente el tag de origen, preservando variables, comando de inicio,
 volumen y red; verificar versión y /ping después. La restauración ya probó esa
-misma versión. El conector no ofrece editar el origen de un servicio existente
-ni administrar los backups nativos de volumen; el navegador no tiene sesión.
-Estos pasos no se declaran aplicados. Falta verificar/activar los backups del
+misma versión. El pin y los backups nativos de volumen no se aplicaron en esta revisión.
+Estos pasos siguen pendientes y no se declaran verificados. Falta verificar/activar los backups del
 volumen de MySQL-staging (fd07f2a6-db8e-41a9-874b-2cf87fcd4d3c), ejecutar uno y
 registrar su ID. La segunda línea productiva queda para la aprobación de fila 6.
 
 ## Corte de promoción
 
 Producción de la aplicación permanece en f761890, cuya promoción fue aprobada
-por Jesús. La fila 6 permanece en la rama de trabajo. Gate local: 84 tests / 639
-aserciones. Staging: 280 HTTP institucionales y 68 de roles, más backup y
-restauración real. Antes de aprobar/promover: completar los pendientes de
+por Jesús. La fila 6 permanece en la rama de trabajo. Gate de revisión local:
+93 tests / 696 aserciones de las suites actuales de aislamiento seleccionadas.
+La suite histórica completa mezcla Pest/JMac y no se declara ejecutada.
+Staging: 15 comprobaciones de revisión con rollback, 280 HTTP institucionales y
+68 de roles, más backup y restauraciones reales legacy/nueva de 80 tablas. Drive: pruebas HTTP
+simuladas aprobadas; la copia real sigue pendiente de carpeta/OAuth. Evidencia:
+`docs/audits/2026-10-07-row6-review-staging.json`. Antes de aprobar/promover: completar los pendientes de
 infraestructura anteriores y revisar el código/evidencia. Después de aprobar:
 crear bucket propio de producción, conectar referencias, configurar cron
 productivo y verificar primer backup antes de cerrar la fila como Operativa.

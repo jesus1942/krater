@@ -253,6 +253,21 @@ class DeployOperationsTest extends TestCase
         $this->assertSame(1, Artisan::call('ena:smoke:aceptar', ['snapshot' => $failed['snapshot_id'], '--motivo' => 'Revision', '--usuario' => 'admin@example.invalid', '--no-interaction' => true]));
     }
 
+    public function test_interactive_accept_command_prompts_for_identity_and_audits_the_baseline(): void
+    {
+        $this->actor();
+        $service = app(DeploySnapshotService::class); $service->check();
+        DB::table('invoices')->where('id', 1)->delete(); $failed = $service->check();
+        $command = new \Crater\Console\Commands\AcceptDeploySnapshot();
+        $command->setLaravel($this->app);
+        $tester = new \Symfony\Component\Console\Tester\CommandTester($command);
+        $tester->setInputs(['admin@example.invalid', 'clave-ficticia-1234']);
+        $this->assertSame(0, $tester->execute(['snapshot' => $failed['snapshot_id'], '--motivo' => 'Revision interactiva'], ['interactive' => true]));
+        $this->assertTrue($service->check()['passed']);
+        $this->assertSame(1, DB::table('audit_logs')->where('action', 'deploy_snapshot_accepted')->count());
+        $this->assertStringNotContainsString('clave-ficticia-1234', $tester->getDisplay());
+    }
+
     public function test_audit_failure_rolls_back_baseline_acceptance(): void
     {
         $actor = $this->actor(); $service = app(DeploySnapshotService::class); $service->check();

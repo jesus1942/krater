@@ -1,0 +1,840 @@
+{
+  "code_revision": "65e55bde91464d7c013550d319abe0b8d484f189",
+  "production_promoted": false,
+  "local_gate": {
+    "tests": 93,
+    "assertions": 696,
+    "scope": "selected_current_class_based_isolation_tests",
+    "legacy_full_suite_run": false,
+    "interactive_command_without_user_option_verified": true
+  },
+  "staging_review": {
+    "passed": true,
+    "checks": [
+      "baseline_actual_aprobada",
+      "fixture_factura_existente",
+      "reubicacion_sin_auditoria_bloquea",
+      "reubicacion_auditada_aceptada_y_reportada",
+      "recuperacion_de_conteos",
+      "evento_anterior_no_reutilizable",
+      "administracion_total_vigente",
+      "aceptacion_nueva_base_auditada",
+      "destrabado_sin_otro_deploy",
+      "foto_fallida_preservada",
+      "cuenta_sin_administracion_total",
+      "cuenta_ordinaria_rechazada",
+      "rollback_preserva_conteos_operativos",
+      "clave_legacy_independiente_de_rotacion_app_key",
+      "clave_backup_propia"
+    ],
+    "rollback": true,
+    "drive_live_test": "pending_school_folder_and_oauth",
+    "revision": "65e55bde91464d7c013550d319abe0b8d484f189"
+  },
+  "drive_mock": {
+    "passed": true,
+    "mock_http": true,
+    "live_drive_copy": false,
+    "checks": [
+      "success",
+      "corrupt",
+      "denied"
+    ],
+    "revision": "65e55bde91464d7c013550d319abe0b8d484f189"
+  },
+  "legacy_restore": {
+    "passed": true,
+    "created_at": "2026-10-07T15:34:58+00:00",
+    "key": "suiteena/staging/20261007T060149Z-d2b4cb5e4f39.zip",
+    "source_environment": "staging",
+    "target_database": "krater_restore_test_20261007_153456_83bc1163",
+    "mysql_version": "9.7.2",
+    "table_fingerprints_match": true,
+    "tables": 80,
+    "archive_sha256": "7627012164b17422c70d498ed308462d1fe4fe1bf33e25523365b4119dfe5bc7",
+    "audit": [
+      {
+        "company_id": 1,
+        "models": {
+          "StudyPlan": {
+            "table": "study_plans",
+            "total": 0,
+            "valid_level": 0,
+            "null_level": 0,
+            "missing_level": 0,
+            "foreign_company_level": 0
+          },
+          "CourseSection": {
+            "table": "course_sections",
+            "total": 1,
+            "valid_level": 1,
+            "null_level": 0,
+            "missing_level": 0,
+            "foreign_company_level": 0
+          },
+          "GradeLevel": {
+            "table": "grade_levels",
+            "total": 5,
+            "valid_level": 5,
+            "null_level": 0,
+            "missing_level": 0,
+            "foreign_company_level": 0
+          },
+          "Estimate": {
+            "table": "estimates",
+            "total": 22,
+            "valid_level": 22,
+            "null_level": 0,
+            "missing_level": 0,
+            "foreign_company_level": 0
+          },
+          "AcademicYear": {
+            "table": "academic_years",
+            "total": 3,
+            "valid_level": 3,
+            "null_level": 0,
+            "missing_level": 0,
+            "foreign_company_level": 0
+          },
+          "Student": {
+            "table": "students",
+            "total": 48,
+            "valid_level": 48,
+            "null_level": 0,
+            "missing_level": 0,
+            "foreign_company_level": 0
+          },
+          "Division": {
+            "table": "divisions",
+            "total": 6,
+            "valid_level": 6,
+            "null_level": 0,
+            "missing_level": 0,
+            "foreign_company_level": 0
+          },
+          "Item": {
+            "table": "items",
+            "total": 22,
+            "valid_level": 22,
+            "null_level": 0,
+            "missing_level": 0,
+            "foreign_company_level": 0
+          },
+          "Enrollment": {
+            "table": "enrollments",
+            "total": 24,
+            "valid_level": 24,
+            "null_level": 0,
+            "missing_level": 0,
+            "foreign_company_level": 0
+          },
+          "Payment": {
+            "table": "payments",
+            "total": 22,
+            "valid_level": 22,
+            "null_level": 0,
+            "missing_level": 0,
+            "foreign_company_level": 0
+          },
+          "Invoice": {
+            "table": "invoices",
+            "total": 26,
+            "valid_level": 26,
+            "null_level": 0,
+            "missing_level": 0,
+            "foreign_company_level": 0
+          },
+          "Expense": {
+            "table": "expenses",
+            "total": 21,
+            "valid_level": 21,
+            "null_level": 0,
+            "missing_level": 0,
+            "foreign_company_level": 0
+          },
+          "Subject": {
+            "table": "subjects",
+            "total": 1,
+            "valid_level": 1,
+            "null_level": 0,
+            "missing_level": 0,
+            "foreign_company_level": 0
+          }
+        }
+      }
+    ],
+    "deploy_guard": {
+      "baseline_passed": true,
+      "simulated_loss_exit_code": 1,
+      "rollback_counts_match": true,
+      "recovery_exit_code": 0
+    },
+    "distinct_mysql_server_verified": true
+  },
+  "http": {
+    "passed": true,
+    "checks": [
+      {
+        "path": "/ping",
+        "expected": 200,
+        "actual": 200
+      },
+      {
+        "path": "/login",
+        "expected": 200,
+        "actual": 200
+      },
+      {
+        "path": "/api/v1/bootstrap",
+        "expected": 401,
+        "actual": 401
+      },
+      {
+        "path": "/api/v1/students",
+        "expected": 401,
+        "actual": 401
+      },
+      {
+        "path": "/api/v1/backups",
+        "expected": 401,
+        "actual": 401
+      },
+      {
+        "path": "/assets/js/app.js?id=35bce386f9c99d89800c",
+        "actual": 200,
+        "matches_build": true
+      },
+      {
+        "path": "/assets/css/crater.css?id=0b090d6c6a3202e87168",
+        "actual": 200,
+        "matches_build": true
+      }
+    ]
+  },
+  "institution": {
+    "passed": true,
+    "count": 280,
+    "levels": 3,
+    "preserved_levels": true,
+    "required_creation_level": true,
+    "real_report_pdfs": true
+  },
+  "roles": {
+    "passed": true,
+    "locale": "es",
+    "fallback_locale": "es",
+    "account_without_language": true,
+    "empty_language": true,
+    "validation_in_spanish": true,
+    "checks": [
+      {
+        "method": "POST",
+        "path": "/api/v1/auth/login",
+        "expected": 200,
+        "actual": 200
+      },
+      {
+        "method": "POST",
+        "path": "/api/v1/auth/login",
+        "expected": 200,
+        "actual": 200
+      },
+      {
+        "method": "POST",
+        "path": "/api/v1/auth/login",
+        "expected": 200,
+        "actual": 200
+      },
+      {
+        "method": "POST",
+        "path": "/api/v1/auth/login",
+        "expected": 200,
+        "actual": 200
+      },
+      {
+        "method": "POST",
+        "path": "/api/v1/auth/login",
+        "expected": 200,
+        "actual": 200
+      },
+      {
+        "method": "GET",
+        "path": "/api/v1/bootstrap",
+        "expected": 200,
+        "actual": 200
+      },
+      {
+        "method": "GET",
+        "path": "/api/v1/me/settings?settings%5B0%5D=language",
+        "expected": 200,
+        "actual": 200
+      },
+      {
+        "method": "GET",
+        "path": "/api/v1/bootstrap",
+        "expected": 200,
+        "actual": 200
+      },
+      {
+        "method": "GET",
+        "path": "/api/v1/me/settings?settings%5B0%5D=language",
+        "expected": 200,
+        "actual": 200
+      },
+      {
+        "method": "POST",
+        "path": "/api/v1/auth/login",
+        "expected": 422,
+        "actual": 422
+      },
+      {
+        "method": "GET",
+        "path": "/api/v1/bootstrap",
+        "expected": 200,
+        "actual": 200
+      },
+      {
+        "method": "GET",
+        "path": "/api/v1/me",
+        "expected": 200,
+        "actual": 200
+      },
+      {
+        "method": "GET",
+        "path": "/api/v1/me/settings?settings%5B0%5D=language",
+        "expected": 200,
+        "actual": 200
+      },
+      {
+        "method": "GET",
+        "path": "/api/v1/languages",
+        "expected": 200,
+        "actual": 200
+      },
+      {
+        "method": "GET",
+        "path": "/api/v1/school-levels",
+        "expected": 200,
+        "actual": 200
+      },
+      {
+        "method": "GET",
+        "path": "/api/v1/students",
+        "expected": 200,
+        "actual": 200
+      },
+      {
+        "method": "GET",
+        "path": "/api/v1/academic-years",
+        "expected": 200,
+        "actual": 200
+      },
+      {
+        "method": "GET",
+        "path": "/api/v1/grade-levels",
+        "expected": 200,
+        "actual": 200
+      },
+      {
+        "method": "GET",
+        "path": "/api/v1/subjects",
+        "expected": 200,
+        "actual": 200
+      },
+      {
+        "method": "GET",
+        "path": "/api/v1/study-plans",
+        "expected": 200,
+        "actual": 200
+      },
+      {
+        "method": "GET",
+        "path": "/api/v1/divisions",
+        "expected": 200,
+        "actual": 200
+      },
+      {
+        "method": "GET",
+        "path": "/api/v1/enrollments?division_id=1",
+        "expected": 200,
+        "actual": 200
+      },
+      {
+        "method": "GET",
+        "path": "/api/v1/dashboard",
+        "expected": 403,
+        "actual": 403
+      },
+      {
+        "method": "GET",
+        "path": "/api/v1/search",
+        "expected": 403,
+        "actual": 403
+      },
+      {
+        "method": "GET",
+        "path": "/api/v1/students/placement-options",
+        "expected": 403,
+        "actual": 403
+      },
+      {
+        "method": "GET",
+        "path": "/api/v1/users",
+        "expected": 403,
+        "actual": 403
+      },
+      {
+        "method": "GET",
+        "path": "/api/v1/backups",
+        "expected": 403,
+        "actual": 403
+      },
+      {
+        "method": "GET",
+        "path": "/api/v1/bootstrap",
+        "expected": 200,
+        "actual": 200
+      },
+      {
+        "method": "GET",
+        "path": "/api/v1/me",
+        "expected": 200,
+        "actual": 200
+      },
+      {
+        "method": "GET",
+        "path": "/api/v1/me/settings?settings%5B0%5D=language",
+        "expected": 200,
+        "actual": 200
+      },
+      {
+        "method": "GET",
+        "path": "/api/v1/languages",
+        "expected": 200,
+        "actual": 200
+      },
+      {
+        "method": "GET",
+        "path": "/api/v1/school-levels",
+        "expected": 200,
+        "actual": 200
+      },
+      {
+        "method": "GET",
+        "path": "/api/v1/students",
+        "expected": 200,
+        "actual": 200
+      },
+      {
+        "method": "GET",
+        "path": "/api/v1/academic-years",
+        "expected": 200,
+        "actual": 200
+      },
+      {
+        "method": "GET",
+        "path": "/api/v1/grade-levels",
+        "expected": 200,
+        "actual": 200
+      },
+      {
+        "method": "GET",
+        "path": "/api/v1/subjects",
+        "expected": 200,
+        "actual": 200
+      },
+      {
+        "method": "GET",
+        "path": "/api/v1/study-plans",
+        "expected": 200,
+        "actual": 200
+      },
+      {
+        "method": "GET",
+        "path": "/api/v1/divisions",
+        "expected": 200,
+        "actual": 200
+      },
+      {
+        "method": "GET",
+        "path": "/api/v1/enrollments?division_id=1",
+        "expected": 200,
+        "actual": 200
+      },
+      {
+        "method": "GET",
+        "path": "/api/v1/dashboard",
+        "expected": 403,
+        "actual": 403
+      },
+      {
+        "method": "GET",
+        "path": "/api/v1/search",
+        "expected": 403,
+        "actual": 403
+      },
+      {
+        "method": "GET",
+        "path": "/api/v1/students/placement-options",
+        "expected": 403,
+        "actual": 403
+      },
+      {
+        "method": "GET",
+        "path": "/api/v1/users",
+        "expected": 403,
+        "actual": 403
+      },
+      {
+        "method": "GET",
+        "path": "/api/v1/backups",
+        "expected": 403,
+        "actual": 403
+      },
+      {
+        "method": "POST",
+        "path": "/api/v1/users/10/role-assignments",
+        "expected": 403,
+        "actual": 403
+      },
+      {
+        "method": "POST",
+        "path": "/api/v1/users/10/role-assignments",
+        "expected": 201,
+        "actual": 201
+      },
+      {
+        "method": "GET",
+        "path": "/api/v1/bootstrap",
+        "expected": 200,
+        "actual": 200
+      },
+      {
+        "method": "GET",
+        "path": "/api/v1/me",
+        "expected": 200,
+        "actual": 200
+      },
+      {
+        "method": "GET",
+        "path": "/api/v1/me/settings?settings%5B0%5D=language",
+        "expected": 200,
+        "actual": 200
+      },
+      {
+        "method": "GET",
+        "path": "/api/v1/languages",
+        "expected": 200,
+        "actual": 200
+      },
+      {
+        "method": "GET",
+        "path": "/api/v1/school-levels",
+        "expected": 200,
+        "actual": 200
+      },
+      {
+        "method": "GET",
+        "path": "/api/v1/students",
+        "expected": 200,
+        "actual": 200
+      },
+      {
+        "method": "GET",
+        "path": "/api/v1/academic-years",
+        "expected": 200,
+        "actual": 200
+      },
+      {
+        "method": "GET",
+        "path": "/api/v1/grade-levels",
+        "expected": 200,
+        "actual": 200
+      },
+      {
+        "method": "GET",
+        "path": "/api/v1/subjects",
+        "expected": 200,
+        "actual": 200
+      },
+      {
+        "method": "GET",
+        "path": "/api/v1/study-plans",
+        "expected": 200,
+        "actual": 200
+      },
+      {
+        "method": "GET",
+        "path": "/api/v1/divisions",
+        "expected": 200,
+        "actual": 200
+      },
+      {
+        "method": "GET",
+        "path": "/api/v1/enrollments?division_id=1",
+        "expected": 200,
+        "actual": 200
+      },
+      {
+        "method": "GET",
+        "path": "/api/v1/students/placement-options",
+        "expected": 200,
+        "actual": 200
+      },
+      {
+        "method": "POST",
+        "path": "/api/v1/students",
+        "expected": 201,
+        "actual": 201
+      },
+      {
+        "method": "PUT",
+        "path": "/api/v1/students/61",
+        "expected": 200,
+        "actual": 200
+      },
+      {
+        "method": "POST",
+        "path": "/api/v1/students",
+        "expected": 403,
+        "actual": 403
+      },
+      {
+        "method": "DELETE",
+        "path": "/api/v1/students/61",
+        "expected": 403,
+        "actual": 403
+      },
+      {
+        "method": "PUT",
+        "path": "/api/v1/students/61/relocate",
+        "expected": 403,
+        "actual": 403
+      },
+      {
+        "method": "PUT",
+        "path": "/api/v1/students/61",
+        "expected": 403,
+        "actual": 403
+      },
+      {
+        "method": "GET",
+        "path": "/api/v1/students",
+        "expected": 403,
+        "actual": 403
+      },
+      {
+        "method": "POST",
+        "path": "/api/v1/role-assignments/38/revoke",
+        "expected": 200,
+        "actual": 200
+      },
+      {
+        "method": "POST",
+        "path": "/api/v1/students",
+        "expected": 403,
+        "actual": 403
+      }
+    ]
+  },
+  "production": {
+    "revision": "f7618902abc4d86d752b37514df7145520ad5583",
+    "deployment": "cbfe545a-4dd0-418e-ad83-1407a44dac40",
+    "unchanged": true
+  },
+  "deployments": {
+    "review_and_legacy_restore": "b3918b09-959b-497c-83e8-daa8412efaab",
+    "web": "4728f263-0058-4cc8-84fa-c949a0fc47ca",
+    "new_key_backup_and_restore": "898540d8-7d33-471b-95bb-290bc746e5b8"
+  },
+  "encryption": {
+    "key_id": "backup-v1",
+    "independent_from_app_key": true,
+    "legacy_authenticated_envelope_preserved": true,
+    "recovery_artifact_saved_outside_railway": true,
+    "secrets_in_report": false
+  },
+  "external_backup": {
+    "destination": "school_google_drive",
+    "weekly_utc": "30 6 * * 0",
+    "source_and_download_sha256_verified_by_implementation": true,
+    "mock_staging_passed": true,
+    "live_copy_verified": false,
+    "service_provisioned": false,
+    "pending": [
+      "school_folder_id",
+      "school_oauth_credentials",
+      "weekly_service_and_real_sha256_test"
+    ]
+  },
+  "pending_infrastructure": [
+    "pin_existing_mysql_images_to_9.7.2",
+    "verify_enable_native_staging_volume_backup"
+  ],
+  "additional_new_key_run": {
+    "deployment": "e1781829-1e2d-407b-bfed-30bf3ee0928b",
+    "passed": false,
+    "reason": "Source changed while institutional staging fixtures were executing; backup rejected, no pruning."
+  },
+  "new_key_backup": {
+    "passed": true,
+    "key": "suiteena/staging/20261007T181628Z-aee2ba442cee.zip",
+    "mysql_version": "9.7.2",
+    "bytes": 79452,
+    "archive_sha256": "b1f441d773dd5392860fd5b4ec939cda97811efdd51cd8af0005b4a24da9d0ad",
+    "tables": 80,
+    "pruned": 1
+  },
+  "new_key_restore": {
+    "passed": true,
+    "created_at": "2026-10-07T18:16:36+00:00",
+    "key": "suiteena/staging/20261007T181628Z-aee2ba442cee.zip",
+    "source_environment": "staging",
+    "target_database": "krater_restore_test_20261007_181631_c5ea0b55",
+    "mysql_version": "9.7.2",
+    "table_fingerprints_match": true,
+    "tables": 80,
+    "archive_sha256": "b1f441d773dd5392860fd5b4ec939cda97811efdd51cd8af0005b4a24da9d0ad",
+    "audit": [
+      {
+        "company_id": 1,
+        "models": {
+          "StudyPlan": {
+            "table": "study_plans",
+            "total": 0,
+            "valid_level": 0,
+            "null_level": 0,
+            "missing_level": 0,
+            "foreign_company_level": 0
+          },
+          "CourseSection": {
+            "table": "course_sections",
+            "total": 1,
+            "valid_level": 1,
+            "null_level": 0,
+            "missing_level": 0,
+            "foreign_company_level": 0
+          },
+          "GradeLevel": {
+            "table": "grade_levels",
+            "total": 5,
+            "valid_level": 5,
+            "null_level": 0,
+            "missing_level": 0,
+            "foreign_company_level": 0
+          },
+          "Estimate": {
+            "table": "estimates",
+            "total": 37,
+            "valid_level": 37,
+            "null_level": 0,
+            "missing_level": 0,
+            "foreign_company_level": 0
+          },
+          "AcademicYear": {
+            "table": "academic_years",
+            "total": 3,
+            "valid_level": 3,
+            "null_level": 0,
+            "missing_level": 0,
+            "foreign_company_level": 0
+          },
+          "Student": {
+            "table": "students",
+            "total": 68,
+            "valid_level": 68,
+            "null_level": 0,
+            "missing_level": 0,
+            "foreign_company_level": 0
+          },
+          "Division": {
+            "table": "divisions",
+            "total": 6,
+            "valid_level": 6,
+            "null_level": 0,
+            "missing_level": 0,
+            "foreign_company_level": 0
+          },
+          "Item": {
+            "table": "items",
+            "total": 37,
+            "valid_level": 37,
+            "null_level": 0,
+            "missing_level": 0,
+            "foreign_company_level": 0
+          },
+          "Enrollment": {
+            "table": "enrollments",
+            "total": 29,
+            "valid_level": 29,
+            "null_level": 0,
+            "missing_level": 0,
+            "foreign_company_level": 0
+          },
+          "Payment": {
+            "table": "payments",
+            "total": 37,
+            "valid_level": 37,
+            "null_level": 0,
+            "missing_level": 0,
+            "foreign_company_level": 0
+          },
+          "Invoice": {
+            "table": "invoices",
+            "total": 41,
+            "valid_level": 41,
+            "null_level": 0,
+            "missing_level": 0,
+            "foreign_company_level": 0
+          },
+          "Expense": {
+            "table": "expenses",
+            "total": 36,
+            "valid_level": 36,
+            "null_level": 0,
+            "missing_level": 0,
+            "foreign_company_level": 0
+          },
+          "Subject": {
+            "table": "subjects",
+            "total": 1,
+            "valid_level": 1,
+            "null_level": 0,
+            "missing_level": 0,
+            "foreign_company_level": 0
+          }
+        }
+      }
+    ],
+    "deploy_guard": {
+      "baseline_passed": true,
+      "simulated_loss_exit_code": 1,
+      "rollback_counts_match": true,
+      "recovery_exit_code": 0
+    },
+    "distinct_mysql_server_verified": true
+  },
+  "new_key_revision": "264d95545ff645598a02ec920d8f3fb0791db702",
+  "workers_restored": {
+    "backup": {
+      "start": "php artisan ena:backup",
+      "cron": "0 6 * * *"
+    },
+    "restore": {
+      "start": "php artisan ena:restore-test",
+      "cron": "0 7 1 * *"
+    },
+    "predeploy": [],
+    "restart": "NEVER"
+  },
+  "railway_staged_patch": {
+    "id": "3534caa8-69d5-4cf7-9a33-cd30e4e8c354",
+    "only_change": {
+      "from": "php artisan ena:restore-test",
+      "to": "php artisan ena:restore-test"
+    },
+    "destructive": false,
+    "effective_difference": false,
+    "reason": "accept_deploy returned no result twice; temporary start command replaced with normal command in both live and pending configuration"
+  }
+}

@@ -20,10 +20,11 @@ class AcceptDeploySnapshot extends Command
             if (! ctype_digit((string) $this->argument('snapshot')) || trim((string) $this->option('motivo')) === '') {
                 throw new \RuntimeException('Se requieren snapshot numerico y --motivo.');
             }
-            if (! $this->input->isInteractive() || ! $this->option('usuario')) {
-                throw new \RuntimeException('Requiere consola interactiva y --usuario.');
+            if (! $this->input->isInteractive()) {
+                throw new \RuntimeException('Requiere consola interactiva.');
             }
-            $actor = User::where('email', $this->option('usuario'))->first();
+            $email = $this->option('usuario') ?: $this->ask('Email de administracion total');
+            $actor = User::where('email', $email)->first();
             $password = $this->secret('Contrasena de administracion total');
             if (! $actor || ! is_string($password) || ! Hash::check($password, $actor->password)) {
                 throw new \RuntimeException('Credenciales invalidas.');
