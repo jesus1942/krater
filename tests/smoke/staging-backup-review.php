@@ -40,6 +40,10 @@ try {
     $explained = $service->check();
     $assert($explained['passed'] && ! empty($explained['explained_losses']), 'reubicacion_auditada_aceptada_y_reportada');
     DB::table('invoices')->where('id', $row->id)->update(['school_level_id' => $row->school_level_id]);
+    AuditLog::create(['company_id' => $row->company_id, 'school_level_id' => $row->school_level_id,
+        'action' => 'level_reassigned', 'auditable_type' => 'Crater\\Models\\Invoice', 'auditable_id' => $row->id,
+        'old_values' => ['school_level_id' => null], 'new_values' => ['school_level_id' => $row->school_level_id],
+        'severity' => 'high', 'created_at' => now()]);
     $assert($service->check()['passed'], 'recuperacion_de_conteos');
     DB::table('invoices')->where('id', $row->id)->update(['school_level_id' => null]);
     $failed = $service->check();
@@ -57,7 +61,8 @@ try {
     try { $service->accept($failed['snapshot_id'], $ordinary, 'No autorizado'); throw new LogicException('Aceptacion indebida'); }
     catch (RuntimeException $e) { $assert(strpos($e->getMessage(), 'administracion total') !== false, 'cuenta_ordinaria_rechazada'); }
 } catch (Throwable $e) {
-    fwrite(STDERR, 'No se aprobo el ensayo staging ('.get_class($e).").\n");
+    fwrite(STDERR, 'No se aprobo el ensayo staging ('.get_class($e).')'.
+        (strpos($e->getMessage(), 'Fallo:') === 0 ? ': '.$e->getMessage() : '').".\n");
     $exit = 1;
 } finally {
     while (DB::transactionLevel() > $depth) { DB::rollBack(); }
