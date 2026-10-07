@@ -836,5 +836,24 @@
     "destructive": false,
     "effective_difference": false,
     "reason": "accept_deploy returned no result twice; temporary start command replaced with normal command in both live and pending configuration"
+  },
+  "final_code_revision": "e9ccb6be59af8ae1435d63b70bbc98ddfd29ed32",
+  "final_staging_deployments": {
+    "web": {
+      "id": "81af9b50-1b94-4958-b4d7-49d512a08ba9",
+      "status": "SUCCESS",
+      "institutional_checks": 280,
+      "role_checks": 68
+    },
+    "daily_backup": {
+      "id": "f3b9887f-1166-4403-98df-e93727b9b949",
+      "status": "SUCCESS",
+      "cron": "0 6 * * *"
+    },
+    "monthly_restore": {
+      "id": "f6336647-21bb-41e5-8efb-121d1e191853",
+      "status": "SUCCESS",
+      "cron": "0 7 1 * *"
+    }
   }
 }
