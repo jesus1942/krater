@@ -30,6 +30,9 @@ class GoogleDriveBackupDestination
     /** Requests sin excepciones que expongan tokens, cuerpos de error o URLs de sesion. */
     protected function request(string $method, string $url, array $options = [])
     {
+        // Aplicar tambien si el contenedor inyecta un Client con otros defaults.
+        $options = array_merge($options, ['allow_redirects' => false, 'http_errors' => false,
+            'timeout' => 1800, 'connect_timeout' => 30]);
         $response = $this->client->request($method, $url, $options);
         if ($response->getStatusCode() < 200 || $response->getStatusCode() >= 300) {
             throw new BackupOperationException('Google Drive rechazo la operacion (HTTP '.$response->getStatusCode().').');
