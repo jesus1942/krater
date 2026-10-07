@@ -62,7 +62,16 @@ class Kernel extends HttpKernel
         'can' => \Illuminate\Auth\Middleware\Authorize::class,
         'guest' => \Crater\Http\Middleware\RedirectIfAuthenticated::class,
         'throttle' => \Illuminate\Routing\Middleware\ThrottleRequests::class,
+        // `admin` solo exige una asignacion RBAC vigente. Cada ruta exige permiso.
         'admin' => AdminMiddleware::class,
+        'active-account' => \Crater\Http\Middleware\ActiveAccount::class,
+        'signed' => \Illuminate\Routing\Middleware\ValidateSignature::class,
+
+        'permission' => \Crater\Http\Middleware\CheckPermission::class,
+        'tenant' => \Crater\Http\Middleware\ValidateTenant::class,
+        'tenant-resource' => \Crater\Http\Middleware\TenantResource::class,
+        'report-tenant' => \Crater\Http\Middleware\ReportTenant::class,
+
         'verified' => \Illuminate\Auth\Middleware\EnsureEmailIsVerified::class,
         'install' => \Crater\Http\Middleware\InstallationMiddleware::class,
         'redirect-if-installed' => \Crater\Http\Middleware\RedirectIfInstalled::class,
@@ -72,7 +81,9 @@ class Kernel extends HttpKernel
     /**
      * The priority-sorted list of middleware.
      *
-     * This forces the listed middleware to always be in the given order.
+     * ValidateTenant tiene que ejecutarse despues de autenticar y antes de
+     * SubstituteBindings. De lo contrario Laravel resuelve por ID un modelo de
+     * otra institucion cuando TenantContext todavia esta vacio.
      *
      * @var array
      */
@@ -81,7 +92,13 @@ class Kernel extends HttpKernel
         \Illuminate\View\Middleware\ShareErrorsFromSession::class,
         \Crater\Http\Middleware\Authenticate::class,
         \Illuminate\Session\Middleware\AuthenticateSession::class,
+        \Crater\Http\Middleware\ActiveAccount::class,
+        AdminMiddleware::class,
+        \Crater\Http\Middleware\ValidateTenant::class,
+        \Crater\Http\Middleware\CheckPermission::class,
+        \Illuminate\Routing\Middleware\ValidateSignature::class,
         \Illuminate\Routing\Middleware\SubstituteBindings::class,
+        \Crater\Http\Middleware\TenantResource::class,
         \Illuminate\Auth\Middleware\Authorize::class,
     ];
 }

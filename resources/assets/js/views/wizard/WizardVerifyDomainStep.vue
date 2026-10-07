@@ -14,7 +14,7 @@
           v-model.trim="formData.app_domain"
           type="text"
           name="name"
-          placeholder="crater.com"
+          placeholder="escuelanuevaustral.edu.ar"
           @input="$v.formData.app_domain.$touch()"
         />
       </sw-input-group>

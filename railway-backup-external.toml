@@ -1,0 +1,10 @@
+# Worker separado. Usar solo despues de configurar carpeta y OAuth de la escuela.
+[build]
+builder = "DOCKERFILE"
+dockerfilePath = "Dockerfile"
+
+[deploy]
+startCommand = "php artisan ena:backup:externo"
+preDeployCommand = []
+cronSchedule = "30 6 * * 0"
+restartPolicyType = "NEVER"

@@ -2,12 +2,14 @@
 
 namespace Crater\Models;
 
+use Crater\Traits\Auditable;
 use App;
 use Barryvdh\DomPDF\Facade as PDF;
 use Carbon\Carbon;
 use Crater\Mail\SendInvoiceMail;
 use Crater\Traits\GeneratesPdfTrait;
 use Crater\Traits\HasCustomFieldsTrait;
+use Crater\Traits\BelongsToSchoolLevel;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Auth;
@@ -17,10 +19,12 @@ use Vinkla\Hashids\Facades\Hashids;
 
 class Invoice extends Model implements HasMedia
 {
+    use Auditable;
     use HasFactory;
     use InteractsWithMedia;
     use GeneratesPdfTrait;
     use HasCustomFieldsTrait;
+    use BelongsToSchoolLevel;
 
     public const STATUS_DRAFT = 'DRAFT';
     public const STATUS_SENT = 'SENT';
@@ -75,7 +79,9 @@ class Invoice extends Model implements HasMedia
     public static function getNextInvoiceNumber($value)
     {
         // Get the last created order
-        $lastOrder = Invoice::where('invoice_number', 'LIKE', $value.'-%')
+        $lastOrder = Invoice::acrossLevels()
+            ->where('invoices.company_id', request()->header('company'))
+            ->where('invoice_number', 'LIKE', $value.'-%')
             ->orderBy('invoice_number', 'desc')
             ->first();
 
@@ -136,6 +142,21 @@ class Invoice extends Model implements HasMedia
         return $this->belongsTo('Crater\Models\User', 'user_id');
     }
 
+    public function student()
+    {
+        return $this->belongsTo(Student::class);
+    }
+
+    public function enrollment()
+    {
+        return $this->belongsTo(Enrollment::class);
+    }
+
+    public function familyMember()
+    {
+        return $this->belongsTo(FamilyMember::class);
+    }
+
     public function creator()
     {
         return $this->belongsTo('Crater\Models\User', 'creator_id');
@@ -143,7 +164,7 @@ class Invoice extends Model implements HasMedia
 
     public function getInvoicePdfUrlAttribute()
     {
-        return url('/invoices/pdf/'.$this->unique_hash);
+        return \Illuminate\Support\Facades\URL::temporarySignedRoute('documents.invoice', now()->addDay(), ['invoice' => $this->unique_hash]);
     }
 
     public function getPreviousStatus()
@@ -581,7 +602,7 @@ class Invoice extends Model implements HasMedia
             '{INVOICE_DUE_DATE}' => $this->formattedDueDate,
             '{INVOICE_NUMBER}' => $this->invoice_number,
             '{INVOICE_REF_NUMBER}' => $this->reference_number,
-            '{INVOICE_LINK}' => url('/customer/invoices/pdf/'.$this->unique_hash),
+            '{INVOICE_LINK}' => \Illuminate\Support\Facades\URL::temporarySignedRoute('documents.customer.invoice', now()->addDays(7), ['invoice' => $this->unique_hash]),
         ];
     }
 }

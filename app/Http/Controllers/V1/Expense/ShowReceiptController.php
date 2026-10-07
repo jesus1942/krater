@@ -7,6 +7,11 @@ use Crater\Models\Expense;
 
 class ShowReceiptController extends Controller
 {
+    public function __construct()
+    {
+        $this->middleware('tenant');
+    }
+
     /**
      * Retrieve details of an expense receipt from storage.
      *

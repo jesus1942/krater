@@ -1,11 +1,12 @@
-FROM php:7.4-fpm
+FROM mysql:9.7.2 AS mysql_tools
 
-# Arguments defined in docker-compose.yml
-ARG user
-ARG uid
+FROM php:8.2-fpm-bookworm
 
-# Install system dependencies
-RUN apt-get update && apt-get install -y \
+ARG user=www
+ARG uid=1000
+
+# Dependencias del sistema + nginx
+RUN apt-get update && apt-get install -y --no-install-recommends \
     git \
     curl \
     libpng-dev \
@@ -14,27 +15,71 @@ RUN apt-get update && apt-get install -y \
     zip \
     unzip \
     libzip-dev \
-    libmagickwand-dev \
-    mariadb-client
+    mariadb-client \
+    nginx \
+    gettext-base \
+    gzip \
+    && apt-get clean && rm -rf /var/lib/apt/lists/*
 
-# Clear cache
-RUN apt-get clean && rm -rf /var/lib/apt/lists/*
-
-RUN pecl install imagick \
-    && docker-php-ext-enable imagick
-
-# Install PHP extensions
+# Extensiones PHP
 RUN docker-php-ext-install pdo_mysql mbstring zip exif pcntl bcmath gd
 
-# Get latest Composer
+# Composer
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
-# Create system user to run Composer and Artisan Commands
-RUN useradd -G www-data,root -u $uid -d /home/$user $user
-RUN mkdir -p /home/$user/.composer && \
-    chown -R $user:$user /home/$user
+# Dump y restauracion con los clientes de la misma version exacta del servidor.
+COPY --from=mysql_tools /usr/bin/mysql /usr/local/bin/mysql
+COPY --from=mysql_tools /usr/bin/mysqldump /usr/local/bin/mysqldump
+RUN mysql --version && mysqldump --version
 
-# Set working directory
+# Crear usuario del sistema
+RUN useradd -G www-data,root -u $uid -d /home/$user $user \
+    && mkdir -p /home/$user/.composer \
+    && chown -R $user:$user /home/$user
+
 WORKDIR /var/www
 
-USER $user
+# Copiar codigo fuente
+COPY . .
+
+# Restaurar el frontend Vue precompilado y verificado
+RUN cat build/frontend/app.js.gz.part.* | gzip -dc > public/assets/js/app.js \
+    && cp build/frontend/crater.css public/assets/css/crater.css \
+    && cp build/frontend/mix-manifest.json public/mix-manifest.json
+
+# Instalar dependencias PHP
+ENV COMPOSER_ALLOW_SUPERUSER=1
+RUN composer install --no-dev --optimize-autoloader --no-interaction
+
+# Directorios de Laravel + permisos + marcar como instalado en la imagen
+RUN mkdir -p storage/framework/cache/data \
+        storage/framework/sessions \
+        storage/framework/views \
+        storage/logs \
+        bootstrap/cache \
+        storage/app/public \
+    && echo "1" > storage/app/database_created \
+    && ln -sfn /var/www/storage/app/public /var/www/public/storage \
+    && chown -R www-data:www-data storage bootstrap/cache public \
+    && chmod -R 775 storage bootstrap/cache
+
+# Descargar fuentes Poppins localmente (evita requests externos en runtime)
+RUN mkdir -p /var/www/public/assets/fonts/poppins \
+    && curl -fsSL "https://cdn.jsdelivr.net/npm/@fontsource/poppins@5/files/poppins-latin-300-normal.woff2" \
+            -o /var/www/public/assets/fonts/poppins/poppins-300.woff2 \
+    && curl -fsSL "https://cdn.jsdelivr.net/npm/@fontsource/poppins@5/files/poppins-latin-400-normal.woff2" \
+            -o /var/www/public/assets/fonts/poppins/poppins-400.woff2 \
+    && curl -fsSL "https://cdn.jsdelivr.net/npm/@fontsource/poppins@5/files/poppins-latin-500-normal.woff2" \
+            -o /var/www/public/assets/fonts/poppins/poppins-500.woff2 \
+    && curl -fsSL "https://cdn.jsdelivr.net/npm/@fontsource/poppins@5/files/poppins-latin-600-normal.woff2" \
+            -o /var/www/public/assets/fonts/poppins/poppins-600.woff2
+
+# Configuracion de nginx
+RUN cp /var/www/nginx.conf /etc/nginx/sites-available/default.template \
+    && rm -f /etc/nginx/sites-enabled/default \
+    && ln -s /etc/nginx/sites-available/default /etc/nginx/sites-enabled/default \
+    && chmod +x /var/www/start.sh
+
+# Railway sirve la aplicación por nginx; start.sh inicia PHP-FPM y nginx.
+EXPOSE 8080
+CMD ["/var/www/start.sh"]

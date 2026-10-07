@@ -21,10 +21,14 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
-Route::post('login', [LoginController::class, 'login']);
+// Limite de intentos: 5 cada 15 minutos por IP y usuario. Sin esto, la ruta
+// admite fuerza bruta ilimitada, y desde que la landing es publica el
+// formulario esta a un clic de cualquiera que encuentre el sitio.
+Route::post('login', [LoginController::class, 'login'])
+    ->middleware('throttle:5,15');
 
 
-Route::prefix('reports')->group(function () {
+Route::prefix('reports')->middleware(['redirect-if-unauthenticated', 'report-tenant'])->group(function () {
 
     // sales report by customer
     //----------------------------------
@@ -51,33 +55,33 @@ Route::prefix('reports')->group(function () {
 // download invoice pdf
 // -------------------------------------------------
 
-Route::get('/invoices/pdf/{invoice:unique_hash}', InvoicePdfController::class);
+Route::get('/invoices/pdf/{invoice:unique_hash}', InvoicePdfController::class)->name('documents.invoice')->middleware('signed');
 
 
 // download estimate pdf
 // -------------------------------------------------
 
-Route::get('/estimates/pdf/{estimate:unique_hash}', EstimatePdfController::class);
+Route::get('/estimates/pdf/{estimate:unique_hash}', EstimatePdfController::class)->name('documents.estimate')->middleware('signed');
 
 
 // download payment pdf
 // -------------------------------------------------
 
-Route::get('/payments/pdf/{payment:unique_hash}', PaymentPdfController::class);
+Route::get('/payments/pdf/{payment:unique_hash}', PaymentPdfController::class)->name('documents.payment')->middleware('signed');
 
 
 // download expense receipt
 // -------------------------------------------------
 
-Route::get('/expenses/{expense}/receipt', DownloadReceiptController::class);
+Route::get('/expenses/{expense}/receipt', DownloadReceiptController::class)->name('documents.receipt')->middleware('signed');
 
 
 // customer pdf endpoints for invoice and estimate
 // -------------------------------------------------
 
-Route::get('/customer/invoices/pdf/{invoice:unique_hash}', CustomerInvoicePdfController::class);
+Route::get('/customer/invoices/pdf/{invoice:unique_hash}', CustomerInvoicePdfController::class)->name('documents.customer.invoice')->middleware('signed');
 
-Route::get('/customer/estimates/pdf/{estimate:unique_hash}', CustomerEstimatePdfController::class);
+Route::get('/customer/estimates/pdf/{estimate:unique_hash}', CustomerEstimatePdfController::class)->name('documents.customer.estimate')->middleware('signed');
 
 
 Route::get('auth/logout', function () {
@@ -93,12 +97,23 @@ Route::get('/on-boarding', function () {
 })->name('install')->middleware('redirect-if-installed');
 
 
+// Landing page publica de Escuela Nueva Austral
+// -------------------------------------------------
+// Se declara antes del catch-all del SPA para quedarse con la raiz del sitio.
+// Es publica: se ve con la sesion iniciada o sin ella, y el boton de la
+// cabecera lleva a /login, que sigue montando la aplicacion Vue.
+
+Route::get('/', function () {
+    return view('landing');
+})->name('landing');
+
+
 // Move other http requests to the Vue App
 // -------------------------------------------------
 
 Route::get('/admin/{vue?}', function () {
     return view('app');
-})->where('vue', '[\/\w\.-]*')->name('admin')->middleware(['install', 'redirect-if-unauthenticated']);
+})->where('vue', '[\/\w\.-]*')->name('admin')->middleware(['install', 'redirect-if-unauthenticated', 'active-account']);
 
 
 // Move other http requests to the Vue App

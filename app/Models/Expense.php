@@ -2,8 +2,10 @@
 
 namespace Crater\Models;
 
+use Crater\Traits\Auditable;
 use Carbon\Carbon;
 use Crater\Traits\HasCustomFieldsTrait;
+use Crater\Traits\BelongsToSchoolLevel;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Auth;
@@ -13,9 +15,11 @@ use Spatie\MediaLibrary\InteractsWithMedia;
 
 class Expense extends Model implements HasMedia
 {
+    use Auditable;
     use HasFactory;
     use InteractsWithMedia;
     use HasCustomFieldsTrait;
+    use BelongsToSchoolLevel;
 
     protected $guarded = ['id'];
 
@@ -23,6 +27,7 @@ class Expense extends Model implements HasMedia
         'formattedExpenseDate',
         'formattedCreatedAt',
         'receipt',
+        'receiptUrl',
     ];
 
     public function setExpenseDateAttribute($value)
@@ -69,6 +74,11 @@ class Expense extends Model implements HasMedia
         }
 
         return null;
+    }
+
+    public function getReceiptUrlAttribute()
+    {
+        return \Illuminate\Support\Facades\URL::temporarySignedRoute('documents.receipt', now()->addDay(), ['expense' => $this->id]);
     }
 
     public function scopeExpensesBetween($query, $start, $end)

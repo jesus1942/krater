@@ -8,6 +8,11 @@ use Illuminate\Http\Request;
 
 class UploadReceiptController extends Controller
 {
+    public function __construct()
+    {
+        $this->middleware('tenant');
+    }
+
     /**
      * Upload the expense receipts to storage.
      *

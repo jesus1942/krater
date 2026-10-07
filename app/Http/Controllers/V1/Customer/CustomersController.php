@@ -5,6 +5,8 @@ namespace Crater\Http\Controllers\V1\Customer;
 use Crater\Http\Controllers\Controller;
 use Crater\Http\Requests;
 use Crater\Models\User;
+use Crater\Services\Access\TenantUsers;
+use Crater\Support\TenantContext;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -18,9 +20,9 @@ class CustomersController extends Controller
     public function index(Request $request)
     {
         $limit = $request->has('limit') ? $request->limit : 10;
+        $levelId = TenantContext::schoolLevelId();
 
-        $customers = User::with('creator')
-            ->customer()
+        $customers = app(TenantUsers::class)->customers()->with('creator')
             ->applyFilters($request->only([
                 'search',
                 'contact_name',
@@ -30,18 +32,25 @@ class CustomersController extends Controller
                 'orderByField',
                 'orderBy',
             ]))
-            ->whereCompany($request->header('company'))
+            ->whereCompany(TenantContext::companyId())
             ->select(
                 'users.*',
                 DB::raw('sum(invoices.due_amount) as due_amount')
             )
             ->groupBy('users.id')
-            ->leftJoin('invoices', 'users.id', '=', 'invoices.user_id')
+            ->leftJoin('invoices', function ($join) use ($levelId) {
+                $join->on('users.id', '=', 'invoices.user_id')->where('invoices.company_id', '=', TenantContext::companyId());
+                if ($levelId) {
+                    $join->where('invoices.school_level_id', '=', $levelId);
+                }
+            })
             ->paginateData($limit);
+
+        $customerCount = app(TenantUsers::class)->customers()->count();
 
         return response()->json([
             'customers' => $customers,
-            'customerTotalCount' => User::whereRole('customer')->count(),
+            'customerTotalCount' => $customerCount,
         ]);
     }
 
@@ -69,6 +78,7 @@ class CustomersController extends Controller
      */
     public function show(User $customer)
     {
+        abort_unless(app(TenantUsers::class)->canViewCustomer($customer), 403);
         $customer->load([
             'billingAddress.country',
             'shippingAddress.country',
@@ -111,7 +121,12 @@ class CustomersController extends Controller
      */
     public function delete(Request $request)
     {
-        User::deleteCustomers($request->ids);
+        $data = $request->validate(['ids' => ['required', 'array', 'min:1'], 'ids.*' => ['integer', 'distinct']]);
+        DB::transaction(function () use ($data) {
+            $customers = app(TenantUsers::class)->customers()->whereIn('users.id', $data['ids'])->lockForUpdate()->get();
+            abort_unless($customers->count() === count($data['ids']), 403);
+            User::deleteCustomers($data['ids']);
+        });
 
         return response()->json([
             'success' => true,

@@ -43,6 +43,27 @@ return [
 
     'disks' => [
 
+        // Exclusivo del servicio cron: nunca cambia el disco predeterminado de la web.
+        'ena_backups' => [
+            'driver' => 's3',
+            'endpoint' => env('BACKUP_ENDPOINT'),
+            'bucket' => env('BACKUP_BUCKET'),
+            'region' => env('BACKUP_REGION'),
+            'key' => env('BACKUP_ACCESS_KEY_ID'),
+            'secret' => env('BACKUP_SECRET_ACCESS_KEY'),
+            'use_path_style_endpoint' => true,
+            'visibility' => 'private',
+            'http' => ['connect_timeout' => 15, 'timeout' => 300],
+            'retries' => 2,
+        ],
+
+        // Comprobantes: se entregan solo mediante las rutas firmadas.
+        'finance_private' => [
+            'driver' => 'local',
+            'root' => storage_path('app/finance-private'),
+            'visibility' => 'private',
+        ],
+
         'local' => [
             'driver' => 'local',
             'root' => storage_path('app'),

@@ -2,36 +2,24 @@
 
 namespace Crater\Http\Controllers\V1\General;
 
+use Crater\Enums\Permission;
 use Crater\Http\Controllers\Controller;
-use Crater\Models\User;
+use Crater\Services\Access\AccessManager;
+use Crater\Services\Access\TenantUsers;
+use Crater\Support\TenantContext;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
 
 class SearchController extends Controller
 {
-    /**
-     * Handle the incoming request.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Http\Response
-     */
-    public function __invoke(Request $request)
+    public function __invoke(Request $request, AccessManager $access, TenantUsers $users)
     {
-        $customers = User::where('role', 'customer')
-            ->applyFilters($request->only(['search']))
-            ->latest()
-            ->paginate(10);
+        $levelId = TenantContext::schoolLevelId();
+        $actor = $request->user();
+        $customers = $access->allows($actor, Permission::FINANCE_VIEW, $levelId)
+            ? $users->customers()->applyFilters($request->only('search'))->latest()->paginate(10) : [];
+        $staff = $access->allows($actor, Permission::USER_VIEW, $levelId)
+            ? $users->staff($actor)->applyFilters($request->only('search'))->latest()->paginate(10) : [];
 
-        if (Auth::user()->role == 'super admin') {
-            $users = User::where('role', 'admin')
-                ->applyFilters($request->only(['search']))
-                ->latest()
-                ->paginate(10);
-        }
-
-        return response()->json([
-            'customers' => $customers,
-            'users' => $users ?? [],
-        ]);
+        return response()->json(['customers' => $customers, 'users' => $staff]);
     }
 }

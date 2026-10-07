@@ -1,14 +1,14 @@
 <template>
   <base-page>
     <div class="pb-6">
-      <sw-page-header :title="$tc('settings.setting', 1)">
+      <sw-page-header :title="settingsTitle">
         <sw-breadcrumb slot="breadcrumbs">
           <sw-breadcrumb-item
             :title="$t('general.home')"
-            to="/admin/dashboard"
+            :to="homePath"
           />
           <sw-breadcrumb-item
-            :title="$tc('settings.setting', 2)"
+            :title="settingsTitle"
             to="/admin/settings/user-profile"
             active
           />
@@ -18,7 +18,7 @@
 
     <div class="w-full mb-6 select-wrapper xl:hidden">
       <sw-select
-        :options="menuItems"
+        :options="visibleMenuItems"
         v-model="currentSetting"
         :searchable="true"
         :show-labels="false"
@@ -32,8 +32,8 @@
       <div class="hidden col-span-3 mt-1 xl:block">
         <sw-list>
           <sw-list-item
-            v-for="(menuItem, index) in menuItems"
-            :title="$t(menuItem.title)"
+            v-for="(menuItem, index) in visibleMenuItems"
+            :title="menuLabel(menuItem.title)"
             :key="index"
             :to="menuItem.link"
             :active="hasActiveUrl(menuItem.link)"
@@ -55,9 +55,15 @@
 </template>
 
 <script>
+import { navigationLabel, settingsLabel } from '../../helpers/navigation'
+import { canVisit, landingPath } from '../../helpers/access'
 import {
   UserIcon,
   OfficeBuildingIcon,
+  AcademicCapIcon,
+  CalendarIcon,
+  TemplateIcon,
+  UserAddIcon,
   BellIcon,
   CheckCircleIcon,
   ClipboardListIcon,
@@ -80,6 +86,10 @@ export default {
   components: {
     UserIcon,
     OfficeBuildingIcon,
+    AcademicCapIcon,
+    CalendarIcon,
+    TemplateIcon,
+    UserAddIcon,
     PencilAltIcon,
     CogIcon,
     CheckCircleIcon,
@@ -112,6 +122,38 @@ export default {
           link: '/admin/settings/company-info',
           title: 'settings.menu_title.company_information',
           icon: 'office-building-icon',
+        },
+        {
+          link: '/admin/settings/school-levels',
+          title: 'settings.menu_title.school_levels',
+          icon: 'academic-cap-icon',
+          totalAdminOnly: true,
+        },
+        {
+          link: '/admin/settings/academic-years',
+          title: 'settings.menu_title.academic_years',
+          icon: 'calendar-icon',
+        },
+        {
+          link: '/admin/settings/academic-structure',
+          title: 'Estructura académica',
+          icon: 'template-icon',
+        },
+        {
+          link: '/admin/settings/enrollments',
+          title: 'settings.menu_title.enrollments',
+          icon: 'user-add-icon',
+        },
+        {
+          link: '/admin/settings/audit-logs',
+          title: 'settings.menu_title.audit_logs',
+          icon: 'clipboard-list-icon',
+        },
+        {
+          link: '/admin/settings/data-reconciliation',
+          title: 'Registros sin nivel',
+          icon: 'database-icon',
+          totalAdminOnly: true,
         },
         {
           link: '/admin/settings/preferences',
@@ -153,7 +195,6 @@ export default {
           title: 'settings.menu_title.expense_category',
           icon: 'clipboard-list-icon',
         },
-
         {
           link: '/admin/settings/mail-configuration',
           title: 'settings.mail.mail_config',
@@ -178,18 +219,46 @@ export default {
     }
   },
 
+  computed: {
+    settingsTitle() { return settingsLabel(this.$store.state.user.currentUser) },
+    homePath() { return landingPath(this.$store.state.user.currentUser) },
+    isTotalAdmin() {
+      const currentUser = this.$store.state.user.currentUser
+      return Boolean(
+        currentUser &&
+          currentUser.is_total_admin === true
+      )
+    },
+    isWholeInstitutionContext() {
+      return !window.Ls.get('selectedSchoolLevel')
+    },
+    visibleMenuItems() {
+      return this.menuItems.filter(item => {
+        const key = item.link.split('/').pop()
+        if (key === 'user-profile') return true
+        if (item.totalAdminOnly && (!this.isTotalAdmin || !this.isWholeInstitutionContext)) return false
+        return canVisit(this.$store.state.user.currentUser, item.link)
+      })
+    },
+  },
+
   watch: {
     '$route.path'(newValue) {
       if (newValue === '/admin/settings') {
         this.$router.push('/admin/settings/user-profile')
+        return
       }
+
+      this.currentSetting = this.visibleMenuItems.find(
+        (item) => item.link === newValue
+      ) || this.currentSetting
     },
   },
 
   mounted() {
-    this.currentSetting = this.menuItems.find(
+    this.currentSetting = this.visibleMenuItems.find(
       (item) => item.link == this.$route.path
-    )
+    ) || this.currentSetting
   },
 
   created() {
@@ -199,8 +268,9 @@ export default {
   },
 
   methods: {
+    menuLabel(key) { return navigationLabel(key) },
     getCustomLabel({ title }) {
-      return this.$t(title)
+      return navigationLabel(title)
     },
     hasActiveUrl(url) {
       return this.$route.path.indexOf(url) > -1

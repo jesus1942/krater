@@ -18,6 +18,12 @@ class GetUserSettingsController extends Controller
     {
         $user = Auth::user();
 
-        return response()->json($user->getSettings($request->settings));
+        $settings = $user->getSettings($request->settings);
+        if (in_array('language', $request->settings, true)) {
+            // Mi perfil muestra el mismo idioma efectivo que bootstrap, sin escribir preferencias.
+            $settings['language'] = $user->preferredLocale();
+        }
+
+        return response()->json($settings);
     }
 }
