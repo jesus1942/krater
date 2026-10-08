@@ -1,5 +1,20 @@
 # CLAUDE.md
 
+## Estado vigente de fila 6 — 08/10/2026
+
+Jesús aprobó la revisión de Claude de 9729322 y autorizó promover a produccion.
+Aplicación 4949ffde SUCCESS. Primer backup real en backups-production y
+restauración en MySQL-restore-production-test aprobados: 80 tablas idénticas,
+UUID distinto, MySQL 9.7.2 y guardia/pérdida/rollback/recuperación verificados.
+Workers productivos diario 06:00 UTC y mensual día 1 07:00 UTC, bucket por
+referencias, clave exclusiva de production por referencia shared y archivo
+de recuperación fuera de Railway. Ambos MySQL existentes fijados a 9.7.2.
+Drive desactivado hasta OAuth escolar. Backups nativos de volúmenes pendientes:
+acceso al panel rechazado por verificación de Google. No declarar cerrado ese
+pendiente. Este estado reemplaza los cortes históricos «no promover» de fila 6.
+Evidencia: docs/audits/2026-10-08-backups-production.json;
+operación: docs/operations/BACKUPS_Y_SMOKE.md.
+
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
 ## Project

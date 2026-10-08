@@ -1,0 +1,580 @@
+{
+  "approved_commit": "97293220f33d76021bf4f64d0850d9ba55ceb172",
+  "source_branch": "produccion",
+  "environment_id": "b1463838-6a29-454a-a3ed-ab04d3d2ecb8",
+  "project_id": "9a35b882-a58e-4889-b0a9-8703da31e609",
+  "web": {
+    "deployment_id": "4949ffde-004c-4d70-8987-ea17d358d11f",
+    "status": "SUCCESS",
+    "predeploy_smoke_passed": true,
+    "postdeploy": {
+      "snapshot_id": 2,
+      "previous_id": 1,
+      "passed": true,
+      "baseline": false,
+      "counts": {
+        "enrollments:1:1": 1,
+        "enrollments:1:2": 0,
+        "enrollments:1:3": 0,
+        "enrollments:1:all": 1,
+        "enrollments:1:null": 0,
+        "enrollments:all:all": 1,
+        "estimates:1:1": 0,
+        "estimates:1:2": 0,
+        "estimates:1:3": 0,
+        "estimates:1:all": 1,
+        "estimates:1:null": 1,
+        "estimates:all:all": 1,
+        "expenses:1:1": 0,
+        "expenses:1:2": 0,
+        "expenses:1:3": 0,
+        "expenses:1:all": 0,
+        "expenses:1:null": 0,
+        "expenses:all:all": 0,
+        "invoices:1:1": 0,
+        "invoices:1:2": 0,
+        "invoices:1:3": 0,
+        "invoices:1:all": 0,
+        "invoices:1:null": 0,
+        "invoices:all:all": 0,
+        "items:1:1": 1,
+        "items:1:2": 1,
+        "items:1:3": 0,
+        "items:1:all": 2,
+        "items:1:null": 0,
+        "items:all:all": 2,
+        "payments:1:1": 0,
+        "payments:1:2": 0,
+        "payments:1:3": 0,
+        "payments:1:all": 0,
+        "payments:1:null": 0,
+        "payments:all:all": 0,
+        "staff_members:1:1": 0,
+        "staff_members:1:2": 0,
+        "staff_members:1:3": 0,
+        "staff_members:1:all": 1,
+        "staff_members:1:null": 1,
+        "staff_members:all:all": 1,
+        "students:1:1": 1,
+        "students:1:2": 0,
+        "students:1:3": 0,
+        "students:1:all": 1,
+        "students:1:null": 0,
+        "students:all:all": 1
+      },
+      "losses": [],
+      "declarations": [],
+      "explained_losses": [],
+      "audit_events": [],
+      "audit_cursor": 37
+    },
+    "public_http_smoke": {
+      "base": "https://krater-production.up.railway.app",
+      "checks": [
+        {
+          "path": "/ping",
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "path": "/login",
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "path": "/api/v1/bootstrap",
+          "expected": 401,
+          "actual": 401
+        },
+        {
+          "path": "/api/v1/students",
+          "expected": 401,
+          "actual": 401
+        },
+        {
+          "path": "/api/v1/students/placement-options",
+          "expected": 401,
+          "actual": 401
+        },
+        {
+          "path": "/assets/js/app.js?id=35bce386f9c99d89800c",
+          "actual": 200,
+          "sha256": "932622567035b01b2967cc61c98aa0adbf58c430b8ef099f7702e9ab72f749df",
+          "matches_build": true
+        },
+        {
+          "path": "/assets/css/crater.css?id=0b090d6c6a3202e87168",
+          "actual": 200,
+          "sha256": "7775f28aa35cc236d39cea0874a17f772aeb7a5c85fb4023d9cefed05adba255",
+          "matches_build": true
+        }
+      ],
+      "passed": true
+    }
+  },
+  "bucket": {
+    "name": "backups-production",
+    "id": "252087d1-f94c-49e9-bbe8-d8ae2c26de52",
+    "region": "sjc",
+    "credentials": "Railway reference variables only",
+    "worker_references": {
+      "BACKUP_ENDPOINT": "${{backups-production.ENDPOINT}}",
+      "BACKUP_BUCKET": "${{backups-production.BUCKET}}",
+      "BACKUP_REGION": "${{backups-production.REGION}}",
+      "BACKUP_ACCESS_KEY_ID": "${{backups-production.ACCESS_KEY_ID}}",
+      "BACKUP_SECRET_ACCESS_KEY": "${{backups-production.SECRET_ACCESS_KEY}}"
+    }
+  },
+  "encryption": {
+    "key_id": "production-backup-v1",
+    "production_key_distinct_from_staging": true,
+    "independent_from_app_key": true,
+    "recovery_artifact_saved_outside_railway": true,
+    "secrets_in_report": false,
+    "worker_reference": "${{shared.BACKUP_ENCRYPTION_KEY}}",
+    "key_id_reference": "${{shared.BACKUP_ENCRYPTION_KEY_ID}}"
+  },
+  "backup": {
+    "deployment_id": "c461e16b-dfc4-4948-be53-b4cb6e01d76b",
+    "passed": true,
+    "key": "suiteena/production/20261008T163201Z-2331d52e2651.zip",
+    "mysql_version": "9.7.2",
+    "bytes": 34006,
+    "archive_sha256": "e935376488b29bbaffe422ded545e251eb3c25d34097edba8d91f47eca4016d9",
+    "tables": 80,
+    "pruned": 0
+  },
+  "restore": {
+    "deployment_id": "e09b9506-2d90-4b6b-a0fb-5356d5f8f666",
+    "status": "SUCCESS",
+    "passed": true,
+    "created_at": "2026-10-08T16:48:54+00:00",
+    "key": "suiteena/production/20261008T163201Z-2331d52e2651.zip",
+    "source_environment": "production",
+    "target_database": "krater_restore_test_20261008_164847_267ac819",
+    "mysql_version": "9.7.2",
+    "table_fingerprints_match": true,
+    "tables": 80,
+    "archive_sha256": "e935376488b29bbaffe422ded545e251eb3c25d34097edba8d91f47eca4016d9",
+    "audit": [
+      {
+        "company_id": 1,
+        "models": {
+          "StudyPlan": {
+            "table": "study_plans",
+            "total": 0,
+            "valid_level": 0,
+            "null_level": 0,
+            "missing_level": 0,
+            "foreign_company_level": 0
+          },
+          "CourseSection": {
+            "table": "course_sections",
+            "total": 0,
+            "valid_level": 0,
+            "null_level": 0,
+            "missing_level": 0,
+            "foreign_company_level": 0
+          },
+          "GradeLevel": {
+            "table": "grade_levels",
+            "total": 12,
+            "valid_level": 12,
+            "null_level": 0,
+            "missing_level": 0,
+            "foreign_company_level": 0
+          },
+          "Estimate": {
+            "table": "estimates",
+            "total": 1,
+            "valid_level": 0,
+            "null_level": 1,
+            "missing_level": 0,
+            "foreign_company_level": 0
+          },
+          "AcademicYear": {
+            "table": "academic_years",
+            "total": 3,
+            "valid_level": 3,
+            "null_level": 0,
+            "missing_level": 0,
+            "foreign_company_level": 0
+          },
+          "Student": {
+            "table": "students",
+            "total": 1,
+            "valid_level": 1,
+            "null_level": 0,
+            "missing_level": 0,
+            "foreign_company_level": 0
+          },
+          "Division": {
+            "table": "divisions",
+            "total": 12,
+            "valid_level": 12,
+            "null_level": 0,
+            "missing_level": 0,
+            "foreign_company_level": 0
+          },
+          "Item": {
+            "table": "items",
+            "total": 2,
+            "valid_level": 2,
+            "null_level": 0,
+            "missing_level": 0,
+            "foreign_company_level": 0
+          },
+          "Enrollment": {
+            "table": "enrollments",
+            "total": 1,
+            "valid_level": 1,
+            "null_level": 0,
+            "missing_level": 0,
+            "foreign_company_level": 0
+          },
+          "Payment": {
+            "table": "payments",
+            "total": 0,
+            "valid_level": 0,
+            "null_level": 0,
+            "missing_level": 0,
+            "foreign_company_level": 0
+          },
+          "Invoice": {
+            "table": "invoices",
+            "total": 0,
+            "valid_level": 0,
+            "null_level": 0,
+            "missing_level": 0,
+            "foreign_company_level": 0
+          },
+          "Expense": {
+            "table": "expenses",
+            "total": 0,
+            "valid_level": 0,
+            "null_level": 0,
+            "missing_level": 0,
+            "foreign_company_level": 0
+          },
+          "Subject": {
+            "table": "subjects",
+            "total": 1,
+            "valid_level": 1,
+            "null_level": 0,
+            "missing_level": 0,
+            "foreign_company_level": 0
+          }
+        }
+      }
+    ],
+    "deploy_guard": {
+      "baseline_passed": true,
+      "simulated_loss_exit_code": 1,
+      "rollback_counts_match": true,
+      "recovery_exit_code": 0
+    },
+    "distinct_mysql_server_verified": true,
+    "failed_attempt": {
+      "deployment_id": "b5fff5bc-19cc-48ce-bb0e-05d409b8acce",
+      "reason": "unresolved encryption reference rejected before import",
+      "resolution": "same production key stored once in production shared variables; both workers reference shared; no rotation"
+    }
+  },
+  "mysql_pins": {
+    "staging": {
+      "service_id": "330c15e7-74fe-4836-9420-a1e509d79d0b",
+      "deployment_id": "f15e7046-9835-40ec-8010-f7f0ea7f47b9",
+      "image": "mysql:9.7.2",
+      "status": "SUCCESS"
+    },
+    "production": {
+      "service_id": "c11c33fb-f0d7-4276-802c-4b72b65d929d",
+      "deployment_id": "1a6e434f-7f16-47c5-bbf5-c015c6146aab",
+      "image": "mysql:9.7.2",
+      "status": "SUCCESS"
+    },
+    "isolated_restore": {
+      "service_id": "7bf84ff4-9e27-4fdb-a4e1-0ae571240c12",
+      "deployment_id": "5d2a07cc-d946-412e-8b75-fe23ebcdbd4f",
+      "image": "mysql:9.7.2",
+      "status": "SUCCESS",
+      "public_domain": false,
+      "persistent_volume": false
+    }
+  },
+  "google_drive": {
+    "enabled": false,
+    "reason": "school_oauth_not_configured"
+  },
+  "native_volume_backups": {
+    "status": "pending",
+    "reason": "connector does not expose volume backup operation; Google verification rejected sign-in; not retried",
+    "staging_enabled_verified": false,
+    "production_enabled_verified": false
+  },
+  "verified_at": "2026-10-08T16:53:26.472Z",
+  "workers": {
+    "backup": {
+      "service_id": "7b814345-79e4-43a0-839e-1ea90f423a84",
+      "name": "backups-production-cron",
+      "deployment_id": "b0ab8e9f-562e-4e69-b4ad-c4209dddacd9",
+      "status": "SUCCESS",
+      "config": {
+        "source": {
+          "repo": "jesus1942/krater",
+          "branch": "produccion",
+          "checkSuites": false
+        },
+        "build": {
+          "builder": "DOCKERFILE",
+          "watchPatterns": [
+            "/app/**",
+            "/config/**",
+            "/database/**",
+            "/Dockerfile",
+            "/composer.*",
+            "/build/frontend/**",
+            "/post-deploy-smoke.sh",
+            "/pre-deploy.sh",
+            "/start.sh",
+            "/nginx.conf",
+            "/routes/**",
+            "/resources/**"
+          ],
+          "buildEnvironment": "V3",
+          "dockerfilePath": "Dockerfile"
+        },
+        "deploy": {
+          "startCommand": "php artisan ena:backup",
+          "preDeployCommand": [],
+          "restartPolicyType": "NEVER",
+          "useLegacyStacker": false,
+          "ipv6EgressEnabled": false,
+          "cronSchedule": "0 6 * * *",
+          "runtime": "V2",
+          "multiRegionConfig": {
+            "us-west2": {
+              "numReplicas": 1
+            }
+          }
+        }
+      },
+      "public_domains": 0
+    },
+    "restore": {
+      "service_id": "89a9b0bc-b846-4b8e-8270-9b3cec6b70f5",
+      "name": "restore-test-production-cron",
+      "deployment_id": "e0278626-87c3-4e04-8203-34a0b45369be",
+      "status": "SUCCESS",
+      "config": {
+        "source": {
+          "repo": "jesus1942/krater",
+          "branch": "produccion",
+          "checkSuites": false
+        },
+        "build": {
+          "builder": "DOCKERFILE",
+          "watchPatterns": [
+            "/app/**",
+            "/config/**",
+            "/database/**",
+            "/Dockerfile",
+            "/composer.*",
+            "/build/frontend/**",
+            "/post-deploy-smoke.sh",
+            "/pre-deploy.sh",
+            "/start.sh",
+            "/nginx.conf",
+            "/routes/**",
+            "/resources/**"
+          ],
+          "buildEnvironment": "V3",
+          "dockerfilePath": "Dockerfile"
+        },
+        "deploy": {
+          "startCommand": "php artisan ena:restore-test",
+          "preDeployCommand": [],
+          "restartPolicyType": "NEVER",
+          "useLegacyStacker": false,
+          "ipv6EgressEnabled": false,
+          "cronSchedule": "0 7 1 * *",
+          "runtime": "V2",
+          "multiRegionConfig": {
+            "us-west2": {
+              "numReplicas": 1
+            }
+          }
+        }
+      },
+      "public_domains": 0
+    }
+  },
+  "final_health": {
+    "environment": {
+      "id": "b1463838-6a29-454a-a3ed-ab04d3d2ecb8",
+      "name": "production"
+    },
+    "services": [
+      {
+        "serviceId": "7b814345-79e4-43a0-839e-1ea90f423a84",
+        "serviceName": "backups-production-cron",
+        "state": "cronReady",
+        "statusText": "Ready",
+        "activeDeployments": [
+          {
+            "id": "b0ab8e9f-562e-4e69-b4ad-c4209dddacd9",
+            "status": "SUCCESS",
+            "createdAt": "2026-10-08T16:50:31.523Z",
+            "statusUpdatedAt": "2026-10-08T16:51:05.853Z"
+          }
+        ],
+        "replicaStatus": {
+          "running": 0,
+          "crashed": 0,
+          "total": 1
+        },
+        "cronJob": null,
+        "issues": {
+          "warningCount": 0,
+          "criticalCount": 0
+        },
+        "recentFailures": 0,
+        "recentFailedDeployments": [],
+        "hasIssues": false,
+        "isCronJob": true,
+        "hasVolume": false
+      },
+      {
+        "serviceId": "89a9b0bc-b846-4b8e-8270-9b3cec6b70f5",
+        "serviceName": "restore-test-production-cron",
+        "state": "cronReady",
+        "statusText": "Ready",
+        "activeDeployments": [
+          {
+            "id": "e0278626-87c3-4e04-8203-34a0b45369be",
+            "status": "SUCCESS",
+            "createdAt": "2026-10-08T16:50:30.522Z",
+            "statusUpdatedAt": "2026-10-08T16:51:02.452Z"
+          }
+        ],
+        "replicaStatus": {
+          "running": 0,
+          "crashed": 0,
+          "total": 1
+        },
+        "cronJob": null,
+        "issues": {
+          "warningCount": 0,
+          "criticalCount": 0
+        },
+        "recentFailures": 0,
+        "recentFailedDeployments": [],
+        "hasIssues": false,
+        "isCronJob": true,
+        "hasVolume": false
+      },
+      {
+        "serviceId": "3434f538-b01d-4c99-be56-e7448f284557",
+        "serviceName": "krater",
+        "state": "online",
+        "statusText": "Online",
+        "activeDeployments": [
+          {
+            "id": "4949ffde-004c-4d70-8987-ea17d358d11f",
+            "status": "SUCCESS",
+            "createdAt": "2026-10-08T15:08:34.136Z",
+            "statusUpdatedAt": "2026-10-08T15:12:44.926Z"
+          }
+        ],
+        "replicaStatus": {
+          "running": 1,
+          "crashed": 0,
+          "total": 1
+        },
+        "cronJob": null,
+        "issues": {
+          "warningCount": 0,
+          "criticalCount": 0
+        },
+        "recentFailures": 0,
+        "recentFailedDeployments": [],
+        "hasIssues": false,
+        "isCronJob": false,
+        "hasVolume": false
+      },
+      {
+        "serviceId": "c11c33fb-f0d7-4276-802c-4b72b65d929d",
+        "serviceName": "MySQL",
+        "state": "online",
+        "statusText": "Online",
+        "activeDeployments": [
+          {
+            "id": "1a6e434f-7f16-47c5-bbf5-c015c6146aab",
+            "status": "SUCCESS",
+            "createdAt": "2026-10-08T15:08:31.079Z",
+            "statusUpdatedAt": "2026-10-08T15:09:14.627Z"
+          }
+        ],
+        "replicaStatus": {
+          "running": 1,
+          "crashed": 0,
+          "total": 1
+        },
+        "cronJob": null,
+        "issues": {
+          "warningCount": 0,
+          "criticalCount": 0
+        },
+        "recentFailures": 0,
+        "recentFailedDeployments": [],
+        "hasIssues": false,
+        "isCronJob": false,
+        "hasVolume": true
+      },
+      {
+        "serviceId": "7bf84ff4-9e27-4fdb-a4e1-0ae571240c12",
+        "serviceName": "MySQL-restore-production-test",
+        "state": "online",
+        "statusText": "Online",
+        "activeDeployments": [
+          {
+            "id": "5d2a07cc-d946-412e-8b75-fe23ebcdbd4f",
+            "status": "SUCCESS",
+            "createdAt": "2026-10-08T15:07:45.889Z",
+            "statusUpdatedAt": "2026-10-08T15:07:57.976Z"
+          }
+        ],
+        "replicaStatus": {
+          "running": 1,
+          "crashed": 0,
+          "total": 1
+        },
+        "cronJob": null,
+        "issues": {
+          "warningCount": 0,
+          "criticalCount": 0
+        },
+        "recentFailures": 0,
+        "recentFailedDeployments": [],
+        "hasIssues": false,
+        "isCronJob": false,
+        "hasVolume": false
+      }
+    ],
+    "pendingWork": [],
+    "summary": {
+      "totalServices": 5,
+      "servicesWithIssues": 0,
+      "totalFailures": 0
+    }
+  },
+  "scope_limitations": {
+    "comparison": "all 80 restored table fingerprints and counts compared against verified backup manifest",
+    "source_data_not_reclassified": true,
+    "known_source_null_levels_preserved": {
+      "estimate": 1,
+      "staff_member": 1
+    },
+    "scheduled_executions": "configured and Ready; future timed runs not yet observed"
+  }
+}

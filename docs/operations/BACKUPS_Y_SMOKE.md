@@ -1,11 +1,62 @@
 # Fila 6: backups y smoke de integridad
 
-Estado al 07/10/2026: correcciones de revisión implementadas y probadas en staging; no promover.
-El smoke acepta cambios auditados, permite una aceptación manual autenticada y los
-backups usan clave propia. La copia a Google Drive requiere carpeta y OAuth de la escuela.
-La evidencia del 04/10 corresponde a la implementación anterior.
-La fila no está cerrada: faltan el pin de los dos MySQL existentes y la
-verificación/activación del backup nativo de volumen. No promover esta fila.
+Estado al 08/10/2026: Jesús aprobó la revisión de Claude de 9729322 y autorizó
+promover a produccion. Aplicación 4949ffde SUCCESS, smoke sin pérdidas y 7
+comprobaciones HTTP/assets aprobadas. Primer backup productivo real y
+restauración de 80 tablas con conteos/huellas idénticos aprobados. MySQL-staging
+y MySQL fijados a mysql:9.7.2, despliegues f15e7046 y 1a6e434f SUCCESS.
+Pendiente: verificar/activar backups nativos de ambos volúmenes; el acceso al
+panel fue rechazado en la verificación de Google. Drive desactivado hasta
+carpeta/OAuth de la escuela. Evidencia actual:
+`docs/audits/2026-10-08-backups-production.json`.
+
+## Producción: configuración y primera verificación
+
+| Recurso | ID | Configuración |
+|---|---|---|
+| Bucket backups-production | 252087d1-f94c-49e9-bbe8-d8ae2c26de52 | región sjc, prefijo suiteena/production |
+| backups-production-cron | 7b814345-79e4-43a0-839e-1ea90f423a84 | `php artisan ena:backup`, `0 6 * * *` UTC (03:00 Argentina) |
+| restore-test-production-cron | 89a9b0bc-b846-4b8e-8270-9b3cec6b70f5 | `php artisan ena:restore-test`, `0 7 1 * *` UTC (día 1, 04:00 Argentina) |
+| MySQL-restore-production-test | 7bf84ff4-9e27-4fdb-a4e1-0ae571240c12 | mysql:9.7.2, red privada, sin dominio público |
+
+Ambos workers siguen produccion y usan DOCKERFILE, restart NEVER y predeploy
+vacío. Agendas repuestas mediante despliegues nuevos después de la corrida
+inicial. MySQL de prueba efímero y dedicado; los informes quedan en S3.
+
+Referencias de los dos workers (sin copiar credenciales del bucket):
+
+```text
+BACKUP_ENDPOINT=${{backups-production.ENDPOINT}}
+BACKUP_BUCKET=${{backups-production.BUCKET}}
+BACKUP_REGION=${{backups-production.REGION}}
+BACKUP_ACCESS_KEY_ID=${{backups-production.ACCESS_KEY_ID}}
+BACKUP_SECRET_ACCESS_KEY=${{backups-production.SECRET_ACCESS_KEY}}
+BACKUP_ENCRYPTION_KEY=${{shared.BACKUP_ENCRYPTION_KEY}}
+BACKUP_ENCRYPTION_KEY_ID=${{shared.BACKUP_ENCRYPTION_KEY_ID}}
+```
+
+Clave propia del ambiente production, 64 caracteres aleatorios, identificador
+production-backup-v1, distinta de staging y APP_KEY. Recuperación conservada
+en SuiteEna-production-backup-recovery.txt fuera de Railway; nunca incluir su
+contenido en Git o logs. Restauración: APP_ENV=restore-test,
+BACKUP_SOURCE_ENVIRONMENT=production, RESTORE_ALLOWED_HOST=RESTORE_DB_HOST=
+mysql-restore-production-test.railway.internal y
+RESTORE_DB_PASSWORD=${{MySQL-restore-production-test.MYSQL_ROOT_PASSWORD}}.
+La fuente usa referencias a krater; se verifica identidad y versión del
+servidor antes de importar exclusivamente en el destino aislado.
+
+Backup c461e16b: `suiteena/production/20261008T163201Z-2331d52e2651.zip`,
+34.006 bytes, SHA256 e935376488b29bbaffe422ded545e251eb3c25d34097edba8d91f47eca4016d9.
+Restauración e09b9506: 08/10 16:48:54 UTC, 80 tablas idénticas en
+krater_restore_test_20261008_164847_267ac819, UUID distinto verificado.
+Guardia: baseline aprobado, pérdida simulada exit 1, rollback idéntico,
+recuperación exit 0. Se conserva el presupuesto histórico sin nivel; no se
+reclasificaron datos productivos para obtener una auditoría sin nulos.
+
+Las secciones siguientes conservan la configuración de staging y el corte
+histórico anterior a la autorización del 08/10. Los pins y el estado de
+promoción indicados como pendientes allí quedan reemplazados por este estado;
+los backups nativos siguen pendientes y no se declaran activados.
 
 ## Servicios de staging
 

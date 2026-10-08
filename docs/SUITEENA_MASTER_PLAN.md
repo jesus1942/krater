@@ -34,24 +34,26 @@ Solo **Operativo** equivale a DONE.
 - [x] Auditoría de datos potencialmente ocultos por `school_level_id` nulo o incorrecto en estimates, invoices, payments, expenses, items y students. Primera corrida productiva 01/10/2026: `PRE-000001` del 16/08/2026 existe y tiene `school_level_id = NULL`; sin evidencia única para reasignación automática.
 - [x] Herramienta de reconciliación para registros globales/huérfanos por nivel: dry-run, aplicación transaccional, auditoría atómica y UI total-admin.
 - [x] Toda la institución Operativa: revisión de Claude aprobada por Jesús para 152a40f/f761890; promoción autorizada a f761890, Railway cbfe545a SUCCESS y smoke público aprobado. Edición en nivel propio, alta con nivel habilitado e informes consolidados; 280 HTTP institucionales y 68 de roles probados en staging. Evidencia: docs/audits/2026-10-03-institution-production.json.
-- [ ] Backups automáticos y política de retención.
-- [ ] Prueba periódica de restauración en ambiente aislado.
+- [x] Backups automáticos y política de retención: producción, diario 06:00 UTC, retención 7/4/6; primer archivo real verificado el 08/10/2026.
+- [x] Prueba periódica de restauración en ambiente aislado: producción, día 1 a las 07:00 UTC; primera restauración real de 80 tablas idénticas en MySQL dedicado.
 - [ ] Soft delete o baja lógica para entidades donde borrar físicamente sea riesgoso.
 - [ ] Bloqueo de deletes destructivos en datos académicos/económicos con historial.
-- [ ] Smoke test post-deploy con conteos críticos por empresa/nivel.
+- [x] Smoke test post-deploy con conteos críticos por empresa/nivel: producción, foto 2 sin pérdidas y 7 comprobaciones HTTP/assets aprobadas el 08/10/2026.
 - [ ] Registro de migraciones de datos con resultado y cantidad afectada.
 - [ ] Revisión del incidente: presupuesto cargado el 16/08/2026 que dejó de aparecer después de activar aislamiento por nivel.
 
-Fila 6 en curso (04/10/2026): backup diario cifrado en bucket staging por
-referencias, retención 7/4/6, restauración mensual aislada en MySQL 9.7.2 y smoke
-de conteos/HTTP implementados y probados. Restauración real: 80 tablas con
-conteos/huellas idénticos; auditoría de niveles y rechazo/recuperación de pérdida
-simulada aprobados. Gate local 84 tests/639 aserciones. Pendientes antes de cerrar:
-pin exacto de los dos MySQL existentes y backup nativo de volumen staging.
-Código final 2938725: web staging eb26191a SUCCESS y ensayo postdeploy
-953474fc SUCCESS a las 14:08 UTC (conteos, 7 checks HTTP/assets y restauración).
-No promovida. Ver docs/operations/BACKUPS_Y_SMOKE.md y
-docs/audits/2026-10-04-backups-staging.json.
+Fila 6 promovida con autorización de Jesús después de aprobar la revisión de
+Claude de 9729322 (08/10/2026). Aplicación productiva 4949ffde SUCCESS; backup
+real y restauración en MySQL-restore-production-test aprobados: 80 tablas con
+conteos/huellas idénticos, servidor distinto y pérdida/rollback/recuperación
+comprobados sobre la copia. Bucket backups-production por referencias;
+clave propia de producción distinta de staging y APP_KEY, recuperación
+entregada fuera de Railway. MySQL-staging/MySQL fijados a mysql:9.7.2.
+Backups, restauración mensual y smoke operativos. El cierre integral conserva
+pendiente verificar/activar backups nativos de ambos volúmenes: acceso al panel
+rechazado en la verificación de Google. Drive permanece desactivado hasta
+carpeta/OAuth de la escuela. Ver docs/operations/BACKUPS_Y_SMOKE.md y
+docs/audits/2026-10-08-backups-production.json.
 
 ## Invariantes
 
