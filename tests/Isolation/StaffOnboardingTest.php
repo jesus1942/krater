@@ -297,8 +297,16 @@ class StaffOnboardingTest extends TestCase
         $hashes = DB::table('users')->pluck('password', 'id');
 
         (new \CreateStaffOnboarding())->up();
+        // Foto aprobada con las fichas recien creadas sin nivel, como en un deploy real.
+        $this->assertSame(0, Artisan::call('ena:smoke'));
         (new \BackfillStaffCargos())->up();
         (new \BackfillStaffCargos())->up(); // repetible: no duplica
+        (new \AuditBackfilledStaffCargos())->up();
+        (new \AuditBackfilledStaffCargos())->up();
+        // El paso de "sin nivel" al nivel del rol queda auditado y ena:smoke lo acepta.
+        $this->assertSame(0, Artisan::call('ena:smoke'), Artisan::output());
+        $this->assertSame(DB::table('staff_assignments')->whereNotNull('role_user_id')->count(),
+            DB::table('audit_logs')->where('action', 'staffassignment.created')->count());
 
         // (1) Ninguna cuenta existente queda obligada a cambiar la contraseña, ni cambia su clave.
         $this->assertSame(0, DB::table('users')->where('must_change_password', true)->count());
