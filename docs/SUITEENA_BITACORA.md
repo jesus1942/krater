@@ -326,3 +326,10 @@
 - Pendiente de la especificación 1.2: unificar responsables (`family_member_student` vs `guardian_student`).
 - Gate: `EnrollmentHistoryTest` (6 tests: alta con matrícula y edición sin mover, corrección vs pase, Primario -> Secundario con historial y `ena:smoke` aprobado, hermanos en distintos niveles con ida y vuelta, cupo, migración por coincidencia exacta); 124 tests en total; smokes DOM aprobados.
 - Staging MySQL: deploy `17da2363-9f6b-42de-a12b-12d723aaf90c` (852f126, reemplazado por el siguiente push) aplicó `2026_10_20_000000_enrollment_history` en 457 ms: `Fila 7 matriculas desde campos legacy: {"created":60,"no_match":0,"ambiguous":0}`; smoke snapshot 44 sin pérdidas y con 96 alumnos y 96 matrículas por nivel (55/21/20). Deploy `e9b4d138-03fe-44a1-87bb-9377cdadfe07` (f9328af) SUCCESS: Nothing to migrate, snapshot 45 sin pérdidas, R2b aprobado y recorrido institucional con 299 checks, `enrollment_history: true` (pase entre niveles con historial y corrección de vuelta). Fila 7 probada en staging; no promovida.
+
+## 2026-10-18 — Fila 7 promovida y cola síncrona en producción
+
+- Jesús autorizó promover la fila 7 y fijar `QUEUE_CONNECTION=sync` en el servicio `krater` de producción.
+- Variable `QUEUE_CONNECTION=sync` seteada sin redeploy propio; la tomó el deploy de la promoción.
+- `produccion` avanzó por fast-forward 76591c2 -> 57f802f. Deploys SUCCESS: web `7abbc190-729e-4f30-a3d9-7a0de8e1d878`, backups `ee7bb3ad-646f-4f7a-b863-38497c7592e8`, restauración `17a11a63-dab1-40f6-8e82-056115e8cc9c`.
+- Predeploy: `2026_10_20_000000_enrollment_history` en 118,61 ms, `Fila 7 matriculas desde campos legacy: {"created":0,"no_match":0,"ambiguous":0}` (el único alumno ya tenía matrícula); smoke snapshot 7 sin pérdidas; `SuiteEna runtime` con `queue_connection: sync` y `sessions_survive_deploy: true`; predeploy completo. Los PDF de facturas, presupuestos y cobros se generan ahora en el mismo pedido, sin depender de una tabla `jobs` inexistente.

@@ -24,6 +24,13 @@ reversibles) están en producción, SHA fbf3cf4. Gate `phpunit-rbac.xml` 108
 tests; `InstitutionScenario` ensaya baja/restauración en staging. Detalle en
 docs/SUITEENA_BITACORA.md. Siguen: fila 7, fila C y etapa 2.
 
+Estado 18/10/2026: E1, arreglos de sesion y fila 7 en produccion, SHA 57f802f.
+Fila 7: `StudentPlacement` separa correccion de carga y pase (transferred_out),
+historial en `/students/{id}/enrollments`, legacy derivado de la matricula
+vigente. Produccion con `QUEUE_CONNECTION=sync` (no hay tabla jobs ni worker) y
+sesiones en base; `ena:runtime` lo informa en cada predeploy. Pendiente de 1.2:
+unificar responsables. Siguen fila C y etapa 2.
+
 Fila E1 (19/10/2026, en staging): la ficha de Personal unifica personal y
 usuarios. Cargos = roles con alcance via `RoleAssignments`; docencia =
 `teaching_assignments` que otorgan el rol docente por seccion y se revocan en
