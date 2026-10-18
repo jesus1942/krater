@@ -276,4 +276,68 @@ class StaffOnboardingTest extends TestCase
         $this->assertSame(0, DB::table('staff_members')->where('user_id', $family->id)->count());
         $this->assertSame(1, DB::table('staff_members')->where('user_id', $linked->id)->count());
     }
+
+    /** Antes de promover E1: cuentas existentes sin cambio forzado y fichas con el nivel de su cargo. */
+    public function test_migration_keeps_existing_passwords_and_gives_files_the_level_of_their_roles(): void
+    {
+        $twoLevels = $this->account('doble', 'preceptor', 1);
+        DB::table('role_user')->insert(['company_id' => 1, 'user_id' => $twoLevels->id, 'school_level_id' => 2,
+            'role_id' => DB::table('roles')->where('company_id', 1)->where('name', 'staff')->value('id')]);
+        $noRole = User::create(['company_id' => 1, 'name' => 'Sin Rol', 'email' => 'sinrol@example.invalid',
+            'password' => 'ficticia-local-1234', 'role' => 'staff', 'currency_id' => 1]);
+        $subject = DB::table('subjects')->where('school_level_id', 1)->value('id');
+        $section = DB::table('course_sections')->insertGetId(['company_id' => 1, 'school_level_id' => 1,
+            'academic_year_id' => DB::table('divisions')->where('id', $this->divisions['1A'])->value('academic_year_id'),
+            'division_id' => $this->divisions['1A'], 'subject_id' => $subject, 'status' => 'active']);
+        $legacyTeacher = $this->account('docentevieja', 'teacher', 1);
+        DB::table('role_user')->where('user_id', $legacyTeacher->id)->update(['course_section_id' => $section, 'managed_scope' => true]);
+        $revoked = $this->account('revocado', 'preceptor', 1);
+        DB::table('role_user')->where('user_id', $revoked->id)->update(['revoked_at' => now()]);
+        DB::table('staff_members')->delete();
+        $hashes = DB::table('users')->pluck('password', 'id');
+
+        (new \CreateStaffOnboarding())->up();
+        (new \BackfillStaffCargos())->up();
+        (new \BackfillStaffCargos())->up(); // repetible: no duplica
+
+        // (1) Ninguna cuenta existente queda obligada a cambiar la contraseña, ni cambia su clave.
+        $this->assertSame(0, DB::table('users')->where('must_change_password', true)->count());
+        $this->assertFalse((bool) $this->admin->fresh()->must_change_password);
+        $this->assertEquals($hashes, DB::table('users')->pluck('password', 'id'));
+        $this->as($this->admin, null);
+        $this->getJson('/api/v1/students')->assertOk();
+
+        // (2) Nivel de la ficha = nivel del cargo; institucional solo la administración total.
+        $cargos = fn (User $user) => DB::table('staff_assignments')
+            ->join('staff_members', 'staff_members.id', '=', 'staff_assignments.staff_member_id')
+            ->where('staff_members.user_id', $user->id)->orderBy('staff_assignments.id')
+            ->get(['staff_assignments.school_level_id', 'staff_assignments.role_id', 'staff_assignments.role_user_id']);
+        $member = fn (User $user) => \Crater\Models\StaffMember::where('user_id', $user->id)->firstOrFail();
+        $onboarding = app(\Crater\Services\Access\StaffOnboarding::class);
+
+        $this->assertSame([null], $cargos($this->admin)->pluck('school_level_id')->all());
+        $this->assertSame([1], $cargos($this->director)->pluck('school_level_id')->map(fn ($l) => (int) $l)->all());
+        $this->assertSame([1], $onboarding->memberLevels($member($this->director)));
+        $this->assertSame([1, 2], $cargos($twoLevels)->pluck('school_level_id')->map(fn ($l) => (int) $l)->all());
+        $this->assertSame([], $cargos($noRole)->all());
+        $this->assertSame([], $cargos($revoked)->all());
+        $this->assertSame([], $cargos($legacyTeacher)->all());
+        $this->assertSame(1, DB::table('teaching_assignments')->where('staff_member_id', $member($legacyTeacher)->id)
+            ->where('course_section_id', $section)->where('school_level_id', 1)->count());
+        foreach (User::whereNull('deleted_at')->where('role', '<>', 'customer')->get() as $user) {
+            $levels = $onboarding->memberLevels($member($user));
+            if (in_array(null, $levels, true)) {
+                $this->assertTrue(app(\Crater\Services\Access\AccessManager::class)->isTotalAdmin($user), $user->email.' quedó institucional');
+            }
+        }
+        // Cada cargo apunta al rol vigente del que salió.
+        $this->assertSame(DB::table('role_user')->where('user_id', $this->director->id)->value('id'),
+            $cargos($this->director)->first()->role_user_id);
+
+        // La dirección de Primario ve en Personal a la gente de su nivel.
+        $this->as($this->director, 1);
+        $ids = array_column($this->getJson('/api/v1/staff')->assertOk()->json('data'), 'id');
+        $this->assertContains($member($twoLevels)->id, $ids);
+        $this->assertNotContains($member($this->admin)->id, $ids);
+    }
 }
