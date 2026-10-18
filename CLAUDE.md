@@ -15,6 +15,15 @@ pendiente. Este estado reemplaza los cortes históricos «no promover» de fila 
 Evidencia: docs/audits/2026-10-08-backups-production.json;
 operación: docs/operations/BACKUPS_Y_SMOKE.md.
 
+## Estado vigente de filas 8 y 5 — 18/10/2026
+
+Fila 8 (sin actualizador de Crater, 404 JSON en /api, logs info/stdout y
+warning+/stderr) y fila 5 (baja lógica con `TrashBin`, papelera
+`/api/v1/trash` solo total admin, numeración sin reutilizar, saldos de cobros
+reversibles) están en producción, SHA fbf3cf4. Gate `phpunit-rbac.xml` 108
+tests; `InstitutionScenario` ensaya baja/restauración en staging. Detalle en
+docs/SUITEENA_BITACORA.md. Siguen: fila 7, fila C y etapa 2.
+
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
 ## Project

@@ -278,3 +278,10 @@
 - Gate local `phpunit -c phpunit-rbac.xml`: 108 tests, incluye `SoftDeletionTest` (6 tests). `InstitutionScenario` suma un ciclo de baja y restauración (lote fuera de nivel 403, factura con cobro 422, ítem en uso 422, saldo devuelto y repuesto, papelera), que el smoke de staging repite contra MySQL. `role-ui.cjs` e `institution-ui.cjs` aprobados.
 - Limitación conocida: el email de una familia dada de baja sigue ocupado (la validación `unique` mira la tabla completa); se resuelve restaurándola.
 - Staging MySQL: deploy `c3e20e03-a76a-495d-b632-9538b0386d41` (1babcb7) aplicó `2026_10_18_000000_add_soft_deletes_to_finance_and_users` en 1.330 ms; smoke de conteos (snapshot 38) sin pérdidas. Deploy `62d975c9-c05a-48d9-b351-0921ac111635` (8592c9b) SUCCESS: Nothing to migrate, snapshot 39 sin pérdidas, 76 permisos/14 roles, R2b aprobado y recorrido institucional con 292 checks y `soft_delete_round_trip: true`. Ningún log con nivel error. Worker de backups de staging `25ec9297` SUCCESS. Fila 5 probada en staging; no promovida.
+
+## 2026-10-18 — Fila 5 promovida a producción
+
+- Jesús pidió promover tras la verificación de staging. `produccion` avanzó por fast-forward 428eed9 -> fbf3cf4 (código idéntico a 8592c9b, probado en staging).
+- Deploys SUCCESS: web `73a3e5a3-3b03-41c5-b56e-cc76a71be584`, backups `b47403d3-5b58-46e5-944d-fcb5de4ebed0`, restauración `d3f37b65-003f-4cc9-bca7-3a31a8590281`.
+- Predeploy: migró `2026_10_18_000000_add_soft_deletes_to_finance_and_users` en 938,78 ms; `ena:smoke` snapshot 4 sin pérdidas; 76 permisos, 14 roles, `SuiteEna predeploy: completo`. Ninguna línea con nivel error.
+- No se ejecutaron bajas ni restauraciones sobre registros productivos: el ciclo completo se probó solo en staging. El backup diario del 19/10 06:00 UTC será el primero con el esquema nuevo.
