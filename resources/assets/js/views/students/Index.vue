@@ -73,6 +73,7 @@
         </div>
         <div class="flex justify-end gap-3 mt-4">
           <button v-if="student.can_edit" class="text-sm font-medium text-primary-500" @click="openEdit(student)">Editar</button>
+          <button class="text-sm font-medium text-gray-600" @click="openHistory(student)">Historial</button>
           <button v-if="canRelocate" class="text-sm font-medium text-indigo-600" @click="openRelocate(student)">Reubicar</button>
         </div>
       </article>
@@ -92,19 +93,22 @@
           <label class="text-sm">Apellido *<sw-input v-model="form.last_name" class="mt-1" required /></label>
           <label class="text-sm">DNI<sw-input v-model="form.dni" class="mt-1" /></label>
           <label class="text-sm">Fecha de nacimiento<sw-input v-model="form.birth_date" type="date" class="mt-1" /></label>
-          <label v-if="(canManage && form.school_level_id) || !form.id" class="text-sm">Ciclo lectivo *
+          <p v-if="form.id" class="text-sm md:col-span-2 p-3 text-gray-600 bg-gray-50 border border-gray-200 rounded">
+            Ubicación actual: {{ courseLabel(form) || 'sin matrícula vigente' }}. Para cambiar curso o división usá Reubicar.
+          </p>
+          <label v-if="!form.id" class="text-sm">Ciclo lectivo *
             <select v-model="form.academic_year_id" required class="w-full h-10 px-3 mt-1 bg-white border border-gray-300 rounded" @change="onAcademicYearChange">
               <option value="">Seleccionar ciclo</option>
               <option v-for="year in academicYears" :key="year.id" :value="year.id">{{ year.name || year.year }}</option>
             </select>
           </label>
-          <label v-if="(canManage && form.school_level_id) || !form.id" class="text-sm">Curso/Año *
+          <label v-if="!form.id" class="text-sm">Curso/Año *
             <select v-model="form.grade_level_id" required class="w-full h-10 px-3 mt-1 bg-white border border-gray-300 rounded" @change="onGradeLevelChange">
               <option value="">Seleccionar curso</option>
               <option v-for="grade in gradeLevels" :key="grade.id" :value="grade.id">{{ grade.name }}</option>
             </select>
           </label>
-          <label v-if="(canManage && form.school_level_id) || !form.id" class="text-sm">División *
+          <label v-if="!form.id" class="text-sm">División *
             <select v-model="form.division_id" required class="w-full h-10 px-3 mt-1 bg-white border border-gray-300 rounded">
               <option value="">Seleccionar división</option>
               <option v-for="division in availableDivisions" :key="division.id" :value="division.id">{{ division.name }}</option>
@@ -190,9 +194,17 @@
           </div>
           <button type="button" class="text-2xl text-gray-400" @click="closeRelocation">×</button>
         </div>
-        <p class="p-3 mb-4 text-sm text-blue-800 bg-blue-50 rounded">
-          Corrige nivel, ciclo, curso y división sin borrar el legajo, la familia ni el historial.
-        </p>
+        <fieldset class="mb-4">
+          <legend class="mb-2 text-sm font-medium text-gray-700">¿Qué querés hacer? *</legend>
+          <label class="flex items-start gap-2 p-3 mb-2 text-sm border rounded" :class="relocationForm.mode === 'correction' ? 'border-primary-500 bg-primary-50' : 'border-gray-200'">
+            <input v-model="relocationForm.mode" type="radio" value="correction" required class="mt-1" />
+            <span><strong>Corrección de carga.</strong> El alumno estaba mal cargado: se corrige la matrícula vigente y no queda historial académico.</span>
+          </label>
+          <label class="flex items-start gap-2 p-3 text-sm border rounded" :class="relocationForm.mode === 'transfer' ? 'border-primary-500 bg-primary-50' : 'border-gray-200'">
+            <input v-model="relocationForm.mode" type="radio" value="transfer" required class="mt-1" />
+            <span><strong>Pase.</strong> Cambia de curso, división o nivel: la matrícula vigente se cierra con fecha y se abre una nueva. El historial se conserva.</span>
+          </label>
+        </fieldset>
         <div class="grid gap-4 md:grid-cols-2">
           <label class="text-sm">Nivel *
             <select v-model="relocationForm.school_level_id" required class="w-full h-10 px-3 mt-1 bg-white border border-gray-300 rounded" @change="onRelocationLevelChange">
@@ -219,6 +231,10 @@
             </select>
           </label>
         </div>
+        <label v-if="relocationForm.mode === 'transfer'" class="block mt-4 text-sm md:w-1/2">
+          Fecha del pase
+          <input v-model="relocationForm.effective_on" type="date" class="w-full h-10 px-3 mt-1 bg-white border border-gray-300 rounded" />
+        </label>
         <label class="block mt-4 text-sm">
           Motivo *
           <textarea
@@ -227,15 +243,31 @@
             maxlength="500"
             rows="3"
             class="w-full px-3 py-2 mt-1 bg-white border border-gray-300 rounded"
-            placeholder="Explicar por qué se corrige la ubicación académica"
+            :placeholder="relocationForm.mode === 'transfer' ? 'Explicar el motivo del pase' : 'Explicar por qué se corrige la carga'"
           ></textarea>
         </label>
+        <enrollment-history v-if="history.length" :items="history" class="mt-5" />
         <p v-if="relocationError" class="mt-4 text-sm text-red-600">{{ relocationError }}</p>
         <div class="flex justify-end gap-3 mt-6">
           <sw-button type="button" variant="primary-outline" @click="closeRelocation">Cancelar</sw-button>
           <sw-button :loading="relocating" :disabled="relocating" variant="primary">Guardar ubicación</sw-button>
         </div>
       </form>
+    </div>
+
+    <div v-if="showHistory" class="fixed inset-0 z-50 flex items-start justify-center p-4 overflow-y-auto bg-black bg-opacity-50">
+      <div class="w-full max-w-2xl p-6 my-8 bg-white rounded shadow-xl">
+        <div class="flex items-center justify-between mb-4">
+          <div>
+            <h2 class="text-xl font-semibold">Historial de matrículas</h2>
+            <p class="mt-1 text-sm text-gray-500">{{ historyStudent ? historyStudent.full_name : '' }}</p>
+          </div>
+          <button type="button" class="text-2xl text-gray-400" @click="showHistory = false">×</button>
+        </div>
+        <p v-if="historyError" class="text-sm text-red-600">{{ historyError }}</p>
+        <p v-else-if="!history.length" class="text-sm text-gray-500">Sin matrículas registradas.</p>
+        <enrollment-history v-else :items="history" />
+      </div>
     </div>
   </base-page>
 </template>
@@ -260,6 +292,20 @@ const newFamilyMember = () => ({
   local_key: `family-${Date.now()}-${familyKey++}`,
 })
 
+// Fila 7: linea de tiempo de matriculas, en todos los niveles del alumno.
+const STATUS_LABELS = { active: 'Vigente', transferred_out: 'Pase', withdrawn: 'Baja', completed: 'Ciclo completo' }
+const EnrollmentHistory = {
+  props: ['items'],
+  methods: { label(status) { return STATUS_LABELS[status] || status } },
+  template: `<ol class="border-l-2 border-gray-200">
+    <li v-for="item in items.slice().reverse()" :key="item.id" class="relative pb-4 pl-4">
+      <span class="absolute w-3 h-3 rounded-full -left-2 top-1" :class="item.status === 'active' ? 'bg-green-500' : 'bg-gray-400'"></span>
+      <p class="text-sm font-medium text-gray-800">{{ item.school_level }} · {{ item.academic_year }} · {{ item.grade }} {{ item.division }}</p>
+      <p class="text-xs text-gray-500">{{ label(item.status) }} · desde {{ item.enrolled_on || '-' }}<template v-if="item.left_on"> hasta {{ item.left_on }}</template></p>
+    </li>
+  </ol>`,
+}
+
 const emptyForm = () => ({
   id: null,
   school_level_id: window.Ls.get('selectedSchoolLevel') || '',
@@ -270,10 +316,6 @@ const emptyForm = () => ({
   last_name: '',
   dni: '',
   birth_date: '',
-  level: '',
-  grade: '',
-  division: '',
-  school_year: new Date().getFullYear(),
   status: 'active',
   guardian_id: null,
   notes: '',
@@ -282,6 +324,7 @@ const emptyForm = () => ({
 
 export default {
   components: {
+    EnrollmentHistory,
     SchoolLevelField, PlusSmIcon },
   data() {
     return {
@@ -301,7 +344,11 @@ export default {
       showRelocation: false,
       relocationStudent: null,
       relocationOptions: { levels: [], academic_years: [], grade_levels: [], divisions: [] },
-      relocationForm: { school_level_id: '', academic_year_id: '', grade_level_id: '', division_id: '', reason: '' },
+      relocationForm: { mode: '', school_level_id: '', academic_year_id: '', grade_level_id: '', division_id: '', effective_on: '', reason: '' },
+      history: [],
+      historyStudent: null,
+      historyError: '',
+      showHistory: false,
       relocationError: '',
       relocating: false,
       timer: null,
@@ -455,6 +502,9 @@ export default {
           family_members: this.form.family_members.map(({ local_key, ...member }) => member),
         }
         if (!this.canSensitive) delete payload.notes
+        // Fila 7: la ubicacion es la matricula; nunca se envian los campos legacy.
+        ;['level', 'grade', 'division', 'school_year'].forEach((key) => delete payload[key])
+        if (this.form.id) ['academic_year_id', 'grade_level_id', 'division_id'].forEach((key) => delete payload[key])
         if (!this.canManage) {
           payload = { first_name: this.form.first_name, last_name: this.form.last_name,
             dni: this.form.dni || null, birth_date: this.form.birth_date || null }
@@ -483,10 +533,27 @@ export default {
     async openRelocate(student) {
       this.relocationStudent = student
       this.relocationError = ''
-      this.relocationForm = { school_level_id: student.school_level_id || '', academic_year_id: '', grade_level_id: '', division_id: '', reason: '' }
-      const response = await window.axios.get(`/api/v1/students/${student.id}/relocation-options`)
+      this.relocationForm = { mode: '', school_level_id: student.school_level_id || '', academic_year_id: '', grade_level_id: '', division_id: '',
+        effective_on: new Date().toISOString().slice(0, 10), reason: '' }
+      const [response, history] = await Promise.all([
+        window.axios.get(`/api/v1/students/${student.id}/relocation-options`),
+        window.axios.get(`/api/v1/students/${student.id}/enrollments`),
+      ])
       this.relocationOptions = response.data
+      this.history = history.data.data
       this.showRelocation = true
+    },
+    async openHistory(student) {
+      this.historyStudent = student
+      this.historyError = ''
+      this.history = []
+      this.showHistory = true
+      try {
+        const { data } = await window.axios.get(`/api/v1/students/${student.id}/enrollments`)
+        this.history = data.data
+      } catch (error) {
+        this.historyError = 'No se pudo cargar el historial.'
+      }
     },
     closeRelocation() {
       this.showRelocation = false
@@ -501,7 +568,9 @@ export default {
       this.relocating = true
       this.relocationError = ''
       try {
-        await window.axios.put(`/api/v1/students/${this.relocationStudent.id}/relocate`, this.relocationForm)
+        const payload = { ...this.relocationForm }
+        if (payload.mode !== 'transfer') delete payload.effective_on
+        await window.axios.put(`/api/v1/students/${this.relocationStudent.id}/relocate`, payload)
         this.closeRelocation()
         await this.fetchStudents()
       } catch (error) {

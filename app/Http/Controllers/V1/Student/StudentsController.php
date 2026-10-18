@@ -11,6 +11,7 @@ use Crater\Models\GradeLevel;
 use Crater\Models\SchoolLevel;
 use Crater\Models\Student;
 use Crater\Services\Access\AccessManager;
+use Crater\Services\Data\StudentPlacement;
 use Crater\Services\Access\StudentRegistration;
 use Crater\Support\TenantContext;
 use Illuminate\Http\Request;
@@ -132,15 +133,16 @@ class StudentsController extends Controller
         $validated = $request->validated();
         $familyMembers = $validated['family_members'] ?? [];
         unset($validated['family_members']);
-        $validated = $this->applyCanonicalPlacement($validated, $companyId, $validated['school_level_id'] ?? null);
+        [$validated, $division, $academicYear] = $this->applyCanonicalPlacement($validated, $companyId, $validated['school_level_id'] ?? null);
 
-        $student = DB::transaction(function () use ($validated, $familyMembers, $companyId) {
+        $student = DB::transaction(function () use ($validated, $familyMembers, $companyId, $division, $academicYear) {
             $student = Student::create(array_merge($validated, [
                 'company_id' => $companyId,
             ]));
+            app(StudentPlacement::class)->place($student, $division, $academicYear);
             $this->syncFamilyMembers($student, $familyMembers, $companyId);
 
-            return $student;
+            return $student->fresh();
         });
 
         return response()->json([
@@ -168,14 +170,27 @@ class StudentsController extends Controller
         $hasFamilyPayload = array_key_exists('family_members', $validated);
         $familyMembers = $validated['family_members'] ?? [];
         unset($validated['family_members']);
+        $placeIn = null;
         if (! empty($validated['academic_year_id']) || ! empty($validated['grade_level_id']) || ! empty($validated['division_id'])) {
-            $validated = $this->applyCanonicalPlacement($validated, $companyId, $student->school_level_id === null ? null : (int) $student->school_level_id);
+            [$validated, $division, $academicYear] = $this->applyCanonicalPlacement($validated, $companyId, $student->school_level_id === null ? null : (int) $student->school_level_id);
+            // Fila 7: editar el legajo no cambia la ubicacion. La misma ubicacion se
+            // ignora; sin matricula se abre la primera; otra ubicacion va por Reubicar.
+            $current = app(StudentPlacement::class)->activeEnrollment($student, false);
+            if (! $current) {
+                $placeIn = [$division, $academicYear];
+            } elseif ((int) $current->division_id !== (int) $division->id || (int) $current->academic_year_id !== (int) $academicYear->id) {
+                abort(422, 'Para cambiar curso o división usá Reubicar: corrección de carga o pase.');
+            }
+            unset($validated['school_level_id'], $validated['school_year']);
         } else {
             unset($validated['academic_year_id'], $validated['grade_level_id'], $validated['division_id']);
         }
 
-        DB::transaction(function () use ($student, $validated, $familyMembers, $hasFamilyPayload, $companyId) {
+        DB::transaction(function () use ($student, $validated, $familyMembers, $hasFamilyPayload, $companyId, $placeIn) {
             $student->update($validated);
+            if ($placeIn) {
+                app(StudentPlacement::class)->place($student, $placeIn[0], $placeIn[1]);
+            }
             if ($hasFamilyPayload) {
                 $this->syncFamilyMembers($student, $familyMembers, $companyId);
             }
@@ -218,21 +233,12 @@ class StudentsController extends Controller
 
         abort_unless($academicYear && $gradeLevel && $division, 422, 'El curso, la división y el ciclo deben pertenecer al nivel institucional activo.');
 
-        $schoolLevel = SchoolLevel::where('company_id', $companyId)->findOrFail($gradeLevel->school_level_id);
-        $levelLabels = [
-            'primary' => 'Primario',
-            'secondary' => 'Secundario',
-            'tertiary' => 'Terciario',
-        ];
-
+        // Fila 7: la ubicacion es la matricula; los campos legacy los deriva StudentPlacement.
         unset($validated['academic_year_id'], $validated['grade_level_id'], $validated['division_id']);
         $validated['school_level_id'] = $gradeLevel->school_level_id;
-        $validated['level'] = $levelLabels[$schoolLevel->code] ?? $schoolLevel->name;
-        $validated['grade'] = $gradeLevel->name;
-        $validated['division'] = $division->name;
         $validated['school_year'] = $academicYear->year;
 
-        return $validated;
+        return [$validated, $division, $academicYear];
     }
 
     private function syncFamilyMembers(Student $student, array $items, $companyId)

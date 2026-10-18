@@ -30,7 +30,10 @@ class EnrollmentsController extends Controller
         $division = Division::findOrFail($request->division_id);
         $this->authorize('viewEnrollmentsOfDivision', $division);
 
-        $enrollments = Enrollment::with('student:id,first_name,last_name,dni')
+        // Fila 7: tras un pase de nivel el alumno ya no es del nivel de esta
+        // division, pero su matricula historica tiene que seguir mostrandolo.
+        $enrollments = Enrollment::with(['student' => fn ($q) => $q->withoutGlobalScope('school_level')
+            ->select('id', 'first_name', 'last_name', 'dni')])
             ->where('division_id', $division->id)
             ->orderBy('status')
             ->get()

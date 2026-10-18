@@ -386,6 +386,7 @@ Route::prefix('/v1')->group(function () {
         Route::get('/students/placement-options', [StudentsController::class, 'placementOptions'])->middleware('permission:students.manage,students.register');
         Route::get('/students/{student}/relocation-options', [StudentRelocationController::class, 'options'])->middleware('permission:academic.enrollment.transfer');
         Route::put('/students/{student}/relocate', [StudentRelocationController::class, 'relocate'])->middleware('permission:academic.enrollment.transfer');
+        Route::get('/students/{student}/enrollments', [StudentRelocationController::class, 'history'])->middleware('permission:students.view_basic');
         Route::apiResource('students', StudentsController::class)->only(['index', 'show'])
             ->middleware('permission:students.view_basic');
         Route::apiResource('students', StudentsController::class)->only(['store', 'update'])

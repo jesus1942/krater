@@ -35,12 +35,13 @@ class StudentRegistration
             }
             $student = Student::create(array_merge($this->basicData($data), [
                 'company_id' => TenantContext::companyId(), 'school_level_id' => TenantContext::schoolLevelId(),
+                // school_year es obligatorio en la tabla; el resto del legacy lo deriva StudentPlacement.
                 'status' => $data['status'] ?? 'active', 'school_year' => $year->year,
-                'level' => $division->schoolLevel->name, 'grade' => $division->gradeLevel->name, 'division' => $division->name,
             ]));
             Enrollment::create(['company_id' => TenantContext::companyId(), 'school_level_id' => TenantContext::schoolLevelId(),
                 'academic_year_id' => $year->id, 'division_id' => $division->id, 'student_id' => $student->id,
                 'status' => Enrollment::STATUS_ACTIVE, 'enrolled_on' => now()->toDateString(), 'attendance_condition' => 'regular']);
+            app(\Crater\Services\Data\StudentPlacement::class)->syncLegacy($student);
             $this->audit($actor, $student, 'student_registered', ['division_id' => $division->id, 'academic_year_id' => $year->id]);
             return $student;
         });
