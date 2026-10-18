@@ -305,3 +305,10 @@
 - Jesús condicionó la promoción a (1) ninguna cuenta existente con cambio de contraseña forzado y (2) fichas con el nivel de su cargo, institucionales solo para administración total. Ambas probadas en test y en staging.
 - `produccion` avanzó por fast-forward 21a4b75 -> e5b21f3. Deploys SUCCESS: web `6a9e01dd-e72b-480e-a1fc-607c9f0bbd8a`, backups `0a3ee771-d7a7-4730-b29e-7f8ab6c197b6`, restauración `1f36d9e6-d3f2-43a2-b8eb-c0f7791b30eb`.
 - Predeploy: `E1 fichas de personal: {"linked_by_email":0,"files_created":2,"ambiguous_emails":0}`; `E1 cargos desde roles vigentes: {"cargos":1,"institutional_cargos":1,"teaching":0,"skipped_global_without_level":0}` (el cargo de la administración total); `E1 cargos auditados: 1`. Smoke snapshot 5 sin pérdidas; 77 permisos/14 roles; predeploy completo. La segunda cuenta productiva no tiene rol vigente: su ficha queda sin cargo ni nivel hasta que se le asigne uno.
+
+## 2026-10-18 — Arreglos de sesión
+
+- Sin sesión, la API responde 401 (antes `active-account` podía dar 403); con la cuenta desactivada sigue 403. `/admin` con una cookie de sesión que ya no existe redirige a `/login?aviso=sesion`.
+- La SPA trata 401 como sesión terminada y 419 (token CSRF vencido) como "el último cambio no se guardó": en ambos casos recarga `/login` con el aviso en español, para tomar cookies y token nuevos. Ante un 403 consulta `/api/v1/auth/check`: si la sesión ya no existe va al login con aviso; si existe, muestra la falta de permiso. Se retiraron los mensajes en inglés ("Unauthorized", "Logged out successfully", conexión, error desconocido) de ese camino.
+- Sesiones que sobreviven a un deploy: `config/session.php` toma `database` por defecto (la tabla `sessions` existe desde 2014); el disco del contenedor se pierde en cada deploy. Comando `ena:runtime` en `pre-deploy.sh`: informa drivers de sesión, caché y cola sin secretos y advierte si la sesión es efímera. Si una variable `SESSION_DRIVER=file` estuviera definida en Railway, prevalece sobre el valor por defecto: el informe lo muestra.
+- Gate: `SessionResilienceTest` (3 tests), 118 tests en total; smokes DOM aprobados.

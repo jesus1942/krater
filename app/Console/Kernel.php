@@ -16,6 +16,7 @@ class Kernel extends ConsoleKernel
         Commands\ResetApp::class,
         Commands\CreateTemplateCommand::class,
         Commands\MarkAsInstalled::class,
+        Commands\RuntimeReport::class,
     ];
 
     /**

@@ -54,3 +54,14 @@ export const logout = ({ state, commit, dispatch }) => {
       })
   })
 }
+
+/**
+ * La sesion termino (vencida, cerrada por un deploy o token CSRF viejo).
+ * Recarga completa al login para tomar cookies y token nuevos, con aviso.
+ * aviso: 'sesion' (volver a ingresar) o 'no-guardado' (el ultimo cambio no se guardo).
+ */
+export const sessionEnded = ({ state, commit }, aviso = 'sesion') => {
+  if (state.isLoggedOut) return
+  commit(types.SET_LOGOUT, true)
+  window.location.assign('/login?aviso=' + encodeURIComponent(aviso))
+}

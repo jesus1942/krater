@@ -1,5 +1,8 @@
 <template>
   <form id="loginForm" @submit.prevent="validateBeforeSubmit">
+    <p v-if="sessionNotice" class="p-3 mb-4 text-sm text-yellow-800 bg-yellow-50 border border-yellow-200 rounded">
+      {{ sessionNotice }}
+    </p>
     <sw-input-group
       :label="$t('login.email')"
       :error="emailError"
@@ -108,6 +111,12 @@ export default {
     },
   },
   computed: {
+    sessionNotice() {
+      const aviso = this.$route.query.aviso
+      if (aviso === 'no-guardado') return 'Tu sesión venció y el último cambio no se guardó. Ingresá de nuevo y repetilo.'
+      if (aviso === 'sesion') return 'Tu sesión terminó. Ingresá de nuevo para continuar.'
+      return ''
+    },
     emailError() {
       if (!this.$v.loginData.email.$error) {
         return ''

@@ -10,4 +10,5 @@ php artisan ena:smoke
 echo 'SuiteEna predeploy: catalogo de permisos y roles'
 php artisan db:seed --class=RbacSeeder --force
 php artisan crater:mark-installed
+php artisan ena:runtime
 echo 'SuiteEna predeploy: completo'

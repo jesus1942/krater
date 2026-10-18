@@ -19,7 +19,13 @@ class ActiveAccount
 
     public function handle(Request $request, Closure $next)
     {
-        abort_unless($request->user() && $request->user()->is_active, 403);
+        // Sin sesion es 401 (volver a ingresar); cuenta desactivada es 403.
+        if (! $request->user()) {
+            return $request->expectsJson() || $request->is('api/*')
+                ? response()->json(['error' => 'unauthenticated', 'message' => 'Tu sesión terminó.'], 401)
+                : redirect('/login?aviso=sesion');
+        }
+        abort_unless($request->user()->is_active, 403);
 
         if ($request->user()->must_change_password && $request->is('api/*')
             && ! in_array($request->method().' '.$request->path(), self::WHILE_PASSWORD_CHANGE, true)) {
