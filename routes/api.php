@@ -62,13 +62,6 @@ use Crater\Http\Controllers\V1\Settings\UpdateCompanySettingsController;
 use Crater\Http\Controllers\V1\Settings\UpdateUserSettingsController;
 use Crater\Http\Controllers\V1\Student\StudentsController;
 use Crater\Http\Controllers\V1\Student\StudentRelocationController;
-use Crater\Http\Controllers\V1\Update\CheckVersionController;
-use Crater\Http\Controllers\V1\Update\CopyFilesController;
-use Crater\Http\Controllers\V1\Update\DeleteFilesController;
-use Crater\Http\Controllers\V1\Update\DownloadUpdateController;
-use Crater\Http\Controllers\V1\Update\FinishUpdateController;
-use Crater\Http\Controllers\V1\Update\MigrateUpdateController;
-use Crater\Http\Controllers\V1\Update\UnzipUpdateController;
 use Crater\Http\Controllers\V1\Users\UsersController;
 use Crater\Http\Controllers\V1\Academic\AcademicYearsController;
 use Crater\Http\Controllers\V1\Audit\AuditLogsController;
@@ -326,24 +319,6 @@ Route::prefix('/v1')->group(function () {
         Route::get('/next-number', NextNumberController::class)->middleware('permission:finance.view');
 
 
-        // Self Update
-        //----------------------------------
-
-        Route::get('/check/update', CheckVersionController::class)->middleware('permission:system.settings.manage');
-
-        Route::post('/update/download', DownloadUpdateController::class)->middleware('permission:system.settings.manage');
-
-        Route::post('/update/unzip', UnzipUpdateController::class)->middleware('permission:system.settings.manage');
-
-        Route::post('/update/copy', CopyFilesController::class)->middleware('permission:system.settings.manage');
-
-        Route::post('/update/delete', DeleteFilesController::class)->middleware('permission:system.settings.manage');
-
-        Route::post('/update/migrate', MigrateUpdateController::class)->middleware('permission:system.settings.manage');
-
-        Route::post('/update/finish', FinishUpdateController::class)->middleware('permission:system.settings.manage');
-
-
         // Customers
         //----------------------------------
 
@@ -570,3 +545,10 @@ Route::prefix('/v1')->group(function () {
             ->middleware('permission:system.user.manage');
     });
 });
+
+
+// Cualquier /api/... inexistente responde 404 JSON en vez de caer en la SPA.
+// Debe quedar al final de este archivo.
+Route::any('{any}', function () {
+    return response()->json(['message' => 'Not Found.'], 404);
+})->where('any', '.*');

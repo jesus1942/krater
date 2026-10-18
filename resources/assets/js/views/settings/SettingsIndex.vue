@@ -72,7 +72,6 @@ import {
 } from '@vue-hero-icons/outline'
 
 import {
-  RefreshIcon,
   CogIcon,
   MailIcon,
   PencilAltIcon,
@@ -97,7 +96,6 @@ export default {
     MailIcon,
     BellIcon,
     FolderIcon,
-    RefreshIcon,
     CubeIcon,
     CloudUploadIcon,
     DatabaseIcon,
@@ -209,11 +207,6 @@ export default {
           link: '/admin/settings/backup',
           title: 'settings.menu_title.backup',
           icon: 'database-icon',
-        },
-        {
-          link: '/admin/settings/update-app',
-          title: 'settings.menu_title.update_app',
-          icon: 'refresh-icon',
         },
       ],
     }

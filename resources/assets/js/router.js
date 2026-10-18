@@ -89,7 +89,6 @@ import TaxTypes from './views/settings/TaxTypesSetting.vue'
 import NotesSetting from './views/settings/NotesSetting.vue'
 import ExpenseCategory from './views/settings/ExpenseCategorySetting.vue'
 import MailConfig from './views/settings/MailConfigSetting.vue'
-import UpdateApp from './views/settings/UpdateAppSetting.vue'
 import Backup from './views/settings/BackupSetting.vue'
 import FileDisk from './views/settings/FileDiskSetting.vue'
 import CustomFieldsIndex from './views/settings/CustomFieldsSetting.vue'
@@ -455,11 +454,6 @@ const routes = [
             path: 'notifications',
             name: 'notifications',
             component: Notifications,
-          },
-          {
-            path: 'update-app',
-            name: 'updateapp',
-            component: UpdateApp,
           },
           {
             path: 'backup',

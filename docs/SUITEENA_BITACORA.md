@@ -251,3 +251,13 @@
 - Agendas normales restablecidas: backup diario 0 6 * * *, restauración mensual 0 7 1 * *, comandos normales, predeploy vacío, restart NEVER. accept-deploy no respondió; el único cambio pendiente se reemplazó por startCommand normal idéntico al valor live, sin diferencia efectiva ni comandos temporales.
 - Evidencia: docs/audits/2026-10-07-row6-review-staging.json. Producción reverificada: f761890, cbfe545a SUCCESS, sin cambios. No promover. Pin de MySQL y backups nativos de volumen siguen pendientes del cierre anterior.
 - Cierre verificado de e9ccb6b: web 81af9b50 SUCCESS con 280 checks institucionales y 68 roles; workers f3b9887f/f6336647 SUCCESS con agendas normales. Árbol remoto idéntico al probado. No se promovió producción ni se activó Drive sin credenciales.
+
+
+## 2026-10-18 — Fila 8: limpieza de plataforma
+
+- Se rehace la fila 8 sobre `produccion` (b644517); el parche local anterior no llegó al remoto.
+- Se elimina el actualizador de Crater: rutas `check/update` y `update/*`, sus controladores, el comando `crater:update`, la clase `Crater\Space\Updater` y la pantalla de configuración «Actualizar app» con su ruta del frontend.
+- Cualquier `/api/...` inexistente responde 404 JSON (`{"message":"Not Found."}`) desde un catch-all al final de `routes/api.php`, en lugar de devolver la SPA.
+- Canal `stderr` = `Crater\Logging\SplitStreamLogger`: debug/info/notice a stdout, warning o más grave a stderr. PHP-FPM con `log_level = warning` y access log a stdout (`php-fpm-logging.conf`, copiado como `zz-ena-logging.conf`). Antes, los NOTICE de arranque de FPM figuraban como error en Railway.
+- Gate local `phpunit -c phpunit-rbac.xml`: 102 tests / 926 aserciones con PHP 8.3 + bcmath, incluye `tests/Isolation/PlatformCleanupTest.php` (4 tests).
+- Frontend recompilado (`npm ci --legacy-peer-deps`, `npm run production` con `--openssl-legacy-provider`) y `build/frontend` regenerado; el CSS solo pierde clases que usaba la pantalla eliminada.

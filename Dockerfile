@@ -74,6 +74,9 @@ RUN mkdir -p /var/www/public/assets/fonts/poppins \
     && curl -fsSL "https://cdn.jsdelivr.net/npm/@fontsource/poppins@5/files/poppins-latin-600-normal.woff2" \
             -o /var/www/public/assets/fonts/poppins/poppins-600.woff2
 
+# Logs de PHP-FPM: warning+ a stderr, access log a stdout
+RUN cp /var/www/php-fpm-logging.conf /usr/local/etc/php-fpm.d/zz-ena-logging.conf
+
 # Configuracion de nginx
 RUN cp /var/www/nginx.conf /etc/nginx/sites-available/default.template \
     && rm -f /etc/nginx/sites-enabled/default \
