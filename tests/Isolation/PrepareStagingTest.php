@@ -33,6 +33,7 @@ class PrepareStagingTest extends TestCase
             '2020_09_26_100951_create_user_settings_table.php' => 'CreateUserSettingsTable',
             '2026_09_01_000300_create_rbac_tables.php' => 'CreateRbacTables',
             '2026_10_02_000000_add_role_assignment_lifecycle.php' => 'AddRoleAssignmentLifecycle',
+            '2026_10_18_000000_add_soft_deletes_to_finance_and_users.php' => 'AddSoftDeletesToFinanceAndUsers',
         ] as $file => $class) {
             require_once database_path('migrations/'.$file);
             (new $class())->up();

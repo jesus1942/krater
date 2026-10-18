@@ -2,6 +2,7 @@
 
 namespace Crater\Models;
 
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Crater\Traits\Auditable;
 use Carbon\Carbon;
 use Crater\Traits\HasCustomFieldsTrait;
@@ -20,6 +21,7 @@ class Expense extends Model implements HasMedia
     use InteractsWithMedia;
     use HasCustomFieldsTrait;
     use BelongsToSchoolLevel;
+    use SoftDeletes;
 
     protected $guarded = ['id'];
 

@@ -42,11 +42,16 @@ class UniqueNumber implements Rule
 
         $this->type = $attribute;
 
-        if ($this->id && $this->class::where('id', $this->id)->where($attribute, $uniqueNumber)->first()) {
+        // Incluye las bajas logicas: su numero sigue ocupado.
+        $query = fn () => method_exists($this->class, 'bootSoftDeletes')
+            ? $this->class::withTrashed()
+            : $this->class::query();
+
+        if ($this->id && $query()->where('id', $this->id)->where($attribute, $uniqueNumber)->first()) {
             return true;
         }
 
-        if ($this->class::where($attribute, $uniqueNumber)->first()) {
+        if ($query()->where($attribute, $uniqueNumber)->first()) {
             return false;
         }
 

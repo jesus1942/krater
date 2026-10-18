@@ -2,6 +2,7 @@
 
 namespace Crater\Http\Controllers\V1\Payment;
 
+use Crater\Services\Data\TrashBin;
 use Crater\Http\Controllers\Controller;
 use Crater\Http\Requests\DeletePaymentsRequest;
 use Crater\Http\Requests\PaymentRequest;
@@ -97,7 +98,7 @@ class PaymentsController extends Controller
 
     public function delete(DeletePaymentsRequest $request)
     {
-        Payment::deletePayments($request->ids);
+        app(TrashBin::class)->delete('payments', (array) $request->ids);
 
         return response()->json([
             'success' => true,

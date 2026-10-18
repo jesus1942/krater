@@ -2,6 +2,7 @@
 
 namespace Crater\Models;
 
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Crater\Traits\Auditable;
 use App;
 use Barryvdh\DomPDF\Facade as PDF;
@@ -25,6 +26,7 @@ class Estimate extends Model implements HasMedia
     use GeneratesPdfTrait;
     use HasCustomFieldsTrait;
     use BelongsToSchoolLevel;
+    use SoftDeletes;
 
     public const STATUS_DRAFT = 'DRAFT';
     public const STATUS_SENT = 'SENT';
@@ -78,6 +80,7 @@ class Estimate extends Model implements HasMedia
     {
         // Get the last created order
         $lastOrder = Estimate::acrossLevels()
+            ->withTrashed() // un numero dado de baja nunca se reutiliza
             ->where('estimates.company_id', request()->header('company'))
             ->where('estimate_number', 'LIKE', $value.'-%')
             ->orderBy('estimate_number', 'desc')

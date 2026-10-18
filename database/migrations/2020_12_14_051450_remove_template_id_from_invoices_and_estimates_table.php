@@ -1,5 +1,8 @@
 <?php
 
+// Fila 5: sin scopes globales, porque deleted_at todavia no existe en este
+// punto de una instalacion nueva. En bases existentes esta migracion ya corrio.
+
 use Crater\Models\Estimate;
 use Crater\Models\Invoice;
 use Illuminate\Database\Migrations\Migration;
@@ -16,7 +19,7 @@ class RemoveTemplateIdFromInvoicesAndEstimatesTable extends Migration
     public function up()
     {
         if (Schema::hasColumn('invoices', 'invoice_template_id')) {
-            $invoices = Invoice::all();
+            $invoices = Invoice::withoutGlobalScopes()->get();
 
             $invoices->map(function ($invoice) {
                 $invoice->template_name = 'invoice'.$invoice->invoice_template_id;
@@ -32,7 +35,7 @@ class RemoveTemplateIdFromInvoicesAndEstimatesTable extends Migration
         }
 
         if (Schema::hasColumn('estimates', 'estimate_template_id')) {
-            $estimates = Estimate::all();
+            $estimates = Estimate::withoutGlobalScopes()->get();
 
             $estimates->map(function ($estimate) {
                 $estimate->template_name = 'estimate'.$estimate->estimate_template_id;

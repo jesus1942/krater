@@ -200,7 +200,7 @@ class DeployOperationsTest extends TestCase
         Schema::create('currencies', function (Blueprint $t) { $t->increments('id'); });
         Schema::create('users', function (Blueprint $t) {
             $t->increments('id'); $t->integer('company_id'); $t->integer('currency_id')->nullable();
-            $t->string('email'); $t->string('password'); $t->boolean('is_active')->default(true);
+            $t->string('email'); $t->string('password'); $t->boolean('is_active')->default(true); $t->softDeletes();
         });
         Schema::create('roles', function (Blueprint $t) {
             $t->increments('id'); $t->integer('company_id'); $t->string('name'); $t->string('scope_type');

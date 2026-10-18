@@ -154,6 +154,12 @@ export default {
           totalAdminOnly: true,
         },
         {
+          link: '/admin/settings/trash',
+          title: 'Papelera',
+          icon: 'database-icon',
+          totalAdminOnly: true,
+        },
+        {
           link: '/admin/settings/preferences',
           title: 'settings.menu_title.preferences',
           icon: 'cog-icon',

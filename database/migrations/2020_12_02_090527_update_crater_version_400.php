@@ -1,5 +1,8 @@
 <?php
 
+// Fila 5: sin scopes globales, porque deleted_at todavia no existe en este
+// punto de una instalacion nueva. En bases existentes esta migracion ya corrio.
+
 use Crater\Models\CompanySetting;
 use Crater\Models\Estimate;
 use Crater\Models\Expense;
@@ -25,7 +28,7 @@ class UpdateCraterVersion400 extends Migration
 
         Setting::setSetting('version', '4.0.0');
 
-        $user = User::where('role', 'admin')->first();
+        $user = User::withoutGlobalScopes()->where('role', 'admin')->first();
 
         if ($user && $user->role == 'admin') {
             $user->update([
@@ -95,12 +98,12 @@ class UpdateCraterVersion400 extends Migration
 
     private function updateCreatorId($user)
     {
-        Invoice::where('company_id', '<>', null)->update(['creator_id' => $user->id]);
-        Estimate::where('company_id', '<>', null)->update(['creator_id' => $user->id]);
-        Expense::where('company_id', '<>', null)->update(['creator_id' => $user->id]);
-        Payment::where('company_id', '<>', null)->update(['creator_id' => $user->id]);
-        Item::where('company_id', '<>', null)->update(['creator_id' => $user->id]);
-        User::where('role', 'customer')->update(['creator_id' => $user->id]);
+        Invoice::withoutGlobalScopes()->where('company_id', '<>', null)->update(['creator_id' => $user->id]);
+        Estimate::withoutGlobalScopes()->where('company_id', '<>', null)->update(['creator_id' => $user->id]);
+        Expense::withoutGlobalScopes()->where('company_id', '<>', null)->update(['creator_id' => $user->id]);
+        Payment::withoutGlobalScopes()->where('company_id', '<>', null)->update(['creator_id' => $user->id]);
+        Item::withoutGlobalScopes()->where('company_id', '<>', null)->update(['creator_id' => $user->id]);
+        User::withoutGlobalScopes()->where('role', 'customer')->update(['creator_id' => $user->id]);
     }
 
     private function updateCompanySettings($user)

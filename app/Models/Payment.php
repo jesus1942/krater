@@ -2,6 +2,7 @@
 
 namespace Crater\Models;
 
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Crater\Traits\Auditable;
 use Barryvdh\DomPDF\Facade as PDF;
 use Carbon\Carbon;
@@ -25,6 +26,7 @@ class Payment extends Model implements HasMedia
     use GeneratesPdfTrait;
     use HasCustomFieldsTrait;
     use BelongsToSchoolLevel;
+    use SoftDeletes;
 
     public const PAYMENT_MODE_CHECK = 'CHECK';
     public const PAYMENT_MODE_OTHER = 'OTHER';
@@ -243,30 +245,6 @@ class Payment extends Model implements HasMedia
         return $payment;
     }
 
-    public static function deletePayments($ids)
-    {
-        foreach ($ids as $id) {
-            $payment = Payment::find($id);
-
-            if ($payment->invoice_id != null) {
-                $invoice = Invoice::find($payment->invoice_id);
-                $invoice->due_amount = ((int)$invoice->due_amount + (int)$payment->amount);
-
-                if ($invoice->due_amount == $invoice->total) {
-                    $invoice->paid_status = Invoice::STATUS_UNPAID;
-                } else {
-                    $invoice->paid_status = Invoice::STATUS_PARTIALLY_PAID;
-                }
-
-                $invoice->status = $invoice->getPreviousStatus();
-                $invoice->save();
-            }
-
-            $payment->delete();
-        }
-
-        return true;
-    }
 
     private function strposX($haystack, $needle, $number)
     {
@@ -287,6 +265,7 @@ class Payment extends Model implements HasMedia
     {
         // Get the last created order
         $payment = Payment::acrossLevels()
+            ->withTrashed() // un numero dado de baja nunca se reutiliza
             ->where('payments.company_id', request()->header('company'))
             ->where('payment_number', 'LIKE', $value.'-%')
             ->orderBy('payment_number', 'desc')

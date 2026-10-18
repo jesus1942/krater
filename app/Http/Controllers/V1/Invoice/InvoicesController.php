@@ -2,6 +2,7 @@
 
 namespace Crater\Http\Controllers\V1\Invoice;
 
+use Crater\Services\Data\TrashBin;
 use Crater\Http\Controllers\Controller;
 use Crater\Http\Requests;
 use Crater\Http\Requests\DeleteInvoiceRequest;
@@ -129,7 +130,7 @@ class InvoicesController extends Controller
      */
     public function delete(DeleteInvoiceRequest $request)
     {
-        Invoice::destroy($request->ids);
+        app(TrashBin::class)->delete('invoices', (array) $request->ids);
 
         return response()->json([
             'success' => true,

@@ -9,6 +9,7 @@
     <file>tests/Isolation/PrepareStagingTest.php</file>
     <file>tests/Isolation/FreshInstallationCatalogTest.php</file>
     <file>tests/Isolation/PlatformCleanupTest.php</file>
+    <file>tests/Isolation/SoftDeletionTest.php</file>
   </testsuite></testsuites>
   <php>
     <server name="APP_ENV" value="testing"/>

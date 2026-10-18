@@ -2,6 +2,7 @@
 
 namespace Crater\Http\Controllers\V1\Estimate;
 
+use Crater\Services\Data\TrashBin;
 use Crater\Http\Controllers\Controller;
 use Crater\Http\Requests\DeleteEstimatesRequest;
 use Crater\Http\Requests\EstimatesRequest;
@@ -98,7 +99,7 @@ class EstimatesController extends Controller
 
     public function delete(DeleteEstimatesRequest $request)
     {
-        Estimate::destroy($request->ids);
+        app(TrashBin::class)->delete('estimates', (array) $request->ids);
 
         return response()->json([
             'success' => true,

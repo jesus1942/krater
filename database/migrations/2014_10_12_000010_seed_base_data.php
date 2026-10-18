@@ -1,5 +1,8 @@
 <?php
 
+// Fila 5: sin scopes globales, porque deleted_at todavia no existe en este
+// punto de una instalacion nueva. En bases existentes esta migracion ya corrio.
+
 use Crater\Models\CompanySetting;
 use Crater\Models\Currency;
 use Crater\Models\PaymentMethod;
@@ -54,7 +57,7 @@ class SeedBaseData extends Migration
         }
 
         if (Schema::hasTable('company_settings') && CompanySetting::count() === 0) {
-            $user = User::where('role', 'super admin')->first();
+            $user = User::withoutGlobalScopes()->where('role', 'super admin')->first();
             if ($user) {
                 $billingFmt = '<h3>{BILLING_ADDRESS_NAME}</h3><p>{BILLING_ADDRESS_STREET_1}</p><p>{BILLING_CITY}  {BILLING_STATE}</p><p>{BILLING_COUNTRY}  {BILLING_ZIP_CODE}</p>';
                 $shippingFmt = '<h3>{SHIPPING_ADDRESS_NAME}</h3><p>{SHIPPING_ADDRESS_STREET_1}</p><p>{SHIPPING_CITY}  {SHIPPING_STATE}</p><p>{SHIPPING_COUNTRY}  {SHIPPING_ZIP_CODE}</p>';

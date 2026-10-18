@@ -81,6 +81,7 @@ import AcademicStructureIndex from './views/academic/AcademicStructureIndex.vue'
 import EnrollmentsIndex from './views/academic/EnrollmentsIndex.vue'
 import AuditLogsIndex from './views/academic/AuditLogsIndex.vue'
 import DataReconciliation from './views/settings/DataReconciliation.vue'
+import TrashSetting from './views/settings/TrashSetting.vue'
 import Customization from './views/settings/CustomizationSetting.vue'
 import Notifications from './views/settings/NotificationsSetting.vue'
 import Preferences from './views/settings/PreferencesSetting.vue'
@@ -403,6 +404,11 @@ const routes = [
             path: 'data-reconciliation',
             name: 'system.data.reconciliation',
             component: DataReconciliation,
+          },
+          {
+            path: 'trash',
+            name: 'system.trash',
+            component: TrashSetting,
           },
           {
             path: 'customization',

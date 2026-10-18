@@ -2,6 +2,7 @@
 
 namespace Crater\Models;
 
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Carbon\Carbon;
 use Crater\Traits\BelongsToSchoolLevel;
 use Crater\Traits\Auditable;
@@ -14,6 +15,7 @@ class Item extends Model
     use Auditable;
     use HasFactory;
     use BelongsToSchoolLevel;
+    use SoftDeletes;
 
     protected $guarded = ['id'];
 

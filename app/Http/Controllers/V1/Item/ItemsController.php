@@ -2,6 +2,7 @@
 
 namespace Crater\Http\Controllers\V1\Item;
 
+use Crater\Services\Data\TrashBin;
 use Crater\Http\Controllers\Controller;
 use Crater\Http\Requests;
 use Crater\Http\Requests\DeleteItemsRequest;
@@ -106,7 +107,7 @@ class ItemsController extends Controller
      */
     public function delete(DeleteItemsRequest $request)
     {
-        Item::destroy($request->ids);
+        app(TrashBin::class)->delete('items', (array) $request->ids);
 
         return response()->json([
             'success' => true,

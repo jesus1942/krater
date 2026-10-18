@@ -78,6 +78,8 @@ class LegacyRoutesSecurityTest extends TestCase
             $table->unsignedInteger('user_id')->nullable(); $table->string('unique_hash')->unique();
             $table->bigInteger('due_amount')->default(0); $table->timestamps();
         });
+        require_once database_path('migrations/2026_10_18_000000_add_soft_deletes_to_finance_and_users.php');
+        (new \AddSoftDeletesToFinanceAndUsers())->up();
         DB::table('currencies')->insert(['name' => 'Peso', 'code' => 'ARS', 'symbol' => '$', 'precision' => 2,
             'thousand_separator' => '.', 'decimal_separator' => ',', 'swap_currency_symbol' => false]);
         foreach ([1, 2] as $id) {

@@ -2,6 +2,7 @@
 
 namespace Crater\Models;
 
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Carbon\Carbon;
 use Crater\Notifications\MailResetPasswordNotification;
 use Crater\Traits\HasCustomFieldsTrait;
@@ -21,6 +22,7 @@ class User extends Authenticatable implements HasMedia
     use InteractsWithMedia;
     use HasCustomFieldsTrait;
     use HasFactory;
+    use SoftDeletes;
 
     /**
      * The attributes that are mass assignable.
@@ -300,32 +302,6 @@ class User extends Authenticatable implements HasMedia
         });
     }
 
-    public static function deleteCustomers($ids)
-    {
-        foreach ($ids as $id) {
-            $customer = self::find($id);
-
-            if ($customer->estimates()->exists()) {
-                $customer->estimates()->delete();
-            }
-
-            if ($customer->invoices()->exists()) {
-                $customer->invoices()->delete();
-            }
-
-            if ($customer->payments()->exists()) {
-                $customer->payments()->delete();
-            }
-
-            if ($customer->addresses()->exists()) {
-                $customer->addresses()->delete();
-            }
-
-            $customer->delete();
-        }
-
-        return true;
-    }
 
     public function getAvatarAttribute()
     {

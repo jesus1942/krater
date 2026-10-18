@@ -2,6 +2,7 @@
 
 namespace Crater\Http\Controllers\V1\Expense;
 
+use Crater\Services\Data\TrashBin;
 use Crater\Http\Controllers\Controller;
 use Crater\Http\Requests\DeleteExpensesRequest;
 use Crater\Http\Requests\ExpenseRequest;
@@ -97,7 +98,7 @@ class ExpensesController extends Controller
 
     public function delete(DeleteExpensesRequest $request)
     {
-        Expense::destroy($request->ids);
+        app(TrashBin::class)->delete('expenses', (array) $request->ids);
 
         return response()->json([
             'success' => true,

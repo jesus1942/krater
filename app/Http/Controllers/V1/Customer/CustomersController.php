@@ -2,6 +2,7 @@
 
 namespace Crater\Http\Controllers\V1\Customer;
 
+use Crater\Services\Data\TrashBin;
 use Crater\Http\Controllers\Controller;
 use Crater\Http\Requests;
 use Crater\Models\User;
@@ -39,7 +40,8 @@ class CustomersController extends Controller
             )
             ->groupBy('users.id')
             ->leftJoin('invoices', function ($join) use ($levelId) {
-                $join->on('users.id', '=', 'invoices.user_id')->where('invoices.company_id', '=', TenantContext::companyId());
+                $join->on('users.id', '=', 'invoices.user_id')->where('invoices.company_id', '=', TenantContext::companyId())
+                    ->whereNull('invoices.deleted_at');
                 if ($levelId) {
                     $join->where('invoices.school_level_id', '=', $levelId);
                 }
@@ -122,11 +124,7 @@ class CustomersController extends Controller
     public function delete(Request $request)
     {
         $data = $request->validate(['ids' => ['required', 'array', 'min:1'], 'ids.*' => ['integer', 'distinct']]);
-        DB::transaction(function () use ($data) {
-            $customers = app(TenantUsers::class)->customers()->whereIn('users.id', $data['ids'])->lockForUpdate()->get();
-            abort_unless($customers->count() === count($data['ids']), 403);
-            User::deleteCustomers($data['ids']);
-        });
+        app(TrashBin::class)->delete('customers', $data['ids']);
 
         return response()->json([
             'success' => true,

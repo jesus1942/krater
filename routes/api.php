@@ -319,11 +319,22 @@ Route::prefix('/v1')->group(function () {
         Route::get('/next-number', NextNumberController::class)->middleware('permission:finance.view');
 
 
+        // Papelera (fila 5): bajas logicas, solo total admin
+        //----------------------------------
+
+        Route::get('/trash/{type}', [\Crater\Http\Controllers\V1\Trash\TrashController::class, 'index'])
+            ->where('type', 'invoices|estimates|payments|expenses|items|customers')
+            ->middleware('permission:system.settings.manage');
+        Route::post('/trash/{type}/{id}/restore', [\Crater\Http\Controllers\V1\Trash\TrashController::class, 'restore'])
+            ->where(['type' => 'invoices|estimates|payments|expenses|items|customers', 'id' => '[0-9]+'])
+            ->middleware('permission:system.settings.manage');
+
+
         // Customers
         //----------------------------------
 
-        // Hasta la baja logica (fila 5), borrar una familia institucional puede
-        // afectar hermanos/documentos de otros niveles: solo total admin.
+        // La baja de una familia alcanza sus documentos en todos los niveles:
+        // sigue siendo solo total admin, ahora como baja logica restaurable.
         Route::post('/customers/delete', [CustomersController::class, 'delete'])
             ->middleware(['permission:finance.invoice.manage', 'permission:system.settings.manage']);
 

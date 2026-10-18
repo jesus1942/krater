@@ -31,6 +31,13 @@ trait Auditable
         static::deleted(function ($model) {
             $model->registrarEnBitacora('deleted', $model->getOriginal(), []);
         });
+
+        // Solo los modelos con baja logica disparan este evento.
+        if (method_exists(static::class, 'restored')) {
+            static::restored(function ($model) {
+                $model->registrarEnBitacora('restored', [], ['deleted_at' => null]);
+            });
+        }
     }
 
     protected function registrarEnBitacora(string $evento, array $anteriores, array $nuevos): void
