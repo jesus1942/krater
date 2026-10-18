@@ -275,5 +275,5 @@
 - El listado de familias ya no suma la deuda de facturas dadas de baja. Los informes usan Eloquent/`whereHas` y excluyen las bajas. `ena:smoke` cuenta filas físicas: una baja lógica no figura como pérdida.
 - Las migraciones de datos históricas (2014–2021) que usaban modelos Eloquent ahora consultan sin scopes globales, porque en una instalación nueva `deleted_at` todavía no existe en ese punto. En bases existentes ya corrieron y no se reejecutan.
 - Textos de confirmación en español: dicen que la baja es restaurable desde la Papelera.
-- Gate local `phpunit -c phpunit-rbac.xml`: 108 tests / 985 aserciones, incluye `SoftDeletionTest` (6 tests). `role-ui.cjs` e `institution-ui.cjs` aprobados.
+- Gate local `phpunit -c phpunit-rbac.xml`: 108 tests, incluye `SoftDeletionTest` (6 tests). `InstitutionScenario` suma un ciclo de baja y restauración (lote fuera de nivel 403, factura con cobro 422, ítem en uso 422, saldo devuelto y repuesto, papelera), que el smoke de staging repite contra MySQL. `role-ui.cjs` e `institution-ui.cjs` aprobados.
 - Limitación conocida: el email de una familia dada de baja sigue ocupado (la validación `unique` mira la tabla completa); se resuelve restaurándola.

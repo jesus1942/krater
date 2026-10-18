@@ -102,8 +102,33 @@ class InstitutionScenario
                 $call('PUT', '/api/v1/'.$resource.'/'.$id, $different, null, $resource === 'students' ? 422 : 403);
                 if ((int) DB::table($resource)->where('id', $id)->value('school_level_id') !== $idLevel) throw new \RuntimeException('Una edición cambió el nivel de '.$resource);
             }
-            $records[] = $invoiceId;
+            $records[] = compact('invoiceId', 'paymentId', 'expenseId', 'itemId');
         }
+        // Fila 5: baja lógica y papelera con los documentos recién creados del primer nivel.
+        [$first, $second] = [$records[0], $records[1]];
+        $level = (int) $fixture['levels'][0]['school_level_id'];
+        $due = fn () => (int) DB::table('invoices')->where('id', $first['invoiceId'])->value('due_amount');
+        $trashed = fn ($table, $id) => DB::table($table)->where('id', $id)->whereNotNull('deleted_at')->exists();
+        $call('POST', '/api/v1/invoices/delete', ['ids' => [$first['invoiceId']]], null, 422);
+        $call('POST', '/api/v1/items/delete', ['ids' => [$first['itemId']]], null, 422);
+        $call('POST', '/api/v1/expenses/delete', ['ids' => [$first['expenseId'], $second['expenseId']]], $level, 403);
+        if ($trashed('expenses', $first['expenseId'])) throw new \RuntimeException('Un lote rechazado dio de baja un gasto');
+        $call('POST', '/api/v1/payments/delete', ['ids' => [$first['paymentId']]]);
+        if ($due() !== 10000 || ! $trashed('payments', $first['paymentId'])) throw new \RuntimeException('La baja del cobro no devolvió el saldo');
+        $call('POST', '/api/v1/invoices/delete', ['ids' => [$first['invoiceId']]]);
+        $call('GET', '/api/v1/invoices/'.$first['invoiceId'], [], null, 404);
+        if (! in_array($first['invoiceId'], array_column($call('GET', '/api/v1/trash/invoices?limit=100')['records']['data'] ?? [], 'id'), true)) {
+            throw new \RuntimeException('La factura dada de baja no figura en la papelera');
+        }
+        $call('POST', '/api/v1/trash/payments/'.$first['paymentId'].'/restore', [], null, 422);
+        $call('POST', '/api/v1/trash/invoices/'.$first['invoiceId'].'/restore');
+        $call('POST', '/api/v1/trash/payments/'.$first['paymentId'].'/restore');
+        if ($due() !== 9000 || $trashed('invoices', $first['invoiceId']) || $trashed('payments', $first['paymentId'])) {
+            throw new \RuntimeException('La restauración no repuso documentos y saldo');
+        }
+        $call('POST', '/api/v1/expenses/delete', ['ids' => [$first['expenseId']]], $level);
+        $call('POST', '/api/v1/trash/expenses/'.$first['expenseId'].'/restore');
+        if ($trashed('expenses', $first['expenseId'])) throw new \RuntimeException('El gasto no se restauró');
         // Reportes PDF reales: consolidado y los tres filtros, sin reemplazar controladores.
         foreach (['sales/customers', 'sales/items', 'expenses', 'tax-summary', 'profit-loss'] as $report) {
             foreach ([null, ...array_column($fixture['levels'], 'school_level_id')] as $level) {
@@ -114,6 +139,7 @@ class InstitutionScenario
             }
         }
         return ['passed' => true, 'checks' => $checks, 'count' => count($checks), 'levels' => 3,
-            'preserved_levels' => true, 'required_creation_level' => true, 'real_report_pdfs' => true];
+            'preserved_levels' => true, 'required_creation_level' => true, 'real_report_pdfs' => true,
+            'soft_delete_round_trip' => true];
     }
 }
