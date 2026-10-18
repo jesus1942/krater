@@ -129,6 +129,20 @@ class InstitutionScenario
         $call('POST', '/api/v1/expenses/delete', ['ids' => [$first['expenseId']]], $level);
         $call('POST', '/api/v1/trash/expenses/'.$first['expenseId'].'/restore');
         if ($trashed('expenses', $first['expenseId'])) throw new \RuntimeException('El gasto no se restauró');
+        // Fila 7: pase entre niveles con historial y corrección de vuelta, sobre el alumno ficticio del primer nivel.
+        $studentId = (int) DB::table('students')->where('company_id', $company)->where('school_level_id', $level)
+            ->where('last_name', $run.'-0')->value('id');
+        $target = $fixture['levels'][1];
+        $origin = $fixture['levels'][0];
+        $move = fn ($row, $mode) => ['mode' => $mode, 'school_level_id' => $row['school_level_id'], 'academic_year_id' => $row['academic_year_id'],
+            'grade_level_id' => $row['grade_level_id'], 'division_id' => $row['division_id'], 'reason' => 'Ensayo ficticio de fila 7'];
+        $call('PUT', '/api/v1/students/'.$studentId.'/relocate', $move($target, 'transfer'));
+        $history = $call('GET', '/api/v1/students/'.$studentId.'/enrollments', [], (int) $target['school_level_id'])['data'] ?? [];
+        if (array_column($history, 'status') !== ['transferred_out', 'active']) throw new \RuntimeException('El pase no dejó historial');
+        $call('PUT', '/api/v1/students/'.$studentId.'/relocate', $move($origin, 'correction'));
+        if (DB::table('enrollments')->where('student_id', $studentId)->where('status', 'active')->count() !== 1
+            || (int) DB::table('students')->where('id', $studentId)->value('school_level_id') !== $level) throw new \RuntimeException('La corrección no dejó una sola matrícula vigente');
+
         // Fila E1: materias por curso, alta unificada de un docente ficticio y revocación inmediata.
         $subjectId = DB::table('subjects')->where('company_id', $company)->where('school_level_id', $level)->value('id')
             ?? DB::table('subjects')->insertGetId(['company_id' => $company, 'school_level_id' => $level,
@@ -160,6 +174,6 @@ class InstitutionScenario
         }
         return ['passed' => true, 'checks' => $checks, 'count' => count($checks), 'levels' => 3,
             'preserved_levels' => true, 'required_creation_level' => true, 'real_report_pdfs' => true,
-            'soft_delete_round_trip' => true, 'staff_onboarding' => true];
+            'soft_delete_round_trip' => true, 'staff_onboarding' => true, 'enrollment_history' => true];
     }
 }
