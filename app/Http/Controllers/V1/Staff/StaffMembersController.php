@@ -44,7 +44,9 @@ class StaffMembersController extends Controller
             }]);
 
         if (! $global) {
-            $query->whereHas('assignments', fn ($q) => $q->where('school_level_id', $levelId));
+            // Fila E1: tambien quien solo tiene docencia vigente en el nivel.
+            $query->where(fn ($q) => $q->whereHas('assignments', fn ($a) => $a->where('school_level_id', $levelId))
+                ->orWhereHas('teachingAssignments', fn ($t) => $t->whereNull('revoked_at')->where('school_level_id', $levelId)));
         }
 
         $members = $query->orderBy('last_name')->orderBy('first_name')->get();

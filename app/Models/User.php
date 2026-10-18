@@ -58,7 +58,7 @@ class User extends Authenticatable implements HasMedia
         'remember_token',
     ];
 
-    protected $casts = ['is_active' => 'boolean'];
+    protected $casts = ['is_active' => 'boolean', 'must_change_password' => 'boolean'];
 
     protected $with = [
         'currency',

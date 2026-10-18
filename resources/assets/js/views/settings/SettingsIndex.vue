@@ -138,6 +138,11 @@ export default {
           icon: 'template-icon',
         },
         {
+          link: '/admin/settings/course-sections',
+          title: 'Materias por curso',
+          icon: 'template-icon',
+        },
+        {
           link: '/admin/settings/enrollments',
           title: 'settings.menu_title.enrollments',
           icon: 'user-add-icon',

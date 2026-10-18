@@ -173,6 +173,25 @@ Route::prefix('/v1')->group(function () {
             ->middleware('permission:hr.staff.manage');
         Route::put('/staff/{staffMember}', [StaffMembersController::class, 'update'])
             ->middleware('permission:hr.staff.manage');
+        // Fila E1: ficha unificada (datos, cargos, docencia y acceso).
+        Route::get('/staff/onboarding-options', [\Crater\Http\Controllers\V1\Staff\StaffFileController::class, 'options'])
+            ->middleware('permission:hr.staff.onboard');
+        Route::post('/staff/onboard', [\Crater\Http\Controllers\V1\Staff\StaffFileController::class, 'store'])
+            ->middleware('permission:hr.staff.onboard');
+        Route::get('/staff/{staffMember}/file', [\Crater\Http\Controllers\V1\Staff\StaffFileController::class, 'show'])
+            ->middleware('permission:hr.staff.onboard,hr.staff.view');
+        Route::post('/staff/{staffMember}/cargos', [\Crater\Http\Controllers\V1\Staff\StaffFileController::class, 'addCargo'])
+            ->middleware('permission:hr.staff.onboard');
+        Route::post('/staff/{staffMember}/cargos/{assignment}/end', [\Crater\Http\Controllers\V1\Staff\StaffFileController::class, 'endCargo'])
+            ->where('assignment', '[0-9]+')->middleware('permission:hr.staff.onboard');
+        Route::post('/staff/{staffMember}/teaching', [\Crater\Http\Controllers\V1\Staff\StaffFileController::class, 'addTeaching'])
+            ->middleware('permission:hr.staff.onboard');
+        Route::post('/staff/{staffMember}/teaching/{teaching}/revoke', [\Crater\Http\Controllers\V1\Staff\StaffFileController::class, 'revokeTeaching'])
+            ->where('teaching', '[0-9]+')->middleware('permission:hr.staff.onboard');
+        Route::post('/staff/{staffMember}/access', [\Crater\Http\Controllers\V1\Staff\StaffFileController::class, 'enableAccess'])
+            ->middleware('permission:hr.staff.onboard');
+        Route::post('/staff/{staffMember}/access/disable', [\Crater\Http\Controllers\V1\Staff\StaffFileController::class, 'disableAccess'])
+            ->middleware('permission:hr.staff.onboard');
         Route::post('/staff/{staffMember}/assignments', [StaffMembersController::class, 'storeAssignment'])
             ->middleware('permission:hr.staff.manage');
         Route::put('/staff/{staffMember}/assignments/{staffAssignment}', [StaffMembersController::class, 'updateAssignment'])
@@ -238,6 +257,12 @@ Route::prefix('/v1')->group(function () {
         Route::delete('/subjects/{subject}', [SubjectsController::class, 'destroy'])
             ->middleware('permission:academic.study_plan.manage');
 
+        // --- materias por curso (fila E1) ---
+        Route::get('/course-sections', [\Crater\Http\Controllers\V1\Academic\CourseSectionsController::class, 'index'])
+            ->middleware('permission:academic.section.view');
+        Route::put('/divisions/{division}/course-sections', [\Crater\Http\Controllers\V1\Academic\CourseSectionsController::class, 'sync'])
+            ->middleware('permission:academic.section.manage');
+
         // --- matriculas ---
         Route::get('/enrollments', [EnrollmentsController::class, 'index'])
             ->middleware('permission:academic.enrollment.view');
@@ -279,6 +304,7 @@ Route::prefix('/v1')->group(function () {
         Route::put('/me', [CompanyController::class, 'updateProfile']);
         Route::get('/me/settings', GetUserSettingsController::class);
         Route::put('/me/settings', UpdateUserSettingsController::class);
+        Route::put('/me/password', \Crater\Http\Controllers\V1\Auth\ChangePasswordController::class);
         Route::post('/me/upload-avatar', [CompanyController::class, 'uploadAvatar']);
         Route::get('/school-levels', [SchoolLevelsController::class, 'index']);
     });

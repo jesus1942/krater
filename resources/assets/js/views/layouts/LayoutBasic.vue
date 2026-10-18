@@ -1,5 +1,9 @@
 <template>
-  <div v-if="isAppLoaded && accessReady" class="h-full">
+  <div v-if="isAppLoaded && accessReady && mustChangePassword" class="h-full">
+    <base-notification />
+    <change-password />
+  </div>
+  <div v-else-if="isAppLoaded && accessReady" class="h-full">
     <base-modal />
     <base-notification />
     <site-header />
@@ -19,6 +23,7 @@ import SiteHeader from './partials/TheSiteHeader.vue'
 import SiteFooter from './partials/TheSiteFooter.vue'
 import SiteSidebar from './partials/TheSiteSidebar.vue'
 import BaseModal from '../../components/base/modal/BaseModal'
+import ChangePassword from '../auth/ChangePassword.vue'
 import { RefreshIcon } from '@vue-hero-icons/solid'
 import { mapActions, mapGetters } from 'vuex'
 import { canVisit, landingPath } from '../../helpers/access'
@@ -31,12 +36,15 @@ export default {
     SiteFooter,
     BaseModal,
     RefreshIcon,
+    ChangePassword,
   },
 
   computed: {
     ...mapGetters(['isAppLoaded']),
     ...mapGetters('user', ['currentUser']),
     routeAllowed() { return this.accessReady && canVisit(this.currentUser, this.$route.path) },
+    // Fila E1: con contrasenia inicial solo se muestra el cambio de clave.
+    mustChangePassword() { return Boolean(this.currentUser && this.currentUser.must_change_password) },
 
     ...mapGetters('company', {
       selectedCompany: 'getSelectedCompany',
@@ -69,6 +77,7 @@ export default {
   methods: {
     /** Resuelve inicio y enlaces viejos antes de montar sus componentes. */
     redirectToAllowedRoute() {
+      if (this.mustChangePassword) return
       if (!this.routeAllowed || this.$route.path === '/admin') {
         this.$router.replace(landingPath(this.currentUser))
       }

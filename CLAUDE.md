@@ -24,6 +24,13 @@ reversibles) están en producción, SHA fbf3cf4. Gate `phpunit-rbac.xml` 108
 tests; `InstitutionScenario` ensaya baja/restauración en staging. Detalle en
 docs/SUITEENA_BITACORA.md. Siguen: fila 7, fila C y etapa 2.
 
+Fila E1 (19/10/2026, en staging): la ficha de Personal unifica personal y
+usuarios. Cargos = roles con alcance via `RoleAssignments`; docencia =
+`teaching_assignments` que otorgan el rol docente por seccion y se revocan en
+el acto; materias por curso en `CourseSectionsController`. Altas con
+`hr.staff.onboard` (total admin y direccion de nivel en su nivel). Contrasena
+inicial con cambio obligatorio en `ActiveAccount`. Servicio: `StaffOnboarding`.
+
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
 ## Project

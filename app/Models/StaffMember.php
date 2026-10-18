@@ -51,4 +51,9 @@ class StaffMember extends Model
     {
         return $this->hasMany(StaffAssignment::class);
     }
+
+    public function teachingAssignments()
+    {
+        return $this->hasMany(TeachingAssignment::class);
+    }
 }

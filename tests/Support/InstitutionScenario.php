@@ -129,6 +129,26 @@ class InstitutionScenario
         $call('POST', '/api/v1/expenses/delete', ['ids' => [$first['expenseId']]], $level);
         $call('POST', '/api/v1/trash/expenses/'.$first['expenseId'].'/restore');
         if ($trashed('expenses', $first['expenseId'])) throw new \RuntimeException('El gasto no se restauró');
+        // Fila E1: materias por curso, alta unificada de un docente ficticio y revocación inmediata.
+        $subjectId = DB::table('subjects')->where('company_id', $company)->where('school_level_id', $level)->value('id')
+            ?? DB::table('subjects')->insertGetId(['company_id' => $company, 'school_level_id' => $level,
+                'name' => 'Materia ficticia institución', 'created_at' => now(), 'updated_at' => now()]);
+        $divisionId = (int) $fixture['levels'][0]['division_id'];
+        $kept = DB::table('course_sections')->where('division_id', $divisionId)->where('status', 'active')->pluck('subject_id')->all();
+        $call('PUT', '/api/v1/divisions/'.$divisionId.'/course-sections', ['subject_ids' => array_values(array_unique(array_merge($kept, [$subjectId])))], $level);
+        $sectionId = (int) DB::table('course_sections')->where('division_id', $divisionId)->where('subject_id', $subjectId)->value('id');
+        $roleId = DB::table('roles')->where('company_id', $company)->where('name', 'teacher')->value('id');
+        $file = $call('POST', '/api/v1/staff/onboard', ['first_name' => 'Docente ficticio', 'last_name' => $run,
+            'teaching' => [['course_section_id' => $sectionId, 'weekly_hours' => 2]],
+            'access' => ['enabled' => true, 'email' => 'docente.'.strtolower($run).'@example.invalid', 'password' => bin2hex(random_bytes(8))]], $level, 201);
+        $teacherId = (int) ($file['access']['user_id'] ?? 0);
+        $grant = fn () => DB::table('role_user')->where('user_id', $teacherId)->where('role_id', $roleId)
+            ->where('course_section_id', $sectionId)->whereNull('revoked_at')->count();
+        if ($teacherId === 0 || $grant() !== 1 || empty($file['access']['must_change_password'])) throw new \RuntimeException('El alta docente no otorgó acceso y rol de sección');
+        $call('POST', '/api/v1/staff/'.$file['member']['id'].'/teaching/'.$file['teaching'][0]['id'].'/revoke', [], $level);
+        if ($grant() !== 0) throw new \RuntimeException('Revocar la asignación docente no retiró el rol');
+        $call('POST', '/api/v1/staff/'.$file['member']['id'].'/access/disable', [], $level);
+
         // Reportes PDF reales: consolidado y los tres filtros, sin reemplazar controladores.
         foreach (['sales/customers', 'sales/items', 'expenses', 'tax-summary', 'profit-loss'] as $report) {
             foreach ([null, ...array_column($fixture['levels'], 'school_level_id')] as $level) {
@@ -140,6 +160,6 @@ class InstitutionScenario
         }
         return ['passed' => true, 'checks' => $checks, 'count' => count($checks), 'levels' => 3,
             'preserved_levels' => true, 'required_creation_level' => true, 'real_report_pdfs' => true,
-            'soft_delete_round_trip' => true];
+            'soft_delete_round_trip' => true, 'staff_onboarding' => true];
     }
 }

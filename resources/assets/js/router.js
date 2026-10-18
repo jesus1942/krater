@@ -59,9 +59,6 @@ import ExpensesIndex from './views/expenses/Index'
 import ExpenseCreate from './views/expenses/Create.vue'
 
 //User
-import UserIndex from './views/users/Index.vue'
-import UserCreate from './views/users/Create.vue'
-import UserAccess from './views/users/Access.vue'
 
 // Report
 import SalesReports from './views/reports/SalesReports'
@@ -82,6 +79,7 @@ import EnrollmentsIndex from './views/academic/EnrollmentsIndex.vue'
 import AuditLogsIndex from './views/academic/AuditLogsIndex.vue'
 import DataReconciliation from './views/settings/DataReconciliation.vue'
 import TrashSetting from './views/settings/TrashSetting.vue'
+import CourseSectionsSetting from './views/settings/CourseSectionsSetting.vue'
 import Customization from './views/settings/CustomizationSetting.vue'
 import Notifications from './views/settings/NotificationsSetting.vue'
 import Preferences from './views/settings/PreferencesSetting.vue'
@@ -320,23 +318,9 @@ const routes = [
         component: ExpenseCreate,
       },
 
-      // User
-      {
-        path: 'users',
-        component: UserIndex,
-      },
-      {
-        path: 'users/create',
-        name: 'users.create',
-        component: UserCreate,
-      },
-      {
-        path: 'users/:id/edit',
-        name: 'users.edit',
-        component: UserCreate,
-      },
-
-      { path: 'users/:id/access', name: 'users.access', component: UserAccess },
+      // Fila E1: usuarios y accesos viven en la ficha de Personal.
+      { path: 'users', redirect: '/admin/staff' },
+      { path: 'users/*', redirect: '/admin/staff' },
 
       // Reports
       {
@@ -409,6 +393,11 @@ const routes = [
             path: 'trash',
             name: 'system.trash',
             component: TrashSetting,
+          },
+          {
+            path: 'course-sections',
+            name: 'academic.course.sections',
+            component: CourseSectionsSetting,
           },
           {
             path: 'customization',

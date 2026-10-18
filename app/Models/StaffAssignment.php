@@ -20,6 +20,9 @@ class StaffAssignment extends Model
         'active',
         'weekly_hours',
         'notes',
+        'role_id',
+        'division_id',
+        'role_user_id',
     ];
 
     protected $casts = [
@@ -37,6 +40,11 @@ class StaffAssignment extends Model
     public function company()
     {
         return $this->belongsTo(Company::class);
+    }
+
+    public function division()
+    {
+        return $this->belongsTo(Division::class);
     }
 
     public function schoolLevel()

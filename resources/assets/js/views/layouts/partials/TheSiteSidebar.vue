@@ -85,7 +85,6 @@ import {
   CogIcon,
   UsersIcon,
   AcademicCapIcon,
-  ShieldCheckIcon,
 } from '@vue-hero-icons/outline'
 import { mapGetters, mapActions } from 'vuex'
 
@@ -102,7 +101,6 @@ export default {
     CogIcon,
     UsersIcon,
     AcademicCapIcon,
-    ShieldCheckIcon,
   },
 
   computed: {
@@ -117,7 +115,8 @@ export default {
     },
 
     canManageStaff() {
-      return can(this.currentUser, 'hr.staff.view') || can(this.currentUser, 'hr.payroll.view')
+      return can(this.currentUser, 'hr.staff.view') || can(this.currentUser, 'hr.staff.onboard')
+        || can(this.currentUser, 'hr.payroll.view')
     },
 
     menuGroups() {
@@ -197,14 +196,8 @@ export default {
         })
       }
 
+      // Fila E1: el acceso se administra desde la ficha de Personal.
       const systemItems = []
-      if (can(this.currentUser, 'system.user.view')) {
-        systemItems.push({
-          title: 'Usuarios y roles',
-          icon: 'shield-check-icon',
-          route: '/admin/users',
-        })
-      }
       systemItems.push({
         title: settingsLabel(this.currentUser),
         icon: 'cog-icon',
@@ -232,11 +225,11 @@ export default {
         '/admin/customers': 'finance.view', '/admin/items': 'finance.view',
         '/admin/estimates': 'finance.view', '/admin/invoices': 'finance.view',
         '/admin/payments': 'finance.view', '/admin/expenses': 'finance.view',
-        '/admin/staff': 'hr.staff.view', '/admin/payroll': 'hr.payroll.view',
-        '/admin/reports': 'finance.report.view', '/admin/users': 'system.user.view',
+        '/admin/staff': ['hr.staff.view', 'hr.staff.onboard'], '/admin/payroll': 'hr.payroll.view',
+        '/admin/reports': 'finance.report.view',
       }
       return groups.map(group => ({ ...group, items: group.items.filter(item =>
-        !required[item.route] || can(this.currentUser, required[item.route]))
+        !required[item.route] || [].concat(required[item.route]).some(permission => can(this.currentUser, permission)))
       })).filter(group => group.items.length > 0)
     },
   },

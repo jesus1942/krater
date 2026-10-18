@@ -96,6 +96,8 @@ final class RoleName
                     $P::SETTINGS_MANAGE,
                     $P::SCHOOL_LEVEL_MANAGE,
                     $P::PROMOTION_REVERT,
+                    // E1: las altas de personal son de la direccion de cada nivel.
+                    $P::HR_STAFF_ONBOARD,
                 ])),
             ],
 
@@ -120,6 +122,7 @@ final class RoleName
                     $P::STUDENT_MANAGE, $P::GUARDIAN_MANAGE,
                     $P::CLASS_VIEW, $P::CLASS_SCHEDULE, $P::RECORDING_VIEW, $P::RECORDING_MANAGE,
                     $P::USER_VIEW, $P::ROLE_ASSIGN, $P::SETTINGS_VIEW, $P::AUDIT_VIEW,
+                    $P::HR_STAFF_VIEW, $P::HR_STAFF_ONBOARD,
                 ],
             ],
 

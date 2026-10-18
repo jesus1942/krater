@@ -128,6 +128,9 @@ global.axios.interceptors.response.use(undefined, function (err) {
       message:
         'Please check your internet connection or wait until servers are back online.',
     })
+  } else if (err.response.status === 403 && err.response.data && err.response.data.error === 'password_change_required') {
+    // Fila E1: la cuenta debe cambiar la contrasenia inicial antes de seguir.
+    if (window.location.pathname !== '/admin') window.location.assign('/admin')
   } else {
     if (
       err.response.data &&

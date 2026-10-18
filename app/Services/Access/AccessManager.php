@@ -263,7 +263,8 @@ class AccessManager
             $levels[$id] = $this->effectivePermissions($user, $id);
         }
         return ['is_total_admin' => $this->isTotalAdmin($user),
-            'permissions' => $this->effectivePermissions($user), 'permissions_by_level' => $levels];
+            'permissions' => $this->effectivePermissions($user), 'permissions_by_level' => $levels,
+            'must_change_password' => (bool) $user->must_change_password];
     }
 
     /**

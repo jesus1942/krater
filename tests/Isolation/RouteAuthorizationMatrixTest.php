@@ -17,7 +17,7 @@ class RouteAuthorizationMatrixTest extends TestCase
         // deben funcionar antes de seleccionar nivel. Los catalogos son constantes.
         $personal = [
             'POST api/v1/auth/logout', 'GET api/v1/auth/check', 'GET api/v1/bootstrap',
-            'GET api/v1/me', 'PUT api/v1/me', 'GET api/v1/me/settings', 'PUT api/v1/me/settings',
+            'GET api/v1/me', 'PUT api/v1/me', 'GET api/v1/me/settings', 'PUT api/v1/me/settings', 'PUT api/v1/me/password',
             'POST api/v1/me/upload-avatar', 'GET api/v1/school-levels',
             'GET api/v1/currencies', 'GET api/v1/timezones', 'GET api/v1/date/formats',
             'GET api/v1/fiscal/years', 'GET api/v1/languages',

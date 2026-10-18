@@ -10,6 +10,7 @@
     <file>tests/Isolation/FreshInstallationCatalogTest.php</file>
     <file>tests/Isolation/PlatformCleanupTest.php</file>
     <file>tests/Isolation/SoftDeletionTest.php</file>
+    <file>tests/Isolation/StaffOnboardingTest.php</file>
   </testsuite></testsuites>
   <php>
     <server name="APP_ENV" value="testing"/>
