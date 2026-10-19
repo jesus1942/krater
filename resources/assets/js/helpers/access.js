@@ -18,6 +18,14 @@ export function canSeeSchoolDashboard(user) {
   return Boolean(level ? (home.levels || {})[level] : home.all)
 }
 
+/** Panel de asistencia: requiere elegir un nivel; el servidor calcula el alcance en bootstrap. */
+export function canSeeAttendancePanel(user) {
+  if (!user) return false
+  if (user.is_total_admin === true) return true
+  const level = window.Ls.get('selectedSchoolLevel')
+  return Boolean(level && ((user.attendance_panel || {}).levels || {})[level])
+}
+
 /** Inicio util para los permisos del nivel activo. */
 export function landingPath(user) {
   if (canSeeSchoolDashboard(user)) return '/admin/dashboard'
@@ -45,6 +53,11 @@ export function canVisit(user, path) {
     return (academic[parts[2]] || ['system.settings.manage']).every(permission => can(user, permission))
   }
   if (!domain || domain === 'dashboard') return canSeeSchoolDashboard(user)
+  if (domain === 'attendance') {
+    if (parts[2] === 'panel') return canSeeAttendancePanel(user)
+    if (parts[2] === 'staff') return can(user, 'hr.attendance.view')
+    return can(user, 'attendance.record')
+  }
   const permission = {
     students: 'students.view_basic',
     customers: creating ? 'finance.invoice.manage' : 'finance.view',

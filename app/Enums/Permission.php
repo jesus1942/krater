@@ -117,6 +117,10 @@ final class Permission
     // Fila E1: alta unificada de personal (ficha, cargos, docencia y acceso).
     // Solo administracion total y direccion de nivel, esta ultima en su nivel.
     const HR_STAFF_ONBOARD = 'hr.staff.onboard';
+    /** Asistencia y licencias del personal. */
+    const HR_ATTENDANCE_VIEW = 'hr.attendance.view';
+    const HR_ATTENDANCE_RECORD = 'hr.attendance.record';
+
     const HR_PAYROLL_VIEW = 'hr.payroll.view';
     const HR_PAYROLL_MANAGE = 'hr.payroll.manage';
     const HR_PAYROLL_APPROVE = 'hr.payroll.approve';
@@ -297,6 +301,8 @@ final class Permission
             self::HR_STAFF_VIEW => ['group' => 'hr', 'label' => 'Ver personal'],
             self::HR_STAFF_MANAGE => ['group' => 'hr', 'label' => 'Administrar personal'],
             self::HR_STAFF_ONBOARD => ['group' => 'hr', 'label' => 'Dar de alta personal con cargos, docencia y acceso'],
+            self::HR_ATTENDANCE_VIEW => ['group' => 'hr', 'label' => 'Ver asistencia y licencias del personal'],
+            self::HR_ATTENDANCE_RECORD => ['group' => 'hr', 'label' => 'Registrar asistencia y licencias del personal'],
             self::HR_PAYROLL_VIEW => ['group' => 'hr', 'label' => 'Ver liquidaciones y pagos de sueldo'],
             self::HR_PAYROLL_MANAGE => ['group' => 'hr', 'label' => 'Preparar liquidaciones de sueldo'],
             self::HR_PAYROLL_APPROVE => ['group' => 'hr', 'label' => 'Aprobar liquidaciones de sueldo'],

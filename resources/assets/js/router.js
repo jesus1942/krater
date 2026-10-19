@@ -33,6 +33,9 @@ import StudentIndex from './views/students/Index.vue'
 
 // Personal
 import StaffIndex from './views/staff/Index.vue'
+import TakeAttendance from './views/attendance/TakeAttendance.vue'
+import StaffAttendance from './views/attendance/StaffAttendance.vue'
+import AttendancePanel from './views/attendance/AttendancePanel.vue'
 import PayrollIndex from './views/staff/Payroll.vue'
 
 // Items
@@ -200,6 +203,11 @@ const routes = [
         name: 'students.index',
         component: StudentIndex,
       },
+
+      // Asistencia
+      { path: 'attendance', name: 'attendance.take', component: TakeAttendance },
+      { path: 'attendance/staff', name: 'attendance.staff', component: StaffAttendance },
+      { path: 'attendance/panel', name: 'attendance.panel', component: AttendancePanel },
 
       // Personal
       {

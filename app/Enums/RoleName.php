@@ -114,7 +114,7 @@ final class RoleName
                     $P::ENROLLMENT_VIEW, $P::ENROLLMENT_MANAGE, $P::ENROLLMENT_TRANSFER,
                     $P::GRADE_VIEW_ALL, $P::GRADE_PUBLISH, $P::GRADE_AMEND_CLOSED,
                     $P::GRADE_OVERRIDE_COMPUTED, $P::TERM_CLOSE, $P::SCALE_MANAGE,
-                    $P::ATTENDANCE_VIEW_ALL, $P::ATTENDANCE_JUSTIFY, $P::ATTENDANCE_AMEND_PAST,
+                    $P::ATTENDANCE_VIEW_ALL, $P::ATTENDANCE_RECORD, $P::ATTENDANCE_JUSTIFY, $P::ATTENDANCE_AMEND_PAST,
                     $P::PROMOTION_RULES_VIEW, $P::PROMOTION_SIMULATE, $P::PROMOTION_OVERRIDE_RESULT,
                     $P::DOCUMENT_VIEW_ALL, $P::DOCUMENT_ISSUE_INTERNAL,
                     $P::DOCUMENT_UPLOAD_OFFICIAL, $P::DOCUMENT_SIGN,
@@ -123,6 +123,7 @@ final class RoleName
                     $P::CLASS_VIEW, $P::CLASS_SCHEDULE, $P::RECORDING_VIEW, $P::RECORDING_MANAGE,
                     $P::USER_VIEW, $P::ROLE_ASSIGN, $P::SETTINGS_VIEW, $P::AUDIT_VIEW,
                     $P::HR_STAFF_VIEW, $P::HR_STAFF_ONBOARD,
+                    $P::HR_ATTENDANCE_VIEW, $P::HR_ATTENDANCE_RECORD,
                 ],
             ],
 
@@ -137,12 +138,13 @@ final class RoleName
                     $P::SECTION_VIEW, $P::SECTION_MANAGE,
                     $P::ENROLLMENT_VIEW, $P::ENROLLMENT_MANAGE,
                     $P::GRADE_VIEW_ALL, $P::GRADE_PUBLISH,
-                    $P::ATTENDANCE_VIEW_ALL, $P::ATTENDANCE_JUSTIFY,
+                    $P::ATTENDANCE_VIEW_ALL, $P::ATTENDANCE_RECORD, $P::ATTENDANCE_JUSTIFY,
                     $P::PROMOTION_RULES_VIEW, $P::PROMOTION_SIMULATE,
                     $P::DOCUMENT_VIEW_ALL, $P::DOCUMENT_ISSUE_INTERNAL,
                     $P::STUDENT_VIEW_BASIC, $P::STUDENT_VIEW_FILE, $P::STUDENT_MANAGE,
                     $P::CLASS_VIEW, $P::CLASS_SCHEDULE, $P::RECORDING_VIEW,
                     $P::USER_VIEW,
+                    $P::HR_STAFF_VIEW, $P::HR_ATTENDANCE_VIEW, $P::HR_ATTENDANCE_RECORD,
                 ],
             ],
 
@@ -160,6 +162,8 @@ final class RoleName
                     $P::DOCUMENT_VIEW_ALL, $P::DOCUMENT_ISSUE_INTERNAL, $P::DOCUMENT_UPLOAD_OFFICIAL,
                     $P::STUDENT_VIEW_BASIC, $P::STUDENT_VIEW_FILE, $P::STUDENT_MANAGE,
                     $P::GUARDIAN_MANAGE, $P::USER_VIEW,
+                    $P::ATTENDANCE_RECORD,
+                    $P::HR_STAFF_VIEW, $P::HR_ATTENDANCE_VIEW, $P::HR_ATTENDANCE_RECORD,
                 ],
             ],
 
@@ -183,6 +187,7 @@ final class RoleName
                 'scope_type' => 'level',
                 'permissions' => [
                     $P::HR_STAFF_VIEW, $P::HR_STAFF_MANAGE,
+                    $P::HR_ATTENDANCE_VIEW, $P::HR_ATTENDANCE_RECORD,
                     $P::HR_PAYROLL_VIEW, $P::HR_PAYROLL_MANAGE,
                     $P::HR_PAYROLL_APPROVE, $P::HR_PAYROLL_PAY,
                 ],

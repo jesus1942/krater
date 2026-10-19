@@ -260,13 +260,16 @@ class AccessManager
     {
         $levels = [];
         $home = [];
+        $panel = [];
         foreach ($this->levelIds($user) as $id) {
             $levels[$id] = $this->effectivePermissions($user, $id);
             $home[$id] = $this->canSeeSchoolDashboard($user, $id);
+            $panel[$id] = $this->canSeeAttendancePanel($user, $id);
         }
         return ['is_total_admin' => $this->isTotalAdmin($user),
             'permissions' => $this->effectivePermissions($user), 'permissions_by_level' => $levels,
             'school_dashboard' => ['all' => $this->canSeeSchoolDashboard($user, null), 'levels' => $home],
+            'attendance_panel' => ['levels' => $panel],
             'must_change_password' => (bool) $user->must_change_password];
     }
 
@@ -278,6 +281,14 @@ class AccessManager
     {
         return $this->allows($user, Permission::FINANCE_VIEW, $schoolLevelId)
             || $this->seesLevelEnrollment($user, $schoolLevelId);
+    }
+
+    /** Panel de asistencia: asistencia de todo el nivel (no de una division) o la del personal. */
+    public function canSeeAttendancePanel(User $user, int $schoolLevelId): bool
+    {
+        return ($this->allows($user, Permission::ATTENDANCE_VIEW_ALL, $schoolLevelId)
+                && $this->hasLevelWideScope($user, $schoolLevelId, Permission::ATTENDANCE_VIEW_ALL))
+            || $this->allows($user, Permission::HR_ATTENDANCE_VIEW, $schoolLevelId);
     }
 
     public function seesLevelEnrollment(User $user, ?int $schoolLevelId): bool

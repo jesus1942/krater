@@ -132,8 +132,9 @@ async function exercise(role, locale) {
   assert(!calls.includes('/api/v1/dashboard')); assert(!calls.includes('/api/v1/search'))
   const sidebar = find(app, component('layouts/partials/TheSiteSidebar'))
   const links = sidebar.menuGroups.flatMap(group => group.items.map(item => item.route))
-  assert.deepStrictEqual(links, ['/admin/students', '/admin/settings'])
-  assert.deepStrictEqual(sidebar.menuGroups.flatMap(group => group.items.map(item => item.title)), ['Alumnos', 'Mi perfil'])
+  // Preceptor y docente toman lista en su alcance; el panel y el personal quedan para la direccion.
+  assert.deepStrictEqual(links, ['/admin/students', '/admin/attendance', '/admin/settings'])
+  assert.deepStrictEqual(sidebar.menuGroups.flatMap(group => group.items.map(item => item.title)), ['Alumnos', 'Tomar asistencia', 'Mi perfil'])
   assert(sidebar.$el.textContent.includes('Alumnos') && sidebar.$el.textContent.includes('Mi perfil'))
   assert(!sidebar.$el.textContent.includes('navigation.'))
   const header = find(app, component('layouts/partials/TheSiteHeader'))

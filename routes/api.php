@@ -328,6 +328,33 @@ Route::prefix('/v1')->group(function () {
         Route::get('/dashboard/school', \Crater\Http\Controllers\V1\Dashboard\SchoolDashboardController::class)->middleware('permission:finance.view,academic.enrollment.view');
 
 
+        // Asistencia de alumnos y del personal
+        //----------------------------------
+
+        Route::get('/attendance/targets', [\Crater\Http\Controllers\V1\Attendance\AttendanceController::class, 'targets'])
+            ->middleware('permission:attendance.record,attendance.view_all');
+        Route::get('/attendance/sheet', [\Crater\Http\Controllers\V1\Attendance\AttendanceController::class, 'sheet'])
+            ->middleware('permission:attendance.record,attendance.view_all');
+        Route::put('/attendance/sheet', [\Crater\Http\Controllers\V1\Attendance\AttendanceController::class, 'saveSheet'])
+            ->middleware('permission:attendance.record');
+        Route::post('/attendance/records/{record}/justify', [\Crater\Http\Controllers\V1\Attendance\AttendanceController::class, 'justify'])
+            ->middleware('permission:attendance.justify');
+        Route::get('/attendance/panel', [\Crater\Http\Controllers\V1\Attendance\AttendanceController::class, 'panel'])
+            ->middleware('permission:attendance.view_all,hr.attendance.view');
+        Route::match(['get', 'put'], '/attendance/rules', [\Crater\Http\Controllers\V1\Attendance\AttendanceController::class, 'rules'])
+            ->middleware('permission:attendance.record,attendance.view_all');
+        Route::get('/staff-attendance', [\Crater\Http\Controllers\V1\Attendance\AttendanceController::class, 'staffDay'])
+            ->middleware('permission:hr.attendance.view');
+        Route::put('/staff-attendance', [\Crater\Http\Controllers\V1\Attendance\AttendanceController::class, 'saveStaffDay'])
+            ->middleware('permission:hr.attendance.record');
+        Route::get('/staff-leaves', [\Crater\Http\Controllers\V1\Attendance\AttendanceController::class, 'leaves'])
+            ->middleware('permission:hr.attendance.view');
+        Route::post('/staff-leaves', [\Crater\Http\Controllers\V1\Attendance\AttendanceController::class, 'storeLeave'])
+            ->middleware('permission:hr.attendance.record');
+        Route::post('/staff-leaves/{leave}/cancel', [\Crater\Http\Controllers\V1\Attendance\AttendanceController::class, 'cancelLeave'])
+            ->middleware('permission:hr.attendance.record');
+
+
         // Auth check
         //----------------------------------
 
