@@ -342,3 +342,4 @@
 - Solo administración total (`system.settings.manage`, exclusivo). Auditoría `mail_settings.updated` con los campos cambiados y sin valores secretos.
 - Gate: `MailSettingsTest` (4 tests), 128 tests en total; smokes DOM aprobados; el recorrido de staging lee `/api/v1/mail/config`.
 - Habilita la invitación por correo de E1, que queda como paso siguiente.
+- Staging MySQL: deploy `d8a7e497-962f-4c46-8931-79763ffaa41a` (227dd5b) SUCCESS; `2026_10_21_000000_create_mail_settings` en 1.712 ms, predeploy completo y recorrido institucional con 303 checks (incluye la lectura de `/api/v1/mail/config` en Toda la institución y los tres niveles). Fila C probada en staging; no promovida.
