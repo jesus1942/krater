@@ -359,3 +359,12 @@
 - Servicio `backups-production-cron`, deployment `94b4aa18-4d4f-49fb-b5a1-8e56e393ab78` SUCCESS, imagen f74590a (posterior a la 428eed9 de la fila 8 prevista en el chequeo: incluye fila 8, 5, E1, 7, C y el inicio escolar).
 - Resultado: `passed: true`, clave `suiteena/production/20261019T060042Z-29e3fdebbff2.zip`, MySQL 9.7.2, 82 tablas (antes 80: se suman las de filas E1/C), 38 441 bytes, checksum de descarga verificado, 1 archivo podado por retencion.
 - Logs: todas las lineas con severidad info (las de Monolog llegan como `stderr.INFO`, nivel info); ninguna de error.
+
+## 19/10/2026 — Docencia, asistencia, dominio y sitio publico en produccion
+
+- 623aa98: docencia por curso y materia (crea la materia por curso o la materia nueva en el acto); la direccion de nivel edita (`PUT /staff/{id}/file`) y archiva (`POST /staff/{id}/archive`) fichas de su nivel.
+- 9054167: asistencia. Alumnos por dia y division (Primario/Secundario) o por materia (Terciario), justificacion, ventana de 2 dias y `attendance.amend_past`; personal diario y licencias por rango; panel de la direccion (dia, porcentajes, alumnos en riesgo, ausentismo del personal); permisos `hr.attendance.view/record`. Migracion `2026_10_22_000000_create_staff_attendance`. Staging `aea5ab8d` y produccion `06f56e3e`, SUCCESS, smoke de conteos aprobado.
+- 7ca9a0e: `SplitPublicHosts` y `LANDING_HOSTS`; inactivo hasta configurar las variables. Dominios agregados en Railway (app, www, raiz y staging de escuelanuevaaustral.com.ar), pendientes de DNS: ver `docs/operations/DOMINIO_Y_CORREO.md`.
+- e8509fb: sitio publico nuevo (portada institucional, /primario, /secundario, /terciario), direccion oficial De los Avellanos 4094, sin recursos de trazo a mano. Staging `cd966d6a` y produccion `3550a7e3`, SUCCESS, smoke de conteos aprobado, predeploy completo.
+- Correo: decision de usar Cloudflare (DNS y reenvios), Zoho gratis (hasta 5 casillas) y Brevo (envio de la Suite). Pendiente: alta de cuentas y foto principal de la institucion.
+- Gate local 145 tests/1608 aserciones; smokes DOM de roles e institucion aprobados.
