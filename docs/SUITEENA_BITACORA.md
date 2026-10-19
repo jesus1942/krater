@@ -343,3 +343,13 @@
 - Gate: `MailSettingsTest` (4 tests), 128 tests en total; smokes DOM aprobados; el recorrido de staging lee `/api/v1/mail/config`.
 - Habilita la invitación por correo de E1, que queda como paso siguiente.
 - Staging MySQL: deploy `d8a7e497-962f-4c46-8931-79763ffaa41a` (227dd5b) SUCCESS; `2026_10_21_000000_create_mail_settings` en 1.712 ms, predeploy completo y recorrido institucional con 303 checks (incluye la lectura de `/api/v1/mail/config` en Toda la institución y los tres niveles). Fila C probada en staging; no promovida.
+
+## 19/10/2026 — Fila C, logo institucional, turno e inicio escolar en produccion
+
+- Fila C: `produccion` 4b81620, deployment `3268f628-4197-4c7c-a662-774ac81f11ce` SUCCESS; migracion `2026_10_21_000000_create_mail_settings`, smoke de conteos aprobado, `ena:runtime` con sesiones en base y cola `sync`.
+- Logo institucional (16944f1): `ena-logo.svg` es el del terciario (N.° 1831). Nuevo `ena-logo-institucional.svg` (buho, Escuela Nueva Austral, Primario · Secundario · Terciario, texto en trazos) en landing, login, asistente y logo predeterminado de `Company`. Se retiran `edificio.jpg`, su `og:image` y el anillo del login (d7622d6).
+- Turno de division: lista Mañana/Tarde/Noche contra `morning|afternoon|evening`, mensaje en español; test en `StaffOnboardingTest`.
+- Inicio escolar (303d9db): `GET /dashboard/school` reemplaza el tablero de Crater. Matricula vigente, divisiones y ocupacion, personal activo, cuotas vencidas, cobranza del mes y familias con deuda. Se borran `DashboardStats`, `DashboardChart` y `DashboardTable`; `GET /dashboard` legacy queda sin uso en la vista.
+- Direccion de nivel (f74590a): entra al inicio si tiene `academic.enrollment.view` con alcance de nivel completo; sin `finance.view` el servidor devuelve `finance: null`. Preceptores y docentes siguen en Alumnos. Bootstrap informa `school_dashboard` por nivel. Regla pedida por Jesus: quien no tenga permisos de finanzas no ve nada de finanzas.
+- Gate 134 tests/1461 aserciones (`SchoolDashboardTest`, 5 tests), smokes DOM aprobados. Staging: 303d9db `99378801-953c-4245-976c-f26aceba3203` y f74590a `5d70b308-bf01-45b2-92f2-f5b160f70904`, SUCCESS, 68 HTTP de roles y 303 institucionales aprobados.
+- Produccion: 303d9db `462797e0-0fb5-4e6d-946a-6946c260c70f` SUCCESS (smoke de conteos aprobado, predeploy completo); f74590a promovido con autorizacion de Jesus.
