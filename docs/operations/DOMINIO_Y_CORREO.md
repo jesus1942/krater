@@ -34,36 +34,45 @@ registros DNS apuntan al servicio. No se compran.
 Si el panel no admite CNAME en la raiz: usar un DNS con CNAME flattening
 (Cloudflare) o redirigir la raiz a `www` desde DonWeb.
 
-## Correo: Google Workspace for Education Fundamentals
+## Correo: opcion gratuita (decision de Jesus, 19/10/2026)
 
-Decision de Jesus (19/10/2026): correo con Google. Gratis para instituciones
-educativas sin fines de lucro reconocidas; Google revisa la solicitud en 1 a
-2 semanas, despues de verificar el dominio.
+Google Workspace Business cuesta unos US$10,92 por usuario (40 empleados) y la
+escuela es una SRL, asi que no corresponde Education Fundamentals. Se usa:
 
-1. Alta en el formulario de Education Fundamentals con una cuenta
-   administradora que no sea @gmail.com (se crea en el alta, por ejemplo
-   `admin@escuelanuevaaustral.com.ar`).
-2. Verificar el dominio con el registro TXT `google-site-verification=...`
-   que da Google (en `@`).
-3. Correo entrante: MX `@` -> `smtp.google.com`, prioridad 1.
-4. SPF: TXT `@` -> `v=spf1 include:_spf.google.com ~all` (un solo registro SPF;
-   si despues se suma otro emisor se combina en el mismo).
-5. DKIM: generar la clave en Admin > Gmail > Autenticar correo, publicar el TXT
-   `google._domainkey` y activar la firma.
-6. DMARC: TXT `_dmarc` -> `v=DMARC1; p=none; rua=mailto:admin@escuelanuevaaustral.com.ar`
-   para empezar en modo observacion.
+1. **Cloudflare (gratis) como DNS** del dominio: resuelve el CNAME en la raiz
+   (CNAME flattening) para Railway y ofrece Email Routing.
+2. **Cloudflare Email Routing (gratis)**: una direccion por persona
+   (`nombre.apellido@escuelanuevaaustral.com.ar`) que reenvia al correo que ya
+   usa. Sin limite de direcciones. La Suite usa el correo como usuario.
+3. **Zoho Mail Forever Free (hasta 5 casillas)** para cuentas institucionales
+   que leen y escriben: direccion, secretaria, administracion, etc. Si se usan,
+   van en un subdominio (por ejemplo `mail.escuelanuevaaustral.com.ar`) porque
+   sus MX no conviven con los de Email Routing en el mismo nombre.
+4. **Brevo (gratis, 300 correos/dia)** para la Suite: SMTP desde
+   `no-responder@escuelanuevaaustral.com.ar`, cargado en Configuracion > Correo
+   (clave cifrada en `mail_settings`). Staging sigue con `MAIL_DRIVER=log`.
 
-### Envio desde la Suite
+Pasos:
 
-Configuracion > Correo (fila C, clave cifrada en `mail_settings`), con una
-casilla dedicada, por ejemplo `no-responder@escuelanuevaaustral.com.ar`:
-SMTP `smtp.gmail.com`, puerto 587, TLS, usuario la casilla y contrasena de
-aplicacion (requiere verificacion en dos pasos en esa cuenta). Alternativa:
-relay SMTP de Workspace (`smtp-relay.gmail.com`) autorizado en la consola.
-Staging sigue con `MAIL_DRIVER=log`: nunca envia correo real.
+1. Crear la cuenta de Cloudflare y agregar el sitio; anotar los dos servidores
+   de nombres que asigna.
+2. Con el dominio activo en NIC, delegar a esos servidores de nombres (DonWeb >
+   DNS/Delegacion, o NIC Argentina > Delegaciones).
+3. Cargar en Cloudflare los registros de Railway de la tabla de arriba (los
+   CNAME en modo "solo DNS", sin proxy, para que Railway emita el certificado).
+4. Activar Email Routing (agrega sus MX y SPF) y crear las reglas por persona.
+5. Brevo: dar de alta el dominio, publicar su DKIM y sumar `include:spf.brevo.com`
+   al unico registro SPF (por ejemplo
+   `v=spf1 include:_spf.mx.cloudflare.net include:spf.brevo.com ~all`).
+   DMARC: `_dmarc` -> `v=DMARC1; p=none; rua=mailto:<casilla de direccion>`.
+6. Configurar el SMTP de Brevo en la Suite y probar el envio de prueba.
 
-La misma cuenta escolar habilita el acceso a Drive para el archivo externo de
-backups, pendiente desde la fila 6.
+Responder desde la direccion institucional con solo reenvio exige configurar
+"enviar como" en el correo personal con el SMTP de Brevo; por eso las cuentas
+que mas escriben conviene que sean casillas Zoho.
+
+Verificar planes y limites en las paginas oficiales de Cloudflare, Zoho y
+Brevo antes del alta: los datos de arriba salen de fuentes de terceros.
 
 ## Al activar el dominio
 
