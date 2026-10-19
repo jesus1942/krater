@@ -321,6 +321,7 @@ Route::prefix('/v1')->group(function () {
         //----------------------------------
 
         Route::get('/dashboard', DashboardController::class)->middleware('permission:finance.view');
+        Route::get('/dashboard/school', \Crater\Http\Controllers\V1\Dashboard\SchoolDashboardController::class)->middleware('permission:finance.view');
 
 
         // Auth check

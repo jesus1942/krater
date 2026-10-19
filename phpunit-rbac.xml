@@ -11,6 +11,7 @@
     <file>tests/Isolation/PlatformCleanupTest.php</file>
     <file>tests/Isolation/SoftDeletionTest.php</file>
     <file>tests/Isolation/StaffOnboardingTest.php</file>
+    <file>tests/Isolation/SchoolDashboardTest.php</file>
     <file>tests/Isolation/SessionResilienceTest.php</file>
     <file>tests/Isolation/EnrollmentHistoryTest.php</file>
     <file>tests/Isolation/MailSettingsTest.php</file>
