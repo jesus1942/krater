@@ -8,13 +8,17 @@ use Illuminate\Http\Request;
 /**
  * Landing en el dominio principal, Suite en su subdominio.
  *
- * En un host de la landing solo se sirve la portada; el resto de las rutas
+ * En un host de la landing solo se sirve el sitio publico (portada y paginas
+ * de nivel); el resto de las rutas
  * web (login, admin, PDFs firmados, etc.) redirige con 301 a la misma ruta en
  * APP_URL. En el host de la Suite, la raiz lleva al ingreso. Sin
  * LANDING_HOSTS configurado no cambia nada.
  */
 class SplitPublicHosts
 {
+    /** Rutas del sitio publico que se sirven en los hosts de la landing. */
+    const PUBLIC_PATHS = ['/', 'primario', 'secundario', 'terciario'];
+
     public function handle(Request $request, Closure $next)
     {
         $landing = config('ena-hosts.landing_hosts', []);
@@ -26,7 +30,7 @@ class SplitPublicHosts
         $appHost = strtolower((string) parse_url($app, PHP_URL_HOST));
 
         if (in_array($host, $landing, true)) {
-            if ($request->path() === '/' || $appHost === '' || $appHost === $host) {
+            if (in_array($request->path(), self::PUBLIC_PATHS, true) || $appHost === '' || $appHost === $host) {
                 return $next($request);
             }
 

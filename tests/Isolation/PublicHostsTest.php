@@ -21,7 +21,10 @@ class PublicHostsTest extends TestCase
     public function test_without_landing_hosts_nothing_changes(): void
     {
         config(['ena-hosts.landing_hosts' => [], 'app.url' => 'https://krater.example.invalid']);
-        $this->get('http://krater.example.invalid/')->assertOk()->assertSee('Nueva Austral');
+        $this->get('http://krater.example.invalid/')->assertOk()->assertSee('Nueva Austral')
+            ->assertSee('De los Avellanos 4094')->assertDontSee('Avellanos 4068');
+        $this->get('http://krater.example.invalid/terciario')->assertOk()->assertSee('Tecnicatura Superior en Tecnologías Aplicadas');
+        $this->get('http://krater.example.invalid/cuaternario')->assertStatus(302);
         // /login sigue en el mismo host (sin instalar, el propio login redirige al asistente).
         $this->assertStringNotContainsString('app.', (string) $this->get('http://krater.example.invalid/login')->headers->get('Location'));
     }
@@ -34,6 +37,10 @@ class PublicHostsTest extends TestCase
         $landing = $this->get('https://escuela.example.invalid/')->assertOk();
         $landing->assertSee('https://app.escuela.example.invalid/login', false);
         $this->get('https://www.escuela.example.invalid/')->assertOk();
+        // Las paginas de nivel tambien son del sitio publico.
+        foreach (['primario', 'secundario', 'terciario'] as $level) {
+            $this->get('https://escuela.example.invalid/'.$level)->assertOk()->assertSee('Nivel', false);
+        }
         $this->get('https://escuela.example.invalid/login')->assertStatus(301)
             ->assertRedirect('https://app.escuela.example.invalid/login');
         $this->get('https://www.escuela.example.invalid/admin/students?nivel=2')->assertStatus(301)

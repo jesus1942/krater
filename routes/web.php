@@ -101,11 +101,16 @@ Route::get('/on-boarding', function () {
 // -------------------------------------------------
 // Se declara antes del catch-all del SPA para quedarse con la raiz del sitio.
 // Es publica: se ve con la sesion iniciada o sin ella, y el boton de la
-// cabecera lleva a /login, que sigue montando la aplicacion Vue.
+// cabecera lleva al /login de la Suite (APP_URL), que monta la aplicacion Vue.
 
 Route::get('/', function () {
-    return view('landing');
+    return view('public.home');
 })->name('landing');
+
+// Una pagina por nivel, con el mismo contenido de PublicSite.
+Route::get('/{level}', function (string $level) {
+    return view('public.level', ['level' => \Crater\Support\PublicSite::levels()[$level]]);
+})->where('level', 'primario|secundario|terciario')->name('landing.level');
 
 
 // Move other http requests to the Vue App
