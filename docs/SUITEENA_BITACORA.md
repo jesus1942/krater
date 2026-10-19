@@ -353,3 +353,9 @@
 - Direccion de nivel (f74590a): entra al inicio si tiene `academic.enrollment.view` con alcance de nivel completo; sin `finance.view` el servidor devuelve `finance: null`. Preceptores y docentes siguen en Alumnos. Bootstrap informa `school_dashboard` por nivel. Regla pedida por Jesus: quien no tenga permisos de finanzas no ve nada de finanzas.
 - Gate 134 tests/1461 aserciones (`SchoolDashboardTest`, 5 tests), smokes DOM aprobados. Staging: 303d9db `99378801-953c-4245-976c-f26aceba3203` y f74590a `5d70b308-bf01-45b2-92f2-f5b160f70904`, SUCCESS, 68 HTTP de roles y 303 institucionales aprobados.
 - Produccion: 303d9db `462797e0-0fb5-4e6d-946a-6946c260c70f` SUCCESS (smoke de conteos aprobado, predeploy completo); f74590a promovido con autorizacion de Jesus.
+
+## 19/10/2026 06:00 UTC — Backup diario de produccion
+
+- Servicio `backups-production-cron`, deployment `94b4aa18-4d4f-49fb-b5a1-8e56e393ab78` SUCCESS, imagen f74590a (posterior a la 428eed9 de la fila 8 prevista en el chequeo: incluye fila 8, 5, E1, 7, C y el inicio escolar).
+- Resultado: `passed: true`, clave `suiteena/production/20261019T060042Z-29e3fdebbff2.zip`, MySQL 9.7.2, 82 tablas (antes 80: se suman las de filas E1/C), 38 441 bytes, checksum de descarga verificado, 1 archivo podado por retencion.
+- Logs: todas las lineas con severidad info (las de Monolog llegan como `stderr.INFO`, nivel info); ninguna de error.
