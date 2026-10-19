@@ -4,7 +4,7 @@
   >
     <img
       id="logo-crater"
-      src="/images/ena-logo.svg"
+      src="/images/ena-logo-institucional.svg"
       alt="Escuela Nueva Austral"
       class="h-12 max-w-xs"
     />

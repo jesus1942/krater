@@ -145,7 +145,7 @@
                 <td class="py-2 font-medium">
                   {{ d.grade_level ? d.grade_level.name : '' }} {{ d.name }}
                 </td>
-                <td class="py-2 text-gray-600">{{ d.shift || '—' }}</td>
+                <td class="py-2 text-gray-600">{{ turnos[d.shift] || '—' }}</td>
                 <td class="py-2 text-gray-600">{{ d.capacity || '—' }}</td>
                 <td class="py-2 text-right">
                   <button v-if="canManageDivisions" type="button" class="text-primary-500 hover:underline" @click="editarDivision(d)">
@@ -181,7 +181,12 @@
                 <sw-input v-model="formDivision.name" placeholder="A" required />
               </campo>
               <campo label="Turno" :error="err.shift">
-                <sw-input v-model="formDivision.shift" placeholder="Mañana" />
+                <select v-model="formDivision.shift" class="w-full base-input">
+                  <option value="">Sin turno</option>
+                  <option v-for="(label, code) in turnos" :key="code" :value="code">
+                    {{ label }}
+                  </option>
+                </select>
               </campo>
               <campo label="Capacidad" :error="err.capacity">
                 <sw-input v-model.number="formDivision.capacity" type="number" min="1" />
@@ -340,6 +345,7 @@ export default {
   },
 
   computed: {
+    turnos: () => ({ morning: 'Mañana', afternoon: 'Tarde', evening: 'Noche' }),
     canManageDivisions() { return can(this.$store.state.user.currentUser, 'academic.division.manage') },
     canManageSubjects() { return can(this.$store.state.user.currentUser, 'academic.study_plan.manage') },
     tabs() {

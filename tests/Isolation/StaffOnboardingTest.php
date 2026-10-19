@@ -198,6 +198,19 @@ class StaffOnboardingTest extends TestCase
         $this->assertSame([], $this->getJson('/api/v1/students?limit=50')->json('students.data') ?? []);
     }
 
+    public function test_division_shift_takes_a_listed_value_and_explains_itself_in_spanish(): void
+    {
+        $this->as($this->director, 1);
+        $division = DB::table('divisions')->find($this->divisions['1A']);
+        $data = ['academic_year_id' => $division->academic_year_id, 'grade_level_id' => $division->grade_level_id, 'name' => 'A', 'capacity' => 40];
+        $this->putJson('/api/v1/divisions/'.$division->id, $data + ['shift' => '3'])->assertStatus(422)
+            ->assertJsonPath('errors.shift.0', 'Elegí el turno de la lista: mañana, tarde o noche.');
+        $this->putJson('/api/v1/divisions/'.$division->id, $data + ['shift' => 'morning'])->assertOk();
+        $this->assertSame('morning', DB::table('divisions')->where('id', $division->id)->value('shift'));
+        $view = file_get_contents(resource_path('assets/js/views/academic/AcademicStructureIndex.vue'));
+        $this->assertStringContainsString('<select v-model="formDivision.shift"', $view);
+    }
+
     public function test_primary_direction_cannot_onboard_anyone_in_secondary(): void
     {
         $role = fn ($name) => DB::table('roles')->where('company_id', 1)->where('name', $name)->value('id');

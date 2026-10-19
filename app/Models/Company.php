@@ -33,7 +33,7 @@ class Company extends Model implements HasMedia
             }
         }
 
-        return public_path('images/ena-logo.svg');
+        return public_path('images/ena-logo-institucional.svg');
     }
 
     public function getLogoAttribute()
@@ -48,7 +48,7 @@ class Company extends Model implements HasMedia
             }
         }
 
-        return asset('/images/ena-logo.svg');
+        return asset('/images/ena-logo-institucional.svg');
     }
 
     public function user()

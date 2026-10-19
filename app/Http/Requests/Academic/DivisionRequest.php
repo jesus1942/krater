@@ -62,6 +62,7 @@ class DivisionRequest extends FormRequest
     {
         return [
             'name.unique' => 'Ya existe una division con ese nombre para ese curso y ciclo.',
+            'shift.in' => 'Elegí el turno de la lista: mañana, tarde o noche.',
         ];
     }
 }

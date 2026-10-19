@@ -7,7 +7,7 @@
       <div class="ena-login__content w-full max-w-sm">
         <a href="/admin" class="ena-login__brand block">
           <img
-            src="/images/ena-logo.svg"
+            src="/images/ena-logo-institucional.svg"
             alt="Escuela Nueva Austral"
             class="block w-full"
           />

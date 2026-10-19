@@ -132,8 +132,8 @@
                 <div class="polaroid">
                     <div class="marco">
                         <div class="emblema">
-                            <img src="/images/ena-logo.svg"
-                                alt="Logo de Escuela Nueva Austral, Instituto de Nivel Superior T&eacute;cnico.">
+                            <img src="/images/ena-logo-institucional.svg"
+                                alt="Escuela Nueva Austral: Primario, Secundario y Terciario.">
                         </div>
                         <p class="epigrafe">Puerto Madryn, Chubut</p>
                     </div>
