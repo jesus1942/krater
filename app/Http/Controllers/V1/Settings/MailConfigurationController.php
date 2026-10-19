@@ -6,7 +6,7 @@ use Crater\Http\Controllers\Controller;
 use Crater\Http\Requests\MailEnvironmentRequest;
 use Crater\Mail\TestMail;
 use Crater\Models\Setting;
-use Crater\Space\EnvironmentManager;
+use Crater\Services\Mail\MailSettings;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Mail;
@@ -14,82 +14,24 @@ use Mail;
 class MailConfigurationController extends Controller
 {
     /**
-     * @var EnvironmentManager
+     * Fila C: la configuracion se guarda en la base con los secretos cifrados
+     * (MailSettings). Ya no se escribe el .env del contenedor, que se perdia en
+     * cada deploy.
      */
-    protected $environmentManager;
-
-    /**
-     * @param EnvironmentManager $environmentManager
-     */
-    public function __construct(EnvironmentManager $environmentManager)
+    public function saveMailEnvironment(MailEnvironmentRequest $request, MailSettings $mail)
     {
-        $this->environmentManager = $environmentManager;
-    }
-
-    /**
-     *
-     * @param MailEnvironmentRequest $request
-     * @return JsonResponse
-     */
-    public function saveMailEnvironment(MailEnvironmentRequest $request)
-    {
-        $setting = Setting::getSetting('profile_complete');
-        $results = $this->environmentManager->saveMailVariables($request);
-
-        if ($setting !== 'COMPLETED') {
+        $mail->save($request->user(), $request->all());
+        if (Setting::getSetting('profile_complete') !== 'COMPLETED') {
             Setting::setSetting('profile_complete', 4);
         }
 
-        return response()->json($results);
+        return response()->json(['success' => 'mail_variables_save_successfully']);
     }
 
-    /**
-     * Devuelve la configuracion de correo con los secretos enmascarados.
-     *
-     * Antes este endpoint devolvia `mail_password`, `mail_mailgun_secret` y
-     * `mail_ses_secret` en texto plano: cualquier usuario administrador recibia
-     * la contrasena SMTP en la respuesta JSON.
-     *
-     * Ahora sale el enmascarado. El frontend lo muestra deshabilitado y, para
-     * cambiar un secreto, manda el valor nuevo completo; nunca necesita leer el
-     * actual.
-     */
-    public function getMailEnvironment()
+    /** Configuracion vigente con los secretos enmascarados; nunca en claro. */
+    public function getMailEnvironment(MailSettings $mail)
     {
-        $MailData = [
-            'mail_driver' => config('mail.driver'),
-            'mail_host' => config('mail.host'),
-            'mail_port' => config('mail.port'),
-            'mail_username' => config('mail.username'),
-            'mail_password' => $this->mask(config('mail.password')),
-            'mail_encryption' => config('mail.encryption'),
-            'from_name' => config('mail.from.name'),
-            'from_mail' => config('mail.from.address'),
-            'mail_mailgun_endpoint' => config('services.mailgun.endpoint'),
-            'mail_mailgun_domain' => config('services.mailgun.domain'),
-            'mail_mailgun_secret' => $this->mask(config('services.mailgun.secret')),
-            'mail_ses_key' => $this->mask(config('services.ses.key')),
-            'mail_ses_secret' => $this->mask(config('services.ses.secret')),
-        ];
-
-        return response()->json($MailData);
-    }
-
-    /**
-     * Enmascara un secreto dejando visibles solo los ultimos 4 caracteres.
-     *
-     * Devuelve cadena vacia si no hay valor configurado, para que el frontend pueda
-     * distinguir entre "no hay nada cargado" y "hay algo que no te muestro".
-     */
-    protected function mask(?string $value): string
-    {
-        if ($value === null || $value === '') {
-            return '';
-        }
-
-        // No se revelan los primeros caracteres: el prefijo identifica al
-        // proveedor y le da informacion util a quien esté probando.
-        return str_repeat('*', 8).substr($value, -4);
+        return response()->json($mail->masked());
     }
 
     /**

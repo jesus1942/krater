@@ -54,7 +54,8 @@ class InstitutionScenario
         $screens = ['bootstrap', 'me', 'school-levels', 'dashboard', 'customers', 'items', 'units',
             'invoices', 'invoices/templates', 'estimates', 'estimates/templates', 'payments', 'payment-methods',
             'expenses', 'categories', 'students', 'academic-years', 'grade-levels', 'divisions', 'subjects',
-            'study-plans', 'school-billing/options', 'users', 'roles', 'company/settings?settings%5B0%5D=currency', 'backups'];
+            'study-plans', 'school-billing/options', 'users', 'roles', 'company/settings?settings%5B0%5D=currency', 'backups',
+            'mail/config'];
         foreach ([null, ...array_column($fixture['levels'], 'school_level_id')] as $level) {
             foreach ($screens as $screen) $call('GET', '/api/v1/'.$screen, [], $level);
             foreach ($fixture['levels'] as $row) {

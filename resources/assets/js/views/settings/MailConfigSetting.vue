@@ -13,6 +13,14 @@
           {{ $t('settings.mail.mail_config_desc') }}
         </p>
       </template>
+      <p v-if="mailConfigData && mailConfigData.delivery_disabled"
+        class="p-3 mb-4 text-sm text-yellow-800 bg-yellow-50 border border-yellow-200 rounded">
+        Este es el entorno de pruebas: los correos se registran en el log y no se envían.
+      </p>
+      <p v-if="mailConfigData" class="mb-4 text-xs text-gray-500">
+        La configuración se guarda en la base y las claves se guardan cifradas; nunca se vuelven a mostrar.
+        Para cambiar una clave escribila completa; si la dejás como está, se conserva la actual.
+      </p>
       <div v-if="mailConfigData">
         <component
           :is="mail_driver"

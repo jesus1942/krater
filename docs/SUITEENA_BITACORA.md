@@ -333,3 +333,12 @@
 - Variable `QUEUE_CONNECTION=sync` seteada sin redeploy propio; la tomó el deploy de la promoción.
 - `produccion` avanzó por fast-forward 76591c2 -> 57f802f. Deploys SUCCESS: web `7abbc190-729e-4f30-a3d9-7a0de8e1d878`, backups `ee7bb3ad-646f-4f7a-b863-38497c7592e8`, restauración `17a11a63-dab1-40f6-8e82-056115e8cc9c`.
 - Predeploy: `2026_10_20_000000_enrollment_history` en 118,61 ms, `Fila 7 matriculas desde campos legacy: {"created":0,"no_match":0,"ambiguous":0}` (el único alumno ya tenía matrícula); smoke snapshot 7 sin pérdidas; `SuiteEna runtime` con `queue_connection: sync` y `sessions_survive_deploy: true`; predeploy completo. Los PDF de facturas, presupuestos y cobros se generan ahora en el mismo pedido, sin depender de una tabla `jobs` inexistente.
+
+## 2026-10-19 — Fila C: correo configurable desde administración total (en staging, sin promover)
+
+- Antes la pantalla de correo reescribía el `.env` del contenedor, que se pierde en cada deploy. Migración `2026_10_21_000000_create_mail_settings`: tabla propia (la de `settings` admite 255 caracteres, poco para un secreto cifrado).
+- `Crater\Services\Mail\MailSettings`: guarda driver, servidor, puerto, usuario, cifrado, remitente y datos de Mailgun/SES; los secretos (clave SMTP, secreto de Mailgun, claves de SES) se cifran con APP_KEY y la lectura los devuelve enmascarados. Un secreto vacío o enmascarado conserva el guardado. Se aplica en cada pedido sobre `config('mail')` y `config('services')`; sin tabla o sin base se usa el `.env`. Si APP_KEY cambia, el secreto no se descifra, se registra un aviso y hay que volver a cargarlo, sin romper la app.
+- Staging nunca envía correo real: conserva `MAIL_DRIVER=log` aunque haya configuración guardada; la pantalla lo avisa.
+- Solo administración total (`system.settings.manage`, exclusivo). Auditoría `mail_settings.updated` con los campos cambiados y sin valores secretos.
+- Gate: `MailSettingsTest` (4 tests), 128 tests en total; smokes DOM aprobados; el recorrido de staging lee `/api/v1/mail/config`.
+- Habilita la invitación por correo de E1, que queda como paso siguiente.

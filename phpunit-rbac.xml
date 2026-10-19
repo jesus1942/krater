@@ -13,6 +13,7 @@
     <file>tests/Isolation/StaffOnboardingTest.php</file>
     <file>tests/Isolation/SessionResilienceTest.php</file>
     <file>tests/Isolation/EnrollmentHistoryTest.php</file>
+    <file>tests/Isolation/MailSettingsTest.php</file>
   </testsuite></testsuites>
   <php>
     <server name="APP_ENV" value="testing"/>

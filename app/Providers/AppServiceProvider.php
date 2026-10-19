@@ -17,6 +17,8 @@ class AppServiceProvider extends ServiceProvider
     {
         Paginator::useBootstrapThree();
         $this->loadJsonTranslationsFrom(resource_path('assets/js/plugins'));
+        // Fila C: el correo configurado desde administracion total pisa el .env.
+        $this->app->make(\Crater\Services\Mail\MailSettings::class)->apply();
     }
 
     /**
