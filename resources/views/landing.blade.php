@@ -25,9 +25,8 @@
     <meta property="og:title" content="Escuela Nueva Austral · Puerto Madryn">
     <meta property="og:description"
         content="Tres niveles educativos en Puerto Madryn. Preinscripcion 2027 abierta para la Tecnicatura Superior en Tecnologias Aplicadas.">
-    <meta property="og:image" content="{{ url('/images/landing/edificio.jpg') }}">
     <meta property="og:url" content="{{ url('/') }}">
-    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:card" content="summary">
     <meta name="theme-color" content="#0F2340">
 
     <link rel="icon" type="image/svg+xml" href="/images/ena-owl.svg">
@@ -132,9 +131,11 @@
 
                 <div class="polaroid">
                     <div class="marco">
-                        <img src="/images/landing/edificio.jpg" width="600" height="450"
-                            alt="Frente del edificio de Escuela Nueva Austral, con el b&uacute;ho institucional y el cartel Nueva Austral de Ense&ntilde;anza Superior.">
-                        <p class="epigrafe">nuestra sede en Madryn</p>
+                        <div class="emblema">
+                            <img src="/images/ena-logo.svg"
+                                alt="Logo de Escuela Nueva Austral, Instituto de Nivel Superior T&eacute;cnico.">
+                        </div>
+                        <p class="epigrafe">Puerto Madryn, Chubut</p>
                     </div>
                     <img class="cinta arriba" src="/images/landing/cinta_azul.png" alt="" aria-hidden="true">
                     <img class="cinta abajo" src="/images/landing/cinta_roja.png" alt="" aria-hidden="true">

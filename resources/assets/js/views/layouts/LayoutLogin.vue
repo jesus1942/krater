@@ -80,18 +80,6 @@
   border-left: 1px solid rgba(244, 240, 231, 0.18);
 }
 
-.content-box::after {
-  content: '';
-  width: 260px;
-  height: 260px;
-  right: 8%;
-  top: 12%;
-  position: absolute;
-  border: 1px solid rgba(244, 240, 231, 0.16);
-  border-radius: 50%;
-  box-shadow: 0 0 90px rgba(165, 18, 28, 0.22);
-}
-
 .ena-login {
   background: #f4f0e7;
 }
