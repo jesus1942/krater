@@ -67,7 +67,7 @@
                 <a href="#contacto">Contacto</a>
             </nav>
 
-            <a class="btn btn-rojo btn-ingresar" href="/login">
+            <a class="btn btn-rojo btn-ingresar" href="{{ rtrim(config('app.url'), '/') }}/login">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                     stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                     <path d="M15 3h4a2 2 0 012 2v14a2 2 0 01-2 2h-4" />
@@ -466,7 +466,7 @@
                         <h3>Suite de Gesti&oacute;n ENA</h3>
                         <p>El sistema interno de la escuela para administrar estudiantes, facturaci&oacute;n,
                             cobros y gastos de los tres niveles.</p>
-                        <a class="btn btn-azul" href="/login">
+                        <a class="btn btn-azul" href="{{ rtrim(config('app.url'), '/') }}/login">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                                 stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                                 <path d="M15 3h4a2 2 0 012 2v14a2 2 0 01-2 2h-4" />
