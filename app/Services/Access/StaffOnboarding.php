@@ -6,8 +6,10 @@ use Crater\Enums\Permission;
 use Crater\Enums\RoleName;
 use Crater\Models\AuditLog;
 use Crater\Models\CourseSection;
+use Crater\Models\Division;
 use Crater\Models\StaffAssignment;
 use Crater\Models\StaffMember;
+use Crater\Models\Subject;
 use Crater\Models\TeachingAssignment;
 use Crater\Models\User;
 use Crater\Support\TenantContext;
@@ -54,7 +56,7 @@ class StaffOnboarding
     public function create(User $actor, array $data): StaffMember
     {
         $levels = array_merge(array_column($data['cargos'] ?? [], 'school_level_id'),
-            array_map(fn ($t) => $this->sectionLevel((int) $t['course_section_id']), $data['teaching'] ?? []));
+            array_map(fn ($t) => $this->teachingLevel($t), $data['teaching'] ?? []));
         if (! $this->access->isTotalAdmin($actor) && ! $levels) {
             throw ValidationException::withMessages(['cargos' => 'Indicá al menos un cargo o una asignación docente de tu nivel.']);
         }
@@ -142,20 +144,21 @@ class StaffOnboarding
         });
     }
 
+    /**
+     * Docencia: materia y curso. Se puede indicar la seccion ya cargada o la
+     * materia (existente o nueva por nombre) y la division; si esa materia
+     * todavia no esta cargada en ese curso, se carga en el acto.
+     */
     public function addTeaching(User $actor, StaffMember $member, array $teaching): TeachingAssignment
     {
-        $section = CourseSection::where('company_id', TenantContext::companyId())->where('status', 'active')
-            ->find($teaching['course_section_id']);
-        if (! $section) {
-            throw ValidationException::withMessages(['course_section_id' => 'La materia del curso no existe o está archivada.']);
-        }
-        $this->authorizeLevel($actor, (int) $section->school_level_id);
-        $this->authorizeMember($actor, $member);
         if (! empty($teaching['ends_on']) && ! empty($teaching['starts_on']) && $teaching['ends_on'] < $teaching['starts_on']) {
             throw ValidationException::withMessages(['ends_on' => 'El fin debe ser igual o posterior al inicio.']);
         }
+        $this->authorizeLevel($actor, $this->teachingLevel($teaching));
+        $this->authorizeMember($actor, $member);
 
-        return DB::transaction(function () use ($actor, $member, $section, $teaching) {
+        return DB::transaction(function () use ($actor, $member, $teaching) {
+            $section = $this->resolveSection($actor, $teaching);
             abort_if(TeachingAssignment::active()->where('staff_member_id', $member->id)
                 ->where('course_section_id', $section->id)->lockForUpdate()->exists(), 409, 'Ya tiene asignada esa materia en ese curso.');
             $assignment = TeachingAssignment::create([
@@ -170,6 +173,113 @@ class StaffOnboarding
             }
 
             return $assignment->fresh();
+        });
+    }
+
+    /** Seccion de la asignacion: la indicada, o materia y division (creando lo que falte). */
+    protected function resolveSection(User $actor, array $teaching): CourseSection
+    {
+        if (! empty($teaching['course_section_id'])) {
+            $section = CourseSection::acrossLevels()->where('company_id', TenantContext::companyId())->where('status', 'active')
+                ->find($teaching['course_section_id']);
+            if (! $section) {
+                throw ValidationException::withMessages(['course_section_id' => 'La materia del curso no existe o está archivada.']);
+            }
+
+            return $section;
+        }
+        $division = $this->teachingDivision($teaching);
+        $level = (int) $division->school_level_id;
+        Division::acrossLevels()->whereKey($division->id)->lockForUpdate()->first();
+        $name = trim((string) ($teaching['subject_name'] ?? ''));
+        if (! empty($teaching['subject_id'])) {
+            $subject = Subject::acrossLevels()->where('company_id', TenantContext::companyId())->where('school_level_id', $level)
+                ->find($teaching['subject_id']);
+            if (! $subject) {
+                throw ValidationException::withMessages(['subject_id' => 'La materia no es de ese nivel.']);
+            }
+        } else {
+            abort_unless($this->access->isTotalAdmin($actor) || $this->access->allows($actor, Permission::STUDY_PLAN_MANAGE, $level), 403);
+            $subject = Subject::acrossLevels()->where('company_id', TenantContext::companyId())->where('school_level_id', $level)
+                ->whereNull('study_plan_id')->whereRaw('LOWER(name) = ?', [mb_strtolower($name)])->first()
+                ?? Subject::create(['company_id' => TenantContext::companyId(), 'school_level_id' => $level, 'name' => $name,
+                    'duration' => 'annual', 'counts_for_promotion' => true, 'enabled' => true]);
+        }
+        $section = CourseSection::acrossLevels()->where('division_id', $division->id)->where('subject_id', $subject->id)->first();
+        if (! $section) {
+            $section = CourseSection::create(['company_id' => $division->company_id, 'school_level_id' => $level,
+                'academic_year_id' => $division->academic_year_id, 'division_id' => $division->id,
+                'subject_id' => $subject->id, 'status' => 'active']);
+        } elseif ($section->status !== 'active') {
+            $section->update(['status' => 'active']);
+        }
+
+        return $section;
+    }
+
+    protected function teachingDivision(array $teaching): Division
+    {
+        $division = Division::acrossLevels()->where('company_id', TenantContext::companyId())->where('enabled', true)
+            ->find($teaching['division_id'] ?? null);
+        if (! $division) {
+            throw ValidationException::withMessages(['division_id' => 'Elegí el curso y división donde dicta la materia.']);
+        }
+
+        return $division;
+    }
+
+    protected function teachingLevel(array $teaching): int
+    {
+        return ! empty($teaching['course_section_id']) ? (int) $this->sectionLevel((int) $teaching['course_section_id'])
+            : (int) $this->teachingDivision($teaching)->school_level_id;
+    }
+
+    /** Corrige los datos de la persona; el documento y el nombre quedan auditados sin su valor. */
+    public function updateMember(User $actor, StaffMember $member, array $data): StaffMember
+    {
+        $this->authorizeMember($actor, $member);
+        $fields = ['first_name', 'last_name', 'document_type', 'document_number', 'email', 'phone', 'hire_date', 'notes'];
+        $values = array_intersect_key($data, array_flip($fields));
+        if (array_key_exists('document_number', $values)) {
+            $values['document_number_normalized'] = $this->normalizeDocument($values['document_number']);
+        }
+        DB::transaction(function () use ($actor, $member, $values) {
+            $member->fill($values);
+            $changed = array_keys($member->getDirty());
+            $member->save();
+            if ($changed) {
+                $this->audit('staff.updated', $actor, $member, null, ['fields' => $changed]);
+            }
+        });
+
+        return $member->fresh();
+    }
+
+    /**
+     * Archiva la ficha: finaliza cargos, revoca docencia y desactiva el acceso.
+     * Conserva la persona y todo su historial. La direccion solo archiva a
+     * quien trabaja unicamente en su nivel.
+     */
+    public function archive(User $actor, StaffMember $member): void
+    {
+        $this->authorizeWholeMember($actor, $member);
+        DB::transaction(function () use ($actor, $member) {
+            $member = StaffMember::whereKey($member->id)->lockForUpdate()->firstOrFail();
+            // Primero el acceso: despues de cerrar cargos la persona ya no figura en el nivel.
+            if ($member->user_id && User::whereKey($member->user_id)->where('is_active', true)->exists()) {
+                $this->disableAccess($actor, $member);
+            }
+            foreach ($member->teachingAssignments()->active()->get() as $teaching) {
+                $this->revokeTeaching($actor, $member, $teaching);
+            }
+            foreach ($member->assignments()->where('active', true)->get() as $cargo) {
+                if ($cargo->role_user_id) {
+                    $this->roles->revoke($actor, (int) $cargo->role_user_id);
+                }
+                $cargo->update(['active' => false, 'end_date' => now()->toDateString()]);
+            }
+            $member->update(['employment_status' => 'inactive', 'termination_date' => now()->toDateString()]);
+            $this->audit('staff.archived', $actor, $member, null, ['user_id' => $member->user_id]);
         });
     }
 

@@ -198,6 +198,87 @@ class StaffOnboardingTest extends TestCase
         $this->assertSame([], $this->getJson('/api/v1/students?limit=50')->json('students.data') ?? []);
     }
 
+    public function test_direction_assigns_a_new_subject_and_course_without_prior_setup(): void
+    {
+        $this->as($this->director, 1);
+        $options = $this->getJson('/api/v1/staff/onboarding-options')->assertOk()->json();
+        $this->assertTrue($options['can_create_subjects']);
+        $this->assertSame([], $options['sections']);
+        $this->assertSame(['Matemática Primario'], array_column($options['subjects'], 'name'));
+        $file = $this->postJson('/api/v1/staff/onboard', [
+            'first_name' => 'Profesora', 'last_name' => 'De Física', 'email' => 'fisica@example.invalid',
+            'teaching' => [['subject_name' => 'Física', 'division_id' => $this->divisions['1A'], 'weekly_hours' => 4]],
+            'access' => ['enabled' => true, 'password' => 'inicial-ficticia-123'],
+        ])->assertStatus(201)->json();
+
+        $subject = DB::table('subjects')->where('school_level_id', 1)->where('name', 'Física')->first();
+        $this->assertNotNull($subject);
+        $section = DB::table('course_sections')->where('division_id', $this->divisions['1A'])->where('subject_id', $subject->id)->first();
+        $this->assertSame('active', $section->status);
+        $this->assertSame(['Física', true], [$file['teaching'][0]['subject'], $file['teaching'][0]['granted']]);
+        $teacher = User::where('email', 'fisica@example.invalid')->firstOrFail();
+        $this->assertSame(1, DB::table('role_user')->join('roles', 'roles.id', '=', 'role_user.role_id')->where('user_id', $teacher->id)
+            ->where('roles.name', 'teacher')->where('course_section_id', $section->id)->whereNull('revoked_at')->count());
+
+        // La misma materia en otro curso reutiliza la materia, no la duplica.
+        $this->postJson('/api/v1/staff/'.$file['member']['id'].'/teaching', ['subject_name' => 'física', 'division_id' => $this->divisions['1B']])->assertStatus(201);
+        $this->assertSame(1, DB::table('subjects')->where('school_level_id', 1)->whereRaw('LOWER(name) = ?', ['física'])->count());
+        $this->assertSame(2, DB::table('teaching_assignments')->where('staff_member_id', $file['member']['id'])->whereNull('revoked_at')->count());
+        // Materia existente por id, en un curso de otro nivel: no.
+        $this->postJson('/api/v1/staff/'.$file['member']['id'].'/teaching', ['subject_id' => $subject->id, 'division_id' => $this->divisions['2A']])->assertStatus(403);
+        $other = DB::table('subjects')->where('school_level_id', 2)->value('id');
+        $this->postJson('/api/v1/staff/'.$file['member']['id'].'/teaching', ['subject_id' => $other, 'division_id' => $this->divisions['1A']])->assertStatus(422);
+    }
+
+    public function test_direction_edits_and_archives_staff_of_its_level_only(): void
+    {
+        $role = fn ($name) => DB::table('roles')->where('company_id', 1)->where('name', $name)->value('id');
+        $this->as($this->director, 1);
+        $file = $this->postJson('/api/v1/staff/onboard', ['first_name' => 'Maestra', 'last_name' => 'Ficticia', 'email' => 'maestra@example.invalid',
+            'cargos' => [['role_id' => $role('preceptor'), 'school_level_id' => 1, 'division_id' => $this->divisions['1A']]],
+            'teaching' => [['subject_name' => 'Lengua', 'division_id' => $this->divisions['1A']]],
+            'access' => ['enabled' => true, 'password' => 'inicial-ficticia-123']])->assertStatus(201)->json();
+        $id = $file['member']['id'];
+
+        $this->putJson('/api/v1/staff/'.$id.'/file', ['first_name' => 'Maestra', 'last_name' => 'Corregida', 'document_number' => '30.111.222'])
+            ->assertOk()->assertJsonPath('member.last_name', 'Corregida');
+        $this->assertSame('30111222', DB::table('staff_members')->where('id', $id)->value('document_number_normalized'));
+        $audit = DB::table('audit_logs')->where('action', 'staff.updated')->first();
+        $this->assertStringNotContainsString('Corregida', (string) $audit->new_values);
+
+        // Otra direccion de nivel no la edita ni la archiva.
+        $other = $this->account('director2', 'level_director', 2);
+        $this->as($other, 2);
+        $this->putJson('/api/v1/staff/'.$id.'/file', ['first_name' => 'X', 'last_name' => 'Y'])->assertStatus(403);
+        $this->postJson('/api/v1/staff/'.$id.'/archive')->assertStatus(403);
+        // Vicedireccion y preceptoria no archivan personal.
+        $this->as($this->account('vice', 'vice_director', 1), 1);
+        $this->postJson('/api/v1/staff/'.$id.'/archive')->assertStatus(403);
+
+        $this->as($this->director, 1);
+        $archived = $this->postJson('/api/v1/staff/'.$id.'/archive')->assertOk()->json();
+        $this->assertSame('inactive', $archived['member']['employment_status']);
+        $this->assertFalse($archived['access']['is_active']);
+        $this->assertSame([false], array_column($archived['cargos'], 'active'));
+        $this->assertNotNull($archived['teaching'][0]['revoked_at']);
+        $user = User::where('email', 'maestra@example.invalid')->firstOrFail();
+        $this->assertSame(0, DB::table('role_user')->where('user_id', $user->id)->whereNull('revoked_at')->count());
+        $this->assertTrue(DB::table('audit_logs')->where('action', 'staff.archived')->exists());
+    }
+
+    public function test_direction_cannot_archive_someone_who_also_works_in_another_level(): void
+    {
+        $role = fn ($name) => DB::table('roles')->where('company_id', 1)->where('name', $name)->value('id');
+        $this->as($this->admin, null);
+        $file = $this->postJson('/api/v1/staff/onboard', ['first_name' => 'Docente', 'last_name' => 'Dos niveles',
+            'cargos' => [['role_id' => $role('preceptor'), 'school_level_id' => 1, 'division_id' => $this->divisions['1A']],
+                ['role_id' => $role('preceptor'), 'school_level_id' => 2, 'division_id' => $this->divisions['2A']]]])->assertStatus(201)->json();
+        $this->as($this->director, 1);
+        $this->postJson('/api/v1/staff/'.$file['member']['id'].'/archive')->assertStatus(403);
+        $this->as($this->admin, null);
+        $this->postJson('/api/v1/staff/'.$file['member']['id'].'/archive')->assertOk()->assertJsonPath('member.employment_status', 'inactive');
+    }
+
     public function test_division_shift_takes_a_listed_value_and_explains_itself_in_spanish(): void
     {
         $this->as($this->director, 1);

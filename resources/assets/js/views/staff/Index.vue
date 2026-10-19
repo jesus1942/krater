@@ -19,14 +19,15 @@
 
           <section>
             <h3 class="section-title">Cargos</h3>
-            <p class="hint">Cada cargo es un rol con su alcance. Los permisos salen solo del cargo.</p>
+            <p class="hint">Cada cargo es un rol con su alcance. Los permisos salen solo del cargo. Para docentes no hace falta cargo: se cargan abajo, con materia y curso.</p>
             <cargo-fields v-for="(cargo, i) in newCargos" :key="'c' + i" v-model="newCargos[i]" :options="options" removable @remove="newCargos.splice(i, 1)" />
             <button type="button" class="link" @click="newCargos.push(blankCargo())">+ Agregar cargo</button>
           </section>
 
           <section>
             <h3 class="section-title">Asignaciones docentes</h3>
-            <p class="hint">Materia y curso que dicta. El docente ve solo a los alumnos de esos cursos.</p>
+            <p class="hint">Maestro/a o profesor/a: materia y curso que dicta. Recibe el rol Docente y ve solo a los alumnos de esos cursos.</p>
+            <p v-if="!options.divisions.length" class="hint">No hay cursos ni divisiones abiertos en este nivel: cargalos en Configuración, Estructura académica.</p>
             <teaching-fields v-for="(t, i) in newTeaching" :key="'t' + i" v-model="newTeaching[i]" :options="options" removable @remove="newTeaching.splice(i, 1)" />
             <button type="button" class="link" @click="newTeaching.push(blankTeaching())">+ Agregar materia</button>
           </section>
@@ -63,7 +64,11 @@
               {{ file.member.document_type || 'Documento' }} {{ file.member.document_number || 'sin cargar' }}
               · {{ file.member.email || 'sin correo' }} · {{ file.member.phone || 'sin teléfono' }}
             </p>
-            <button v-if="canManageHr" type="button" class="link" @click="editMember(file.member)">Editar datos</button>
+            <div class="flex flex-wrap gap-4">
+              <button v-if="canManageHr || canOnboard" type="button" class="link" @click="editMember(file.member)">Editar datos</button>
+              <button v-if="canOnboard && file.member.employment_status === 'active'" type="button" class="link text-red-600" @click="archiveMember">Archivar ficha</button>
+            </div>
+            <p v-if="file.member.employment_status !== 'active'" class="mt-2 hint">Ficha archivada {{ file.member.termination_date ? 'el ' + file.member.termination_date : '' }}: sin cargos, docencia ni acceso vigentes.</p>
           </section>
 
           <section>
@@ -130,7 +135,7 @@
       <sw-card v-if="editing" variant="setting-card">
         <template slot="header"><h6 class="sw-section-title">Editar datos</h6></template>
         <form class="space-y-5" @submit.prevent="saveMember">
-          <member-fields v-model="form" with-status />
+          <member-fields v-model="form" :with-status="canManageHr" />
           <div class="flex flex-wrap justify-end gap-3">
             <sw-button type="button" variant="gray" @click="editing = false">Cancelar</sw-button>
             <sw-button type="submit" variant="primary" :loading="saving">Guardar</sw-button>
@@ -197,14 +202,32 @@ const CargoFields = {
   </div>`,
 }
 
+const NEW_SUBJECT = 'nueva'
+
 const TeachingFields = {
   props: ['value', 'options', 'removable'],
+  computed: {
+    division() { return (this.options.divisions || []).find(d => d.id === this.value.division_id) || null },
+    subjects() { return this.division ? (this.options.subjects || []).filter(s => s.school_level_id === this.division.school_level_id) : [] },
+    levelName() {
+      const levels = this.options.levels || []
+      return levels.length > 1 ? (d) => { const l = levels.find(x => x.id === d.school_level_id); return l ? l.name + ' · ' : '' } : () => ''
+    },
+    subjectChoice() { return this.value.subject_name !== undefined && this.value.subject_name !== null ? NEW_SUBJECT : this.value.subject_id },
+  },
   methods: {
     set(key, val) { this.$emit('input', { ...this.value, [key]: val }) },
-    label(s) { const d = s.division || {}; return (s.subject ? s.subject.name : 'Materia') + ' · ' + ((d.grade_level ? d.grade_level.name + ' ' : '') + (d.name || '')) },
+    pickDivision(id) { this.$emit('input', { ...this.value, division_id: id, subject_id: null, subject_name: null, course_section_id: null }) },
+    pickSubject(v) {
+      this.$emit('input', v === NEW_SUBJECT ? { ...this.value, subject_id: null, subject_name: '' }
+        : { ...this.value, subject_id: Number(v) || null, subject_name: null })
+    },
+    courseLabel(d) { return this.levelName(d) + (d.grade_level ? d.grade_level.name + ' ' : '') + d.name },
   },
   template: `<div class="grid gap-3 p-3 mb-2 border rounded md:grid-cols-4 bg-gray-50">
-    <label class="field md:col-span-2"><span>Materia y curso</span><select :value="value.course_section_id" class="input" @input="set('course_section_id', Number($event.target.value) || null)"><option :value="null">Elegir</option><option v-for="s in options.sections" :key="s.id" :value="s.id">{{ label(s) }}</option></select></label>
+    <label class="field"><span>Curso y división</span><select :value="value.division_id" class="input" @input="pickDivision(Number($event.target.value) || null)"><option :value="null">Elegir</option><option v-for="d in options.divisions" :key="d.id" :value="d.id">{{ courseLabel(d) }}</option></select></label>
+    <label class="field"><span>Materia</span><select :value="subjectChoice" class="input" :disabled="!division" @input="pickSubject($event.target.value)"><option :value="null">{{ division ? 'Elegir' : 'Primero el curso' }}</option><option v-for="s in subjects" :key="s.id" :value="s.id">{{ s.name }}</option><option v-if="options.can_create_subjects" value="nueva">+ Materia nueva…</option></select></label>
+    <label v-if="subjectChoice === 'nueva'" class="field md:col-span-2"><span>Nombre de la materia nueva</span><input :value="value.subject_name" class="input" placeholder="Física" maxlength="255" @input="set('subject_name', $event.target.value)" /></label>
     <label class="field"><span>Horas semanales</span><input :value="value.weekly_hours" type="number" min="0" max="168" step="0.5" class="input" @input="set('weekly_hours', $event.target.value || null)" /></label>
     <label class="field"><span>Desde</span><input :value="value.starts_on" type="date" class="input" @input="set('starts_on', $event.target.value || null)" /></label>
     <label class="field"><span>Hasta</span><input :value="value.ends_on" type="date" class="input" @input="set('ends_on', $event.target.value || null)" /></label>
@@ -217,7 +240,7 @@ export default {
   data() {
     return {
       members: [], loading: true, saving: false, creating: false, editing: false, formError: '',
-      options: { roles: [], levels: [], divisions: [], sections: [] },
+      options: { roles: [], levels: [], divisions: [], sections: [], subjects: [], can_create_subjects: false },
       newMember: {}, newCargos: [], newTeaching: [], newAccess: {},
       file: null, extraCargo: {}, extraTeaching: {}, accessForm: {}, form: {},
     }
@@ -229,21 +252,24 @@ export default {
   },
   async created() {
     await this.load()
-    if (this.canOnboard) {
-      const { data } = await window.axios.get('/api/v1/staff/onboarding-options')
-      this.options = data
-    }
+    await this.loadOptions()
   },
   methods: {
     ...mapActions('notification', ['showNotification']),
     blankMember() { return { document_type: 'DNI', document_number: '', first_name: '', last_name: '', email: '', phone: '', hire_date: '' } },
     blankCargo() { return { role_id: null, school_level_id: this.options.levels.length === 1 ? this.options.levels[0].id : null, division_id: null, weekly_hours: null } },
-    blankTeaching() { return { course_section_id: null, weekly_hours: null, starts_on: null, ends_on: null } },
+    blankTeaching() { return { division_id: null, subject_id: null, subject_name: null, weekly_hours: null, starts_on: null, ends_on: null } },
+    readyTeaching(t) { return t.division_id && (t.subject_id || (t.subject_name && t.subject_name.trim())) },
     clean(obj) { const p = { ...obj }; Object.keys(p).forEach(k => { if (p[k] === '') p[k] = null }); return p },
     messageOf(error, fallback) {
       const data = error.response && error.response.data
       if (data && data.errors) { const first = Object.values(data.errors)[0]; if (first && first.length) return first[0] }
       return (data && (data.message || (data.error === 'forbidden' && 'No tenés permiso para esta operación en este nivel.'))) || fallback
+    },
+    async loadOptions() {
+      if (!this.canOnboard) return
+      const { data } = await window.axios.get('/api/v1/staff/onboarding-options')
+      this.options = data
     },
     async load() {
       this.loading = true
@@ -264,12 +290,12 @@ export default {
       try {
         const payload = { ...this.clean(this.newMember),
           cargos: this.newCargos.filter(c => c.role_id).map(this.clean),
-          teaching: this.newTeaching.filter(t => t.course_section_id).map(this.clean),
+          teaching: this.newTeaching.filter(this.readyTeaching).map(this.clean),
           access: this.newAccess.enabled ? this.clean({ ...this.newAccess, email: this.newAccess.email || this.newMember.email }) : { enabled: false } }
         const { data } = await window.axios.post('/api/v1/staff/onboard', payload)
         this.creating = false
         this.showNotification({ type: 'success', message: 'Alta registrada.' })
-        await this.load()
+        await Promise.all([this.load(), this.loadOptions()])
         this.showFile(data)
       } catch (error) { this.formError = this.messageOf(error, 'No se pudo dar de alta.') } finally { this.saving = false }
     },
@@ -289,7 +315,7 @@ export default {
         const { data } = await window.axios[method](`/api/v1/staff/${this.file.member.id}/${path}`, payload)
         this.showFile(data)
         this.showNotification({ type: 'success', message })
-        await this.load()
+        await Promise.all([this.load(), path === 'teaching' ? this.loadOptions() : null])
       } catch (error) { this.formError = this.messageOf(error, 'No se pudo completar la operación.') }
     },
     act(path, message) { return this.request('post', path, {}, message) },
@@ -300,10 +326,16 @@ export default {
       delete this.form.full_name
       this.editing = true
     },
+    async archiveMember() {
+      if (!window.confirm('Archivar la ficha finaliza sus cargos, revoca la docencia y desactiva el acceso. El historial se conserva. ¿Continuar?')) return
+      await this.act('archive', 'Ficha archivada.')
+    },
     async saveMember() {
       this.saving = true
       try {
-        await window.axios.put(`/api/v1/staff/${this.form.id}`, this.clean(this.form))
+        // RR.HH. edita tambien el estado laboral; la direccion corrige los datos desde la ficha.
+        const url = this.canManageHr ? `/api/v1/staff/${this.form.id}` : `/api/v1/staff/${this.form.id}/file`
+        await window.axios.put(url, this.clean(this.form))
         this.editing = false
         await this.load()
         await this.openFile(this.form)

@@ -190,6 +190,10 @@ Route::prefix('/v1')->group(function () {
             ->where('teaching', '[0-9]+')->middleware('permission:hr.staff.onboard');
         Route::post('/staff/{staffMember}/access', [\Crater\Http\Controllers\V1\Staff\StaffFileController::class, 'enableAccess'])
             ->middleware('permission:hr.staff.onboard');
+        Route::put('/staff/{staffMember}/file', [\Crater\Http\Controllers\V1\Staff\StaffFileController::class, 'update'])
+            ->middleware('permission:hr.staff.onboard');
+        Route::post('/staff/{staffMember}/archive', [\Crater\Http\Controllers\V1\Staff\StaffFileController::class, 'archive'])
+            ->middleware('permission:hr.staff.onboard');
         Route::post('/staff/{staffMember}/access/disable', [\Crater\Http\Controllers\V1\Staff\StaffFileController::class, 'disableAccess'])
             ->middleware('permission:hr.staff.onboard');
         Route::post('/staff/{staffMember}/assignments', [StaffMembersController::class, 'storeAssignment'])
