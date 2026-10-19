@@ -138,7 +138,6 @@ class SchoolDashboardTest extends TestCase
         $this->assertSame([3, 4, 1], [$data['academic']['divisions'][0]['enrolled'], $data['academic']['divisions'][0]['capacity'], $data['academic']['divisions'][1]['enrolled']]);
         $this->assertSame(2, $data['staff']['active']);
         $this->assertSame([70000, 1], [$data['finance']['overdue_total'], $data['finance']['families_overdue']]);
-        $this->as($this->account('director', 'level_director', 1), 1)->getJson('/api/v1/dashboard/school')->assertStatus(403);
     }
 
     public function test_blocks_follow_permissions_and_roles_without_finance_are_rejected(): void
@@ -152,6 +151,23 @@ class SchoolDashboardTest extends TestCase
 
         $this->as($this->account('preceptor', 'preceptor', 1), 1)->getJson('/api/v1/dashboard/school')->assertStatus(403);
         $this->as($this->account('docente', 'teacher', 1), 1)->getJson('/api/v1/dashboard/school')->assertStatus(403);
+    }
+
+    public function test_level_direction_sees_enrollment_and_staff_but_nothing_of_finance(): void
+    {
+        $director = $this->account('director', 'level_director', 1);
+        $data = $this->as($director, 1)->getJson('/api/v1/dashboard/school')->assertOk()->json();
+        $this->assertSame([4, 2], [$data['academic']['students'], $data['staff']['active']]);
+        $this->assertNull($data['finance']);
+        $this->assertStringNotContainsString('Familia', json_encode($data));
+        $this->as($director, 2)->getJson('/api/v1/dashboard/school')->assertStatus(403);
+
+        // El bootstrap le indica al frontend en que niveles hay inicio.
+        $access = app(\Crater\Services\Access\AccessManager::class);
+        $this->assertSame(['all' => false, 'levels' => [1 => true]], $access->frontendAccess($director->fresh())['school_dashboard']);
+        $preceptor = $this->account('preceptor2', 'preceptor', 1);
+        $this->assertSame(['all' => false, 'levels' => [1 => false]], $access->frontendAccess($preceptor->fresh())['school_dashboard']);
+        $this->assertTrue($access->frontendAccess($this->admin->fresh())['school_dashboard']['all']);
     }
 
     public function test_home_view_has_no_invoicing_leftovers(): void

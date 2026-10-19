@@ -72,7 +72,7 @@
 
 <script type="text/babel">
 import { navigationLabel, settingsLabel } from '../../../helpers/navigation'
-import { can } from '../../../helpers/access'
+import { can, canSeeSchoolDashboard } from '../../../helpers/access'
 import {
   HomeIcon,
   UserIcon,
@@ -221,7 +221,7 @@ export default {
       })
 
       const required = {
-        '/admin/dashboard': 'finance.view', '/admin/students': 'students.view_basic',
+        '/admin/students': 'students.view_basic',
         '/admin/customers': 'finance.view', '/admin/items': 'finance.view',
         '/admin/estimates': 'finance.view', '/admin/invoices': 'finance.view',
         '/admin/payments': 'finance.view', '/admin/expenses': 'finance.view',
@@ -229,7 +229,8 @@ export default {
         '/admin/reports': 'finance.report.view',
       }
       return groups.map(group => ({ ...group, items: group.items.filter(item =>
-        !required[item.route] || [].concat(required[item.route]).some(permission => can(this.currentUser, permission)))
+        item.route === '/admin/dashboard' ? canSeeSchoolDashboard(this.currentUser)
+          : !required[item.route] || [].concat(required[item.route]).some(permission => can(this.currentUser, permission)))
       })).filter(group => group.items.length > 0)
     },
   },

@@ -32,7 +32,7 @@
           <span class="ena-tarjeta__rotulo">Personal en actividad</span>
         </router-link>
 
-        <router-link to="/admin/invoices" class="ena-tarjeta">
+        <router-link v-if="data.finance" to="/admin/invoices" class="ena-tarjeta">
           <span class="ena-tarjeta__valor" :class="{ 'ena-tarjeta__valor--alerta': data.finance.overdue_total > 0 }"
             v-html="dinero(data.finance.overdue_total)" />
           <span class="ena-tarjeta__rotulo">Cuotas vencidas</span>
@@ -43,7 +43,7 @@
       </div>
 
       <div class="grid gap-6 xl:grid-cols-5">
-        <section v-if="data.academic" class="ena-panel xl:col-span-3">
+        <section v-if="data.academic" class="ena-panel" :class="data.finance ? 'xl:col-span-3' : 'xl:col-span-5'">
           <header class="ena-panel__cabecera">
             <h2>Matrícula por curso</h2>
             <router-link to="/admin/students" class="ena-enlace">Ver alumnos</router-link>
@@ -81,7 +81,7 @@
           </table>
         </section>
 
-        <div class="grid content-start gap-6" :class="data.academic ? 'xl:col-span-2' : 'xl:col-span-5'">
+        <div v-if="data.finance" class="grid content-start gap-6" :class="data.academic ? 'xl:col-span-2' : 'xl:col-span-5'">
           <section class="ena-panel">
             <header class="ena-panel__cabecera">
               <h2>Cobranza de {{ mesActual }}</h2>

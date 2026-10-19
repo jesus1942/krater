@@ -259,12 +259,31 @@ class AccessManager
     public function frontendAccess(User $user): array
     {
         $levels = [];
+        $home = [];
         foreach ($this->levelIds($user) as $id) {
             $levels[$id] = $this->effectivePermissions($user, $id);
+            $home[$id] = $this->canSeeSchoolDashboard($user, $id);
         }
         return ['is_total_admin' => $this->isTotalAdmin($user),
             'permissions' => $this->effectivePermissions($user), 'permissions_by_level' => $levels,
+            'school_dashboard' => ['all' => $this->canSeeSchoolDashboard($user, null), 'levels' => $home],
             'must_change_password' => (bool) $user->must_change_password];
+    }
+
+    /**
+     * Inicio escolar: finanzas, o matricula con alcance de nivel completo
+     * (direccion). Preceptores y docentes, con alcance de division, no.
+     */
+    public function canSeeSchoolDashboard(User $user, ?int $schoolLevelId): bool
+    {
+        return $this->allows($user, Permission::FINANCE_VIEW, $schoolLevelId)
+            || $this->seesLevelEnrollment($user, $schoolLevelId);
+    }
+
+    public function seesLevelEnrollment(User $user, ?int $schoolLevelId): bool
+    {
+        return $this->allows($user, Permission::ENROLLMENT_VIEW, $schoolLevelId)
+            && $this->hasLevelWideScope($user, $schoolLevelId, Permission::ENROLLMENT_VIEW);
     }
 
     /**

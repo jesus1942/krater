@@ -19,7 +19,8 @@ use Illuminate\Support\Facades\DB;
  * cobranza de cuotas. Reemplaza el tablero de facturacion heredado de Crater.
  *
  * Respeta el nivel del encabezado (scopes globales) y muestra cada bloque solo
- * si el usuario tiene el permiso correspondiente en ese nivel.
+ * si el usuario tiene el permiso correspondiente en ese nivel: la direccion
+ * ve matricula y personal; cuotas y cobranza exigen finance.view.
  */
 class SchoolDashboardController extends Controller
 {
@@ -36,15 +37,17 @@ class SchoolDashboardController extends Controller
         $level = TenantContext::schoolLevelId();
         $access = app(AccessManager::class);
 
-        $academic = $access->allows($user, Permission::ENROLLMENT_VIEW, $level)
-            && ($access->isTotalAdmin($user) || $access->hasLevelWideScope($user, $level, Permission::ENROLLMENT_VIEW));
+        $academic = $access->seesLevelEnrollment($user, $level);
         $staff = $access->allows($user, Permission::HR_STAFF_VIEW, $level);
+        // Sin ningun permiso de finanzas no hay cuotas ni cobranza en el inicio.
+        $finance = $access->allows($user, Permission::FINANCE_VIEW, $level);
+        abort_unless($academic || $finance, 403);
 
         return response()->json([
             'school_level' => $level ? $this->levelLabel(SchoolLevel::find($level)) : null,
             'academic' => $academic ? $this->academic($level === null) : null,
             'staff' => $staff ? $this->staff((int) TenantContext::companyId(), $level) : null,
-            'finance' => $this->finance(),
+            'finance' => $finance ? $this->finance() : null,
         ]);
     }
 
