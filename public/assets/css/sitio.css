@@ -234,3 +234,21 @@ body:not(.sitio--portada) .cabecera .boton--borde:hover { background: var(--navy
   .selector__opcion { flex: 1; text-align: center; padding: 9px 8px; }
   .banda__botones .boton { width: 100%; }
 }
+
+
+/* ------------------------------------------------------ experiencia por nivel */
+.seccion--experiencia { background: #fff; }
+.experiencia__encabezado { max-width: 760px; margin-bottom: 34px; }
+.experiencia__encabezado .titulo-seccion { margin-bottom: 14px; }
+.experiencia__intro { max-width: 68ch; font-size: 19px; color: var(--gris); }
+.experiencias { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px; }
+.experiencia { position: relative; min-height: 250px; overflow: hidden; padding: 30px 26px; border: 1px solid var(--linea); border-radius: var(--radio); background: linear-gradient(145deg, #fff 0%, #f8f9fb 100%); box-shadow: var(--sombra); }
+.experiencia::after { content: ''; position: absolute; right: -34px; bottom: -48px; width: 130px; height: 130px; border-radius: 50%; border: 22px solid color-mix(in srgb, var(--acento) 10%, transparent); pointer-events: none; }
+.experiencia__numero { display: inline-grid; place-items: center; width: 42px; height: 42px; border-radius: 12px; background: color-mix(in srgb, var(--acento) 11%, white); color: var(--acento); font-size: 14px; font-weight: 700; letter-spacing: .06em; }
+.experiencia__eyebrow { margin-top: 24px; color: var(--acento); font-size: 12px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; }
+.experiencia h3 { margin-top: 8px; font-size: 23px; color: var(--navy); }
+.experiencia > p:last-child { margin-top: 12px; max-width: 42ch; color: var(--gris); font-size: 16px; line-height: 1.55; }
+@media (max-width: 900px) {
+  .experiencias { grid-template-columns: 1fr; }
+  .experiencia { min-height: 0; }
+}
