@@ -234,3 +234,7 @@ body:not(.sitio--portada) .cabecera .boton--borde:hover { background: var(--navy
   .selector__opcion { flex: 1; text-align: center; padding: 9px 8px; }
   .banda__botones .boton { width: 100%; }
 }
+
+/* Foto propia del nivel, cargada desde Configuracion > Sitio publico. */
+.portada-nivel--foto { background: linear-gradient(180deg, rgba(11, 26, 49, .45) 0%, rgba(11, 26, 49, .88) 100%), var(--portada-imagen) center / cover no-repeat; }
+.portada-nivel--foto::before { display: none; }

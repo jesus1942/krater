@@ -1,4 +1,5 @@
 @php($inst = \Crater\Support\PublicSite::institution())
+@php($contact = $contact ?? $inst)
 <section class="seccion seccion--gris" id="contacto" aria-labelledby="titulo-contacto">
     <div class="contenedor contacto aparece">
         <div>
@@ -6,8 +7,8 @@
             <h2 id="titulo-contacto" class="titulo-seccion">Dónde encontrarnos</h2>
             <dl class="datos">
                 <div><dt>Dirección</dt><dd><a href="{{ $inst['map'] }}" target="_blank" rel="noopener">{{ $inst['address'] }} · {{ $inst['city'] }}</a></dd></div>
-                <div><dt>Teléfono</dt><dd><a href="tel:{{ $inst['phone_link'] }}">{{ $inst['phone'] }}</a></dd></div>
-                <div><dt>Correo</dt><dd><a href="mailto:{{ $inst['email'] }}">{{ $inst['email'] }}</a></dd></div>
+                <div><dt>Teléfono</dt><dd><a href="tel:{{ $contact['phone_link'] }}">{{ $contact['phone'] }}</a></dd></div>
+                <div><dt>Correo</dt><dd><a href="mailto:{{ $contact['email'] }}">{{ $contact['email'] }}</a></dd></div>
                 <div><dt>Instagram</dt><dd><a href="https://instagram.com/{{ $inst['instagram'] }}" target="_blank" rel="noopener">&#64;{{ $inst['instagram'] }}</a></dd></div>
             </dl>
         </div>

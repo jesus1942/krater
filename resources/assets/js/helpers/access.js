@@ -49,6 +49,7 @@ export function canVisit(user, path) {
       'audit-logs': ['system.audit.view'], 'data-reconciliation': ['data.reconcile'],
       'school-levels': ['system.school_level.manage'], 'backup': ['system.backup.manage'],
       'course-sections': ['academic.section.view'],
+      'public-site': ['site.level.manage'],
     }
     return (academic[parts[2]] || ['system.settings.manage']).every(permission => can(user, permission))
   }

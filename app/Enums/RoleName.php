@@ -124,6 +124,7 @@ final class RoleName
                     $P::USER_VIEW, $P::ROLE_ASSIGN, $P::SETTINGS_VIEW, $P::AUDIT_VIEW,
                     $P::HR_STAFF_VIEW, $P::HR_STAFF_ONBOARD,
                     $P::HR_ATTENDANCE_VIEW, $P::HR_ATTENDANCE_RECORD,
+                    $P::SITE_LEVEL_MANAGE,
                 ],
             ],
 

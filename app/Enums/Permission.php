@@ -147,6 +147,8 @@ final class Permission
     const ROLE_MANAGE = 'system.role.manage';
 
     const SETTINGS_VIEW = 'system.settings.view';
+    /** Pagina del nivel en el sitio publico (textos, contacto y foto). */
+    const SITE_LEVEL_MANAGE = 'site.level.manage';
     const SETTINGS_MANAGE = 'system.settings.manage';
 
     /** Credenciales, tokens, claves de API. Reservado. */
@@ -321,6 +323,7 @@ final class Permission
             self::ROLE_ASSIGN => ['group' => 'system', 'label' => 'Asignar roles'],
             self::ROLE_MANAGE => ['group' => 'system', 'label' => 'Crear y modificar roles'],
             self::SETTINGS_VIEW => ['group' => 'system', 'label' => 'Ver la configuracion'],
+            self::SITE_LEVEL_MANAGE => ['group' => 'system', 'label' => 'Editar la pagina del nivel en el sitio publico'],
             self::SETTINGS_MANAGE => ['group' => 'system', 'label' => 'Modificar la configuracion'],
             self::SECRETS_VIEW_MASKED => ['group' => 'system', 'label' => 'Ver credenciales enmascaradas'],
             self::SECRETS_MANAGE => ['group' => 'system', 'label' => 'Administrar credenciales y tokens'],

@@ -69,6 +69,7 @@ import {
   ClipboardListIcon,
   CubeIcon,
   ClipboardCheckIcon,
+  GlobeAltIcon,
 } from '@vue-hero-icons/outline'
 
 import {
@@ -101,6 +102,7 @@ export default {
     DatabaseIcon,
     CreditCardIcon,
     ClipboardCheckIcon,
+    GlobeAltIcon,
   },
 
   data() {
@@ -120,6 +122,11 @@ export default {
           link: '/admin/settings/company-info',
           title: 'settings.menu_title.company_information',
           icon: 'office-building-icon',
+        },
+        {
+          link: '/admin/settings/public-site',
+          title: 'Sitio público',
+          icon: 'globe-alt-icon',
         },
         {
           link: '/admin/settings/school-levels',

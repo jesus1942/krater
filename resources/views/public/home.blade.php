@@ -14,7 +14,7 @@
         <div class="contenedor portada__contenido">
             <p class="volanta volanta--clara">Institución educativa de gestión privada · Puerto Madryn</p>
             <h1 id="titulo-portada" class="portada__titulo">Escuela Nueva Austral</h1>
-            <p class="portada__bajada">Una misma escuela, de la primaria al título técnico superior.</p>
+            <p class="portada__bajada">{{ $inst['tagline'] }}</p>
 
             <div class="accesos" role="list">
                 @foreach ($levels as $item)
@@ -38,7 +38,7 @@
                 <h2 id="titulo-institucion" class="titulo-seccion">Una trayectoria completa en un mismo lugar</h2>
             </div>
             <div class="institucion__texto">
-                <p>En Escuela Nueva Austral acompañamos a cada estudiante desde los primeros años de la escolaridad hasta su formación técnica de nivel superior, con equipos docentes propios en cada nivel y un mismo proyecto institucional.</p>
+                <p>{{ $inst['about'] }}</p>
                 <dl class="cifras">
                     <div><dt>Niveles</dt><dd>3</dd></div>
                     <div><dt>Carrera técnica superior</dt><dd>1</dd></div>

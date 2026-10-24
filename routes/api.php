@@ -328,6 +328,20 @@ Route::prefix('/v1')->group(function () {
         Route::get('/dashboard/school', \Crater\Http\Controllers\V1\Dashboard\SchoolDashboardController::class)->middleware('permission:finance.view,academic.enrollment.view');
 
 
+        // Sitio publico: institucion (total admin) y pagina de cada nivel (direccion del nivel)
+        //----------------------------------
+
+        Route::get('/site/settings', [\Crater\Http\Controllers\V1\Site\SiteSettingsController::class, 'show'])
+            ->middleware('permission:site.level.manage');
+        Route::put('/site/institution', [\Crater\Http\Controllers\V1\Site\SiteSettingsController::class, 'saveInstitution'])
+            ->middleware('permission:site.level.manage');
+        Route::put('/site/levels/{slug}', [\Crater\Http\Controllers\V1\Site\SiteSettingsController::class, 'saveLevel'])
+            ->where('slug', 'primario|secundario|terciario')->middleware('permission:site.level.manage');
+        Route::post('/site/images/{key}', [\Crater\Http\Controllers\V1\Site\SiteSettingsController::class, 'uploadImage'])
+            ->where('key', 'hero|level\.(primario|secundario|terciario)')->middleware('permission:site.level.manage');
+        Route::delete('/site/images/{key}', [\Crater\Http\Controllers\V1\Site\SiteSettingsController::class, 'deleteImage'])
+            ->where('key', 'hero|level\.(primario|secundario|terciario)')->middleware('permission:site.level.manage');
+
         // Asistencia de alumnos y del personal
         //----------------------------------
 

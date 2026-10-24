@@ -7,7 +7,7 @@
     @php($levels = \Crater\Support\PublicSite::levels())
     @php($program = $level['program'])
 
-    <section class="portada-nivel" style="--acento: {{ $level['accent'] }}" aria-labelledby="titulo-nivel">
+    <section class="portada-nivel {{ $level['image'] ? 'portada-nivel--foto' : '' }}" style="--acento: {{ $level['accent'] }};@if ($level['image']) --portada-imagen: url('{{ $level['image'] }}');@endif" aria-labelledby="titulo-nivel">
         <div class="contenedor">
             <nav class="selector" aria-label="Niveles">
                 @foreach ($levels as $item)
@@ -87,6 +87,6 @@
         </div>
     </section>
 
-    @include('public.partials.preinscription')
-    @include('public.partials.contact')
+    @include('public.partials.preinscription', ['contact' => $level['contact']])
+    @include('public.partials.contact', ['contact' => $level['contact']])
 @endsection

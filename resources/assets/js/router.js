@@ -33,6 +33,7 @@ import StudentIndex from './views/students/Index.vue'
 
 // Personal
 import StaffIndex from './views/staff/Index.vue'
+import SiteSetting from './views/settings/SiteSetting.vue'
 import TakeAttendance from './views/attendance/TakeAttendance.vue'
 import StaffAttendance from './views/attendance/StaffAttendance.vue'
 import AttendancePanel from './views/attendance/AttendancePanel.vue'
@@ -386,6 +387,11 @@ const routes = [
             path: 'enrollments',
             name: 'academic.enrollments',
             component: EnrollmentsIndex,
+          },
+          {
+            path: 'public-site',
+            name: 'settings.public.site',
+            component: SiteSetting,
           },
           {
             path: 'audit-logs',

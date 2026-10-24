@@ -107,6 +107,10 @@ Route::get('/', function () {
     return view('public.home');
 })->name('landing');
 
+// Fotos del sitio publico, guardadas en la base desde Configuracion > Sitio publico.
+Route::get('/sitio/imagen/{key}', [\Crater\Http\Controllers\V1\Site\SiteSettingsController::class, 'image'])
+    ->where('key', 'hero|level\.(primario|secundario|terciario)')->name('site.image');
+
 // Una pagina por nivel, con el mismo contenido de PublicSite.
 Route::get('/{level}', function (string $level) {
     return view('public.level', ['level' => \Crater\Support\PublicSite::levels()[$level]]);

@@ -2,30 +2,76 @@
 
 namespace Crater\Support;
 
+use Crater\Services\Site\SiteContent;
+
 /**
  * Contenido del sitio publico: datos institucionales y una ficha por nivel.
- * Las vistas de resources/views/public solo arman la presentacion.
+ * Lo de aca son los textos predeterminados; lo cargado en Configuracion >
+ * Sitio publico (SiteContent) los reemplaza. Las vistas solo presentan.
  */
 class PublicSite
 {
     public static function institution(): array
     {
+        $saved = app(SiteContent::class)->all();
+        $images = app(SiteContent::class)->images();
+        $base = static::institutionDefaults();
+        foreach (SiteContent::INSTITUTION_FIELDS as $field) {
+            if (isset($saved['institution.'.$field])) {
+                $base[$field] = $saved['institution.'.$field];
+            }
+        }
+        $base['phone_link'] = '+54'.ltrim(preg_replace('/\D/', '', $base['phone']), '0');
+        $base['whatsapp'] = preg_replace('/\D/', '', $base['whatsapp']);
+        $base['instagram'] = ltrim($base['instagram'], '@');
+        $base['map'] = 'https://www.google.com/maps/search/?api=1&query='.rawurlencode($base['address'].', '.$base['city'].', Argentina');
+        $base['hero_image'] = $images['hero']['url'] ?? (file_exists(public_path('images/landing/institucion.jpg')) ? '/images/landing/institucion.jpg' : null);
+
+        return $base;
+    }
+
+    public static function institutionDefaults(): array
+    {
         return [
             'name' => 'Escuela Nueva Austral',
+            'tagline' => 'Una misma escuela, de la primaria al título técnico superior.',
+            'about' => 'En Escuela Nueva Austral acompañamos a cada estudiante desde los primeros años de la escolaridad hasta su formación técnica de nivel superior, con equipos docentes propios en cada nivel y un mismo proyecto institucional.',
             'address' => 'De los Avellanos 4094',
             'city' => 'Puerto Madryn, Chubut',
-            'map' => 'https://www.google.com/maps/search/?api=1&query='.rawurlencode('De los Avellanos 4094, Puerto Madryn, Chubut, Argentina'),
             'phone' => '0280 503 3597',
-            'phone_link' => '+542805033597',
             'whatsapp' => '5492805033597',
             'email' => 'ena.terciario@gmail.com',
             'instagram' => 'ena.terciario',
-            // Foto principal opcional: si existe se usa en la portada.
-            'hero_image' => file_exists(public_path('images/landing/institucion.jpg')) ? '/images/landing/institucion.jpg' : null,
         ];
     }
 
+    /** Niveles con lo guardado aplicado; el contacto vacio usa el de la institucion. */
     public static function levels(): array
+    {
+        $saved = app(SiteContent::class)->all();
+        $images = app(SiteContent::class)->images();
+        $inst = static::institution();
+        $levels = static::levelDefaults();
+        foreach ($levels as $slug => &$level) {
+            $get = fn ($field) => $saved['level.'.$slug.'.'.$field] ?? null;
+            $level['tagline'] = $get('tagline') ?? $level['tagline'];
+            $level['summary'] = $get('summary') ?? $level['summary'];
+            foreach ([1, 2, 3] as $i) {
+                $level['highlights'][$i - 1] = [
+                    'title' => $get('highlight_'.$i.'_title') ?? $level['highlights'][$i - 1]['title'],
+                    'text' => $get('highlight_'.$i.'_text') ?? $level['highlights'][$i - 1]['text'],
+                ];
+            }
+            $phone = $get('phone') ?? $inst['phone'];
+            $level['contact'] = ['phone' => $phone, 'phone_link' => '+54'.ltrim(preg_replace('/\D/', '', $phone), '0'),
+                'whatsapp' => preg_replace('/\D/', '', $get('whatsapp') ?? $inst['whatsapp']), 'email' => $get('email') ?? $inst['email']];
+            $level['image'] = $images['level.'.$slug]['url'] ?? null;
+        }
+
+        return $levels;
+    }
+
+    public static function levelDefaults(): array
     {
         return [
             'primario' => [

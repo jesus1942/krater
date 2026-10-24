@@ -30,7 +30,8 @@ class SplitPublicHosts
         $appHost = strtolower((string) parse_url($app, PHP_URL_HOST));
 
         if (in_array($host, $landing, true)) {
-            if (in_array($request->path(), self::PUBLIC_PATHS, true) || $appHost === '' || $appHost === $host) {
+            if (in_array($request->path(), self::PUBLIC_PATHS, true) || strpos($request->path(), 'sitio/') === 0
+                || $appHost === '' || $appHost === $host) {
                 return $next($request);
             }
 
