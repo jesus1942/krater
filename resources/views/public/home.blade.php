@@ -11,6 +11,7 @@
     <section class="portada {{ $inst['hero_image'] ? 'portada--foto' : '' }}"
         @if ($inst['hero_image']) style="--portada-imagen: url('{{ $inst['hero_image'] }}')" @endif
         aria-labelledby="titulo-portada">
+        <div class="escena" data-escena="portada" aria-hidden="true"></div>
         <div class="contenedor portada__contenido">
             <p class="volanta volanta--clara">Institución educativa de gestión privada · Puerto Madryn</p>
             <h1 id="titulo-portada" class="portada__titulo">Escuela Nueva Austral</h1>
@@ -18,9 +19,9 @@
 
             <div class="accesos" role="list">
                 @foreach ($levels as $item)
-                    <a class="acceso" role="listitem" href="/{{ $item['slug'] }}" style="--acento: {{ $item['accent'] }}">
+                    <a class="acceso" role="listitem" href="/{{ $item['slug'] }}" data-nivel-acceso="{{ $item['slug'] }}" style="--acento: {{ $item['accent'] }}">
                         <span class="acceso__orden">{{ $item['order'] }}</span>
-                        <span class="acceso__nombre">{{ $item['name'] }}</span>
+                        <span class="acceso__nombre" style="view-transition-name: nivel-{{ $item['slug'] }}">{{ $item['name'] }}</span>
                         <span class="acceso__texto">{{ $item['tagline'] }}</span>
                         <span class="acceso__ir" aria-hidden="true">Conocer el nivel
                             <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 10h12M11 5l5 5-5 5" stroke-linecap="round" stroke-linejoin="round"/></svg>

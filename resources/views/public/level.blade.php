@@ -8,6 +8,7 @@
     @php($program = $level['program'])
 
     <section class="portada-nivel {{ $level['image'] ? 'portada-nivel--foto' : '' }}" style="--acento: {{ $level['accent'] }};@if ($level['image']) --portada-imagen: url('{{ $level['image'] }}');@endif" aria-labelledby="titulo-nivel">
+        <div class="escena" data-escena="{{ $level['slug'] }}" aria-hidden="true"></div>
         <div class="contenedor">
             <nav class="selector" aria-label="Niveles">
                 @foreach ($levels as $item)
@@ -16,7 +17,7 @@
                 @endforeach
             </nav>
             <p class="volanta volanta--clara">{{ $level['order'] }} · {{ $program['institute'] ?? 'Escuela Nueva Austral' }}</p>
-            <h1 id="titulo-nivel" class="portada-nivel__titulo">Nivel {{ $level['name'] }}</h1>
+            <h1 id="titulo-nivel" class="portada-nivel__titulo" style="view-transition-name: nivel-{{ $level['slug'] }}">Nivel {{ $level['name'] }}</h1>
             <p class="portada-nivel__bajada">{{ $level['tagline'] }}</p>
             <div class="portada-nivel__botones">
                 <a class="boton boton--claro" href="#preinscripcion">Preinscripción 2027</a>

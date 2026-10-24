@@ -197,7 +197,9 @@ body:not(.sitio--portada) .cabecera .boton--borde:hover { background: var(--navy
 .pie__legal a:hover { color: #fff; }
 
 /* ---------------------------------------------------------------- animacion */
-.aparece { opacity: 0; transform: translateY(18px); transition: opacity .6s ease, transform .6s ease; }
+/* Las secciones entran inclinadas en perspectiva y se enderezan al llegar. */
+.aparece { opacity: 0; transform: perspective(1200px) translate3d(0, 30px, -90px) rotateX(12deg); transform-origin: 50% 100%;
+  transition: opacity .8s cubic-bezier(.22, 1, .36, 1), transform 1s cubic-bezier(.2, .9, .25, 1); }
 .aparece--visible { opacity: 1; transform: none; }
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
@@ -292,4 +294,32 @@ body:not(.sitio--portada) .cabecera .boton--borde:hover { background: var(--navy
 @media (max-width: 900px) {
   .experiencias { grid-template-columns: 1fr; }
   .experiencia { min-height: 0; }
+}
+
+/* ------------------------------------------------------ escena 3D de lineas */
+.portada { overflow: hidden; }
+.escena { position: absolute; inset: 0; z-index: 0; pointer-events: none; opacity: 0; transition: opacity 1.4s ease; }
+.escena canvas { display: block; width: 100% !important; height: 100% !important; }
+.escena--lista { opacity: .9; }
+.portada--foto .escena--lista, .portada-nivel--foto .escena--lista { opacity: .55; }
+.portada:has(.escena--lista)::before, .portada-nivel:has(.escena--lista)::before { opacity: 0; transition: opacity 1s ease; }
+.portada__contenido, .portada-nivel .contenedor { z-index: 1; }
+@media (max-width: 720px) { .escena--lista { opacity: .45; } }
+
+/* ------------------------------------------- transicion 3D entre paginas */
+@view-transition { navigation: auto; }
+.cabecera { view-transition-name: cabecera; }
+::view-transition-old(root) { animation: sale .6s cubic-bezier(.65, 0, .35, 1) both; transform-origin: 0% 50%; }
+::view-transition-new(root) { animation: entra .6s cubic-bezier(.65, 0, .35, 1) both; transform-origin: 100% 50%; }
+html:active-view-transition-type(atras)::view-transition-old(root) { animation-name: sale-atras; transform-origin: 100% 50%; }
+html:active-view-transition-type(atras)::view-transition-new(root) { animation-name: entra-atras; transform-origin: 0% 50%; }
+::view-transition-group(*) { animation-duration: .6s; animation-timing-function: cubic-bezier(.65, 0, .35, 1); }
+@keyframes sale { to { transform: perspective(1600px) translateZ(-240px) rotateY(-30deg); opacity: 0; } }
+@keyframes entra { from { transform: perspective(1600px) translateZ(-240px) rotateY(30deg); opacity: 0; } }
+@keyframes sale-atras { to { transform: perspective(1600px) translateZ(-240px) rotateY(30deg); opacity: 0; } }
+@keyframes entra-atras { from { transform: perspective(1600px) translateZ(-240px) rotateY(-30deg); opacity: 0; } }
+
+@media (prefers-reduced-motion: reduce) {
+  .escena { display: none; }
+  ::view-transition-group(*), ::view-transition-old(*), ::view-transition-new(*) { animation: none !important; }
 }
