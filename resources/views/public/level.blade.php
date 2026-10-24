@@ -141,6 +141,23 @@
         </section>
     @endif
 
+    @if ($level['meeting'])
+        <section class="seccion seccion--reunion" aria-labelledby="titulo-reunion">
+            <div class="contenedor">
+                <div class="reunion aparece" style="--acento: {{ $level['accent'] }}">
+                    <div>
+                        <p class="volanta" style="color: {{ $level['accent'] }}">Reunión informativa por Zoom</p>
+                        <h2 id="titulo-reunion" class="titulo-seccion">Si te interesa conocer más, te esperamos</h2>
+                        <p class="reunion__fecha">{{ $level['meeting']['date'] }}</p>
+                    </div>
+                    @if ($level['meeting']['link'])
+                        <a class="boton boton--primario" href="{{ $level['meeting']['link'] }}" target="_blank" rel="noopener">Anotarme en la reunión</a>
+                    @endif
+                </div>
+            </div>
+        </section>
+    @endif
+
     <section class="seccion seccion--gris" aria-labelledby="titulo-otros">
         <div class="contenedor">
             <h2 id="titulo-otros" class="titulo-seccion">Los otros niveles</h2>
@@ -157,23 +174,6 @@
             </div>
         </div>
     </section>
-
-    @if ($level['meeting'])
-        <section class="seccion seccion--gris" aria-labelledby="titulo-reunion">
-            <div class="contenedor">
-                <div class="reunion aparece" style="--acento: {{ $level['accent'] }}">
-                    <div>
-                        <p class="volanta" style="color: {{ $level['accent'] }}">Reunión informativa por Zoom</p>
-                        <h2 id="titulo-reunion" class="titulo-seccion">Si te interesa conocer más, te esperamos</h2>
-                        <p class="reunion__fecha">{{ $level['meeting']['date'] }}</p>
-                    </div>
-                    @if ($level['meeting']['link'])
-                        <a class="boton boton--primario" href="{{ $level['meeting']['link'] }}" target="_blank" rel="noopener">Anotarme en la reunión</a>
-                    @endif
-                </div>
-            </div>
-        </section>
-    @endif
 
     @include('public.partials.preinscription', ['contact' => $level['contact']])
     @include('public.partials.contact', ['contact' => $level['contact']])
