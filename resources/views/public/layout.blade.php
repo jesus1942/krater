@@ -21,7 +21,7 @@
     <link rel="shortcut icon" href="/assets/img/favicons/favicon-32x32.png">
     <link rel="preload" as="font" type="font/woff2" href="/assets/fonts/ena/barlow-400.woff2" crossorigin>
     <link rel="preload" as="font" type="font/woff2" href="/assets/fonts/ena/barlow-600.woff2" crossorigin>
-    <link rel="stylesheet" href="/assets/css/sitio.css?v=3">
+    <link rel="stylesheet" href="/assets/css/sitio.css?v=4">
 </head>
 
 <body class="sitio @yield('body_class')">

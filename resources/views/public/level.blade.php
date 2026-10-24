@@ -42,6 +42,28 @@
         </div>
     </section>
 
+    @if (!empty($level['experiences']))
+        <section class="seccion seccion--experiencia" aria-labelledby="titulo-experiencia" style="--acento: {{ $level['accent'] }}">
+            <div class="contenedor">
+                <div class="experiencia__encabezado aparece">
+                    <p class="volanta" style="color: {{ $level['accent'] }}">La experiencia ENA</p>
+                    <h2 id="titulo-experiencia" class="titulo-seccion">{{ $level['experience_title'] }}</h2>
+                    <p class="experiencia__intro">{{ $level['experience_intro'] }}</p>
+                </div>
+                <div class="experiencias">
+                    @foreach ($level['experiences'] as $i => $experience)
+                        <article class="experiencia aparece">
+                            <span class="experiencia__numero" aria-hidden="true">{{ str_pad($i + 1, 2, '0', STR_PAD_LEFT) }}</span>
+                            <p class="experiencia__eyebrow">{{ $experience['eyebrow'] }}</p>
+                            <h3>{{ $experience['title'] }}</h3>
+                            <p>{{ $experience['text'] }}</p>
+                        </article>
+                    @endforeach
+                </div>
+            </div>
+        </section>
+    @endif
+
     @if ($program)
         <section class="seccion seccion--oscura" aria-labelledby="titulo-carrera">
             <div class="contenedor carrera">

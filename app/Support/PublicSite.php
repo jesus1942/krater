@@ -83,6 +83,13 @@ class PublicSite
                     ['title' => 'Acompañamiento personalizado', 'text' => 'Seguimiento pedagógico de cada estudiante y diálogo permanente con las familias.'],
                     ['title' => 'Arte, música y deporte', 'text' => 'Talleres que completan la formación y desarrollan otras formas de expresión.'],
                 ],
+                'experience_title' => 'Aprender, descubrir y compartir',
+                'experience_intro' => 'Una propuesta que combina los aprendizajes fundamentales con el acompañamiento cotidiano y distintas formas de expresión.',
+                'experiences' => [
+                    ['eyebrow' => 'Aprendizajes fundamentales', 'title' => 'Leer, escribir y pensar', 'text' => 'Construir bases sólidas en lectura, escritura y pensamiento matemático para seguir aprendiendo.'],
+                    ['eyebrow' => 'Acompañamiento', 'title' => 'Cada trayectoria importa', 'text' => 'Seguimiento pedagógico cercano y diálogo permanente con las familias.'],
+                    ['eyebrow' => 'Formación integral', 'title' => 'Expresarse de distintas maneras', 'text' => 'Arte, música, deporte y convivencia como parte de la experiencia escolar.'],
+                ],
                 'program' => null,
             ],
             'secundario' => [
@@ -94,6 +101,13 @@ class PublicSite
                     ['title' => 'Articulación con el terciario', 'text' => 'Continuidad natural hacia la formación técnica superior dentro de la misma institución.'],
                     ['title' => 'Proyectos y salidas', 'text' => 'Aprendizaje en contexto, con proyectos interdisciplinarios y salidas educativas.'],
                 ],
+                'experience_title' => 'Una etapa para construir proyectos',
+                'experience_intro' => 'El nivel secundario fortalece la formación general y abre oportunidades para explorar intereses, profundizar conocimientos y proyectar el futuro.',
+                'experiences' => [
+                    ['eyebrow' => 'Formación general', 'title' => 'Conocimientos para comprender', 'text' => 'Una base amplia para desarrollar pensamiento crítico y abordar distintas áreas del conocimiento.'],
+                    ['eyebrow' => 'Aprender haciendo', 'title' => 'Proyectos en contexto', 'text' => 'Proyectos interdisciplinarios y salidas educativas para relacionar lo trabajado en clase con situaciones concretas.'],
+                    ['eyebrow' => 'Lo que viene', 'title' => 'Prepararse para el próximo paso', 'text' => 'Orientación hacia los estudios superiores y el mundo del trabajo, con articulación con la formación técnica de la institución.'],
+                ],
                 'program' => null,
             ],
             'terciario' => [
@@ -104,6 +118,13 @@ class PublicSite
                     ['title' => '3 años, presencial', 'text' => 'Cursada en Puerto Madryn con prácticas en entornos reales.'],
                     ['title' => 'Título de nivel superior', 'text' => 'Técnico/a Superior en Tecnologías Aplicadas.'],
                     ['title' => 'Salida laboral real', 'text' => 'Prácticas profesionalizantes en empresas de la región.'],
+                ],
+                'experience_title' => 'Tecnología para resolver problemas reales',
+                'experience_intro' => 'La Tecnicatura Superior en Tecnologías Aplicadas integra electrónica, programación, comunicaciones y automatización con una mirada práctica.',
+                'experiences' => [
+                    ['eyebrow' => 'Tecnologías', 'title' => 'Entender cómo funcionan los sistemas', 'text' => 'Electrotecnia, electrónica, redes, comunicaciones, programación y sistemas de control.'],
+                    ['eyebrow' => 'Integración', 'title' => 'Conectar hardware y software', 'text' => 'Robótica, sensores, PLC y automatización para comprender y operar sistemas tecnológicos.'],
+                    ['eyebrow' => 'Experiencia profesional', 'title' => 'Llevar los conocimientos a la práctica', 'text' => 'Prácticas profesionalizantes y un Proyecto Final Integrador vinculados con entornos reales.'],
                 ],
                 'program' => [
                     'name' => 'Tecnicatura Superior en Tecnologías Aplicadas',
