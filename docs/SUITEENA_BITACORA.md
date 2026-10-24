@@ -368,3 +368,13 @@
 - e8509fb: sitio publico nuevo (portada institucional, /primario, /secundario, /terciario), direccion oficial De los Avellanos 4094, sin recursos de trazo a mano. Staging `cd966d6a` y produccion `3550a7e3`, SUCCESS, smoke de conteos aprobado, predeploy completo.
 - Correo: decision de usar Cloudflare (DNS y reenvios), Zoho gratis (hasta 5 casillas) y Brevo (envio de la Suite). Pendiente: alta de cuentas y foto principal de la institucion.
 - Gate local 145 tests/1608 aserciones; smokes DOM de roles e institucion aprobados.
+
+## 24/10/2026 — Sitio publico editable y pagina del terciario en produccion
+
+- c0cca5f: Configuracion > Sitio publico. Tablas `site_contents` y `site_images` (migracion `2026_10_23_000000_create_site_contents`), permiso `site.level.manage` para direccion de nivel. La administracion total edita institucion, foto de portada y todos los niveles; cada direccion solo su nivel. Fotos en `/sitio/imagen/{clave}` con ETag. Lo vacio usa el texto predeterminado.
+- e179145: se integra la seccion «La experiencia ENA» que Jesus subio a staging (b2302e8).
+- e6ec94e y 1561f24: terciario con membrete institucional (Instituto N.º 1831), presentacion de la TSTA, perfil del egresado, modalidad (lunes a viernes 18 a 22.30 h, 3 años, inicio marzo 2027), destinatarios y reunion informativa por Zoom con fecha y enlace editables; sin fecha no se muestra.
+- Los push del 20 al 24/10 no desplegaron por la prueba vencida de Railway; Jesus regularizo el pago y staging se disparo manualmente.
+- Staging `94dea20b-0de0-45d5-8236-a62464f32045` SUCCESS: migracion aplicada, conteos aprobados, predeploy completo, 68 HTTP de roles y 303 institucionales aprobados.
+- Produccion `aa8b608a-8e2a-4180-b488-da76217c438b` SUCCESS, rama `produccion` 1561f24 promovida con autorizacion de Jesus: migracion aplicada, conteos aprobados sin perdidas, predeploy completo.
+- Gate local 149 tests/1672 aserciones; smokes DOM de roles e institucion aprobados.
