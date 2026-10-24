@@ -124,6 +124,22 @@ class SiteSettingsTest extends TestCase
         $this->getJson('/api/v1/site/settings')->assertStatus(403);
     }
 
+    public function test_tertiary_page_shows_the_career_and_the_meeting_only_when_scheduled(): void
+    {
+        $page = $this->get('/terciario')->assertOk();
+        $page->assertSee('Instituto de Nivel Superior Técnico Nueva Austral N.º 1831')->assertSee('Diagnosticar fallas.')
+            ->assertSee('Lunes a viernes, de 18 a 22.30 h (mayormente)')->assertSee('Primer año: marzo de 2027')
+            ->assertSee('ena-logo-institucional.svg', false)->assertDontSee('Reunión informativa por Zoom');
+        $this->get('/primario')->assertOk()->assertDontSee('Perfil del egresado');
+
+        $this->as($this->admin, null);
+        $this->putJson('/api/v1/site/levels/terciario', ['meeting_link' => 'http://zoom.example.invalid'])->assertStatus(422);
+        $this->putJson('/api/v1/site/levels/terciario', ['meeting_date' => 'Jueves 12 de noviembre, 18.30 h',
+            'meeting_link' => 'https://zoom.example.invalid/j/1'])->assertOk();
+        $this->get('/terciario')->assertOk()->assertSee('Reunión informativa por Zoom')
+            ->assertSee('Jueves 12 de noviembre, 18.30 h')->assertSee('https://zoom.example.invalid/j/1', false);
+    }
+
     public function test_only_images_are_accepted(): void
     {
         $this->as($this->admin, null);

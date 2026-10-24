@@ -75,6 +75,7 @@ class SiteSettingsController extends Controller
         abort_unless($this->canEditLevel($request->user(), $slug), 403);
         $data = $request->validate(array_merge($this->rules(SiteContent::LEVEL_FIELDS), [
             'email' => ['nullable', 'email', 'max:150'], 'summary' => ['nullable', 'string', 'max:600'],
+            'meeting_link' => ['nullable', 'url', 'starts_with:https://', 'max:255'],
         ]));
         $this->content->save(TenantContext::companyId(), 'level.'.$slug.'.', SiteContent::LEVEL_FIELDS, $data, $request->user()->id);
         $this->audit($request, 'site.level_updated', $slug, array_keys($data));

@@ -16,7 +16,7 @@ class SiteContent
 
     /** Campos de cada nivel (direccion del nivel o administracion total). */
     const LEVEL_FIELDS = ['tagline', 'summary', 'highlight_1_title', 'highlight_1_text', 'highlight_2_title', 'highlight_2_text',
-        'highlight_3_title', 'highlight_3_text', 'phone', 'whatsapp', 'email'];
+        'highlight_3_title', 'highlight_3_text', 'phone', 'whatsapp', 'email', 'meeting_date', 'meeting_link'];
 
     const IMAGE_TYPES = ['image/jpeg' => 'jpg', 'image/png' => 'png', 'image/webp' => 'webp'];
     const MAX_IMAGE_BYTES = 4 * 1024 * 1024;

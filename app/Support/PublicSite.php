@@ -66,6 +66,7 @@ class PublicSite
             $level['contact'] = ['phone' => $phone, 'phone_link' => '+54'.ltrim(preg_replace('/\D/', '', $phone), '0'),
                 'whatsapp' => preg_replace('/\D/', '', $get('whatsapp') ?? $inst['whatsapp']), 'email' => $get('email') ?? $inst['email']];
             $level['image'] = $images['level.'.$slug]['url'] ?? null;
+            $level['meeting'] = $get('meeting_date') ? ['date' => $get('meeting_date'), 'link' => $get('meeting_link')] : null;
         }
 
         return $levels;
@@ -112,12 +113,12 @@ class PublicSite
             ],
             'terciario' => [
                 'slug' => 'terciario', 'name' => 'Terciario', 'order' => 'Nivel 3', 'accent' => '#a5121c',
-                'tagline' => 'La Patagonia necesita tecnología. Y quienes sepan hacerla funcionar.',
-                'summary' => 'Instituto de Nivel Superior Técnico Nueva Austral N.º 1831. Formación técnica superior orientada a la industria y los servicios de la región.',
+                'tagline' => 'Tecnicatura Superior en Tecnologías Aplicadas: formación técnica para el sector productivo de la Patagonia.',
+                'summary' => 'La TSTA responde a una necesidad concreta del sector productivo de la Patagonia: formar profesionales capaces de identificar y dar respuesta a las demandas del sector socioproductivo de la región mediante soluciones de implementación tecnológica.',
                 'highlights' => [
-                    ['title' => '3 años, presencial', 'text' => 'Cursada en Puerto Madryn con prácticas en entornos reales.'],
-                    ['title' => 'Título de nivel superior', 'text' => 'Técnico/a Superior en Tecnologías Aplicadas.'],
-                    ['title' => 'Salida laboral real', 'text' => 'Prácticas profesionalizantes en empresas de la región.'],
+                    ['title' => '3 años', 'text' => 'Presencial con mediación tecnológica. Inicio del primer año: marzo de 2027.'],
+                    ['title' => 'Lunes a viernes, de 18 a 22.30 h', 'text' => 'Horario vespertino, pensado también para quienes trabajan.'],
+                    ['title' => 'Título habilitante', 'text' => 'Técnico/a Superior en Tecnologías Aplicadas.'],
                 ],
                 'experience_title' => 'Tecnología para resolver problemas reales',
                 'experience_intro' => 'La Tecnicatura Superior en Tecnologías Aplicadas integra electrónica, programación, comunicaciones y automatización con una mirada práctica.',
@@ -128,6 +129,31 @@ class PublicSite
                 ],
                 'program' => [
                     'name' => 'Tecnicatura Superior en Tecnologías Aplicadas',
+                    'institute' => 'Instituto de Nivel Superior Técnico Nueva Austral N.º 1831',
+                    'outcomes' => [
+                        'Programar, operar, integrar y mantener sistemas tecnológicos aplicados.',
+                        'Diagnosticar fallas.',
+                        'Interpretar documentación técnica.',
+                        'Comunicar con eficacia información técnica.',
+                        'Participar en la automatización de procesos.',
+                        'Analizar y mejorar los sistemas productivos.',
+                        'Aplicar normas de seguridad, higiene, calidad y ética profesional.',
+                        'Comprender el proceso productivo en contexto real y aportar a él.',
+                        'Continuar estudios de nivel superior universitario.',
+                    ],
+                    'audience' => [
+                        ['Egresados del secundario', 'Jóvenes que terminaron el nivel secundario y quieren insertarse rápido en el sector productivo tecnológico.'],
+                        ['Adultos que vuelven a estudiar', 'Personas que desean reinsertarse en el sistema educativo con conocimientos tecnológicos.'],
+                        ['Trabajadores', 'Quienes necesitan profesionalizarse en el área técnica para mejorar su desempeño laboral.'],
+                        ['Inserción laboral regional', 'Jóvenes y adultos interesados en trabajar en el sector productivo de la región.'],
+                    ],
+                    'modality' => [
+                        ['Modalidad', 'Presencial con mediación tecnológica'],
+                        ['Días y horarios', 'Lunes a viernes, de 18 a 22.30 h (mayormente)'],
+                        ['Título habilitante', 'Técnico/a Superior en Tecnologías Aplicadas'],
+                        ['Duración', '3 (tres) años'],
+                        ['Inicio de cursada', 'Primer año: marzo de 2027'],
+                    ],
                     'degree' => 'Técnico/a Superior en Tecnologías Aplicadas',
                     'image' => '/images/landing/industrial.jpg',
                     'subjects' => [

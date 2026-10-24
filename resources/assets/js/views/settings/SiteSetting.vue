@@ -58,6 +58,9 @@
             <campo-texto v-model="levels[slug].phone" etiqueta="Teléfono" />
             <campo-texto v-model="levels[slug].whatsapp" etiqueta="WhatsApp (con código de país)" />
             <campo-texto v-model="levels[slug].email" class="md:col-span-2" etiqueta="Correo" tipo="email" />
+            <p class="text-sm text-gray-500 md:col-span-2">Reunión informativa. Si no cargás la fecha, el bloque no se muestra.</p>
+            <campo-texto v-model="levels[slug].meeting_date" etiqueta="Fecha y hora" defecto="Jueves 12 de noviembre, 18.30 h" />
+            <campo-texto v-model="levels[slug].meeting_link" etiqueta="Enlace de inscripción (https://...)" tipo="url" />
             <div class="flex items-center justify-between gap-3 md:col-span-2">
               <a :href="'/' + slug" target="_blank" rel="noopener" class="text-sm text-primary-500 hover:underline">Ver la página del nivel</a>
               <sw-button type="submit" variant="primary" :loading="guardando">Guardar {{ level.name }}</sw-button>

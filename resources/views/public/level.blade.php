@@ -15,7 +15,7 @@
                         @if ($item['slug'] === $level['slug']) aria-current="page" @endif>{{ $item['name'] }}</a>
                 @endforeach
             </nav>
-            <p class="volanta volanta--clara">{{ $level['order'] }} · Escuela Nueva Austral</p>
+            <p class="volanta volanta--clara">{{ $level['order'] }} · {{ $program['institute'] ?? 'Escuela Nueva Austral' }}</p>
             <h1 id="titulo-nivel" class="portada-nivel__titulo">Nivel {{ $level['name'] }}</h1>
             <p class="portada-nivel__bajada">{{ $level['tagline'] }}</p>
             <div class="portada-nivel__botones">
@@ -24,6 +24,15 @@
             </div>
         </div>
     </section>
+
+    @if (!empty($program['institute']))
+        <div class="contenedor">
+            <div class="membrete">
+                <img src="/images/ena-logo-institucional.svg" alt="Escuela Nueva Austral" width="230" height="60">
+                <p class="membrete__texto"><strong>{{ $program['institute'] }}</strong><span>{{ $program['name'] }}</span></p>
+            </div>
+        </div>
+    @endif
 
     <section class="seccion" aria-labelledby="titulo-propuesta">
         <div class="contenedor institucion aparece">
@@ -41,6 +50,46 @@
             </div>
         </div>
     </section>
+
+    @if (!empty($program['outcomes']))
+        <section class="seccion seccion--gris" aria-labelledby="titulo-logros" style="--acento: {{ $level['accent'] }}">
+            <div class="contenedor perfil">
+                <div class="aparece">
+                    <p class="volanta" style="color: {{ $level['accent'] }}">Perfil del egresado</p>
+                    <h2 id="titulo-logros" class="titulo-seccion">¿Qué lograrás con la {{ $program['name'] }}?</h2>
+                    <ul class="logros">
+                        @foreach ($program['outcomes'] as $outcome)
+                            <li>{{ $outcome }}</li>
+                        @endforeach
+                    </ul>
+                </div>
+                <aside class="ficha aparece" aria-labelledby="titulo-modalidad">
+                    <h3 id="titulo-modalidad" class="ficha__titulo">Modalidad de cursada</h3>
+                    <dl>
+                        @foreach ($program['modality'] as [$label, $value])
+                            <div><dt>{{ $label }}</dt><dd>{{ $value }}</dd></div>
+                        @endforeach
+                    </dl>
+                    <a class="boton boton--primario" href="#preinscripcion">Quiero inscribirme</a>
+                </aside>
+            </div>
+        </section>
+
+        <section class="seccion" aria-labelledby="titulo-destinatarios">
+            <div class="contenedor">
+                <p class="volanta" style="color: {{ $level['accent'] }}">Dirigida a</p>
+                <h2 id="titulo-destinatarios" class="titulo-seccion">¿Para quién es la carrera?</h2>
+                <div class="destinatarios">
+                    @foreach ($program['audience'] as [$title, $text])
+                        <article class="destinatario aparece" style="--acento: {{ $level['accent'] }}">
+                            <h3>{{ $title }}</h3>
+                            <p>{{ $text }}</p>
+                        </article>
+                    @endforeach
+                </div>
+            </div>
+        </section>
+    @endif
 
     @if (!empty($level['experiences']))
         <section class="seccion seccion--experiencia" aria-labelledby="titulo-experiencia" style="--acento: {{ $level['accent'] }}">
@@ -108,6 +157,23 @@
             </div>
         </div>
     </section>
+
+    @if ($level['meeting'])
+        <section class="seccion seccion--gris" aria-labelledby="titulo-reunion">
+            <div class="contenedor">
+                <div class="reunion aparece" style="--acento: {{ $level['accent'] }}">
+                    <div>
+                        <p class="volanta" style="color: {{ $level['accent'] }}">Reunión informativa por Zoom</p>
+                        <h2 id="titulo-reunion" class="titulo-seccion">Si te interesa conocer más, te esperamos</h2>
+                        <p class="reunion__fecha">{{ $level['meeting']['date'] }}</p>
+                    </div>
+                    @if ($level['meeting']['link'])
+                        <a class="boton boton--primario" href="{{ $level['meeting']['link'] }}" target="_blank" rel="noopener">Anotarme en la reunión</a>
+                    @endif
+                </div>
+            </div>
+        </section>
+    @endif
 
     @include('public.partials.preinscription', ['contact' => $level['contact']])
     @include('public.partials.contact', ['contact' => $level['contact']])
