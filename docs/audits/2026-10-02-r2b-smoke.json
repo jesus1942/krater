@@ -1,0 +1,427 @@
+{
+  "date": "2026-10-02",
+  "environment": "staging",
+  "commit": "cc9edaa8686fe9316fd18fb484f066ec6a5e5b89",
+  "deployment": "aaf5c0c2-5044-4b48-bc37-c9a76599dd42",
+  "runtime": "Railway PHP 8.2 / MySQL krater_staging; HTTP loopback en predeploy",
+  "passed": true,
+  "checks": [
+    {
+      "method": "POST",
+      "path": "/api/v1/auth/login",
+      "expected": 200,
+      "actual": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/auth/login",
+      "expected": 200,
+      "actual": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/auth/login",
+      "expected": 200,
+      "actual": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/auth/login",
+      "expected": 200,
+      "actual": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/auth/login",
+      "expected": 200,
+      "actual": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/bootstrap",
+      "expected": 200,
+      "actual": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/me",
+      "expected": 200,
+      "actual": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/me/settings?settings%5B0%5D=language",
+      "expected": 200,
+      "actual": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/languages",
+      "expected": 200,
+      "actual": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/school-levels",
+      "expected": 200,
+      "actual": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/students",
+      "expected": 200,
+      "actual": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/academic-years",
+      "expected": 200,
+      "actual": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/grade-levels",
+      "expected": 200,
+      "actual": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/subjects",
+      "expected": 200,
+      "actual": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/study-plans",
+      "expected": 200,
+      "actual": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/divisions",
+      "expected": 200,
+      "actual": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/enrollments?division_id=1",
+      "expected": 200,
+      "actual": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/dashboard",
+      "expected": 403,
+      "actual": 403
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/search",
+      "expected": 403,
+      "actual": 403
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/students/placement-options",
+      "expected": 403,
+      "actual": 403
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/users",
+      "expected": 403,
+      "actual": 403
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/backups",
+      "expected": 403,
+      "actual": 403
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/bootstrap",
+      "expected": 200,
+      "actual": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/me",
+      "expected": 200,
+      "actual": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/me/settings?settings%5B0%5D=language",
+      "expected": 200,
+      "actual": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/languages",
+      "expected": 200,
+      "actual": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/school-levels",
+      "expected": 200,
+      "actual": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/students",
+      "expected": 200,
+      "actual": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/academic-years",
+      "expected": 200,
+      "actual": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/grade-levels",
+      "expected": 200,
+      "actual": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/subjects",
+      "expected": 200,
+      "actual": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/study-plans",
+      "expected": 200,
+      "actual": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/divisions",
+      "expected": 200,
+      "actual": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/enrollments?division_id=1",
+      "expected": 200,
+      "actual": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/dashboard",
+      "expected": 403,
+      "actual": 403
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/search",
+      "expected": 403,
+      "actual": 403
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/students/placement-options",
+      "expected": 403,
+      "actual": 403
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/users",
+      "expected": 403,
+      "actual": 403
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/backups",
+      "expected": 403,
+      "actual": 403
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/users/10/role-assignments",
+      "expected": 403,
+      "actual": 403
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/users/10/role-assignments",
+      "expected": 201,
+      "actual": 201
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/bootstrap",
+      "expected": 200,
+      "actual": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/me",
+      "expected": 200,
+      "actual": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/me/settings?settings%5B0%5D=language",
+      "expected": 200,
+      "actual": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/languages",
+      "expected": 200,
+      "actual": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/school-levels",
+      "expected": 200,
+      "actual": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/students",
+      "expected": 200,
+      "actual": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/academic-years",
+      "expected": 200,
+      "actual": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/grade-levels",
+      "expected": 200,
+      "actual": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/subjects",
+      "expected": 200,
+      "actual": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/study-plans",
+      "expected": 200,
+      "actual": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/divisions",
+      "expected": 200,
+      "actual": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/enrollments?division_id=1",
+      "expected": 200,
+      "actual": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/students/placement-options",
+      "expected": 200,
+      "actual": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/students",
+      "expected": 201,
+      "actual": 201
+    },
+    {
+      "method": "PUT",
+      "path": "/api/v1/students/3",
+      "expected": 200,
+      "actual": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/students",
+      "expected": 403,
+      "actual": 403
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/v1/students/3",
+      "expected": 403,
+      "actual": 403
+    },
+    {
+      "method": "PUT",
+      "path": "/api/v1/students/3/relocate",
+      "expected": 403,
+      "actual": 403
+    },
+    {
+      "method": "PUT",
+      "path": "/api/v1/students/3",
+      "expected": 403,
+      "actual": 403
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/students",
+      "expected": 403,
+      "actual": 403
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/role-assignments/12/revoke",
+      "expected": 200,
+      "actual": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/students",
+      "expected": 403,
+      "actual": 403
+    }
+  ],
+  "public_http": [
+    {
+      "path": "/ping",
+      "expected": 200,
+      "actual": 200
+    },
+    {
+      "path": "/login",
+      "expected": 200,
+      "actual": 200
+    },
+    {
+      "path": "/api/v1/students",
+      "expected": 401,
+      "actual": 401
+    },
+    {
+      "path": "/api/v1/students/placement-options",
+      "expected": 401,
+      "actual": 401
+    },
+    {
+      "path": "/api/v1/users",
+      "expected": 401,
+      "actual": 401
+    },
+    {
+      "path": "/assets/js/app.js",
+      "actual": 200,
+      "sha256": "79d6b83b324eb49e830dae4557d4ddc83a08b6f4b35818d08e9925cc6a61b0ce",
+      "matches_build": true
+    },
+    {
+      "path": "/assets/css/crater.css",
+      "actual": 200,
+      "sha256": "7775f28aa35cc236d39cea0874a17f772aeb7a5c85fb4023d9cefed05adba255",
+      "matches_build": true
+    }
+  ]
+}

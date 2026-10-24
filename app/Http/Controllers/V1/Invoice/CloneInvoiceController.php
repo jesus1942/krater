@@ -10,6 +10,11 @@ use Illuminate\Http\Request;
 
 class CloneInvoiceController extends Controller
 {
+    public function __construct()
+    {
+        $this->middleware('tenant');
+    }
+
     /**
      * Mail a specific invoice to the corresponding customer's email address.
      *

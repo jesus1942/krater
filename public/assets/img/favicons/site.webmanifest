@@ -1,6 +1,6 @@
 {
-    "name": "",
-    "short_name": "",
+    "name": "Suite de Gestión ENA",
+    "short_name": "Suite ENA",
     "icons": [
         {
             "src": "/assets/img/favicons/android-chrome-192x192.png",
@@ -13,7 +13,7 @@
             "type": "image/png"
         }
     ],
-    "theme_color": "#ffffff",
-    "background_color": "#ffffff",
+    "theme_color": "#102340",
+    "background_color": "#F4F0E7",
     "display": "standalone"
 }

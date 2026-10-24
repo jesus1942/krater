@@ -101,6 +101,11 @@ window.axios.interceptors.request.use(
       config.headers.common['company'] = companyId
     }
 
+    const schoolLevelId = Ls.get('selectedSchoolLevel')
+    if (schoolLevelId) {
+      config.headers.common['school-level'] = schoolLevelId
+    }
+
     return config
   },
   function (error) {
@@ -121,24 +126,32 @@ global.axios.interceptors.response.use(undefined, function (err) {
     store.dispatch('notification/showNotification', {
       type: 'error',
       message:
-        'Please check your internet connection or wait until servers are back online.',
+        'No hay conexión con el servidor. Revisá internet o esperá unos minutos.',
     })
+  } else if (err.response.status === 419) {
+    // Token CSRF vencido: el cambio no llego a guardarse.
+    store.dispatch('auth/sessionEnded', 'no-guardado')
+  } else if (err.response.status === 403 && err.response.data && err.response.data.error === 'password_change_required') {
+    // Fila E1: la cuenta debe cambiar la contrasenia inicial antes de seguir.
+    if (window.location.pathname !== '/admin') window.location.assign('/admin')
   } else {
     if (
       err.response.data &&
       err.config.url !== '/api/v1/auth/check' &&
-      (err.response.statusText === 'Unauthorized' ||
+      (err.response.status === 401 ||
+        err.response.statusText === 'Unauthorized' ||
         err.response.data === ' Unauthorized.')
     ) {
-      console.log(err.response)
-      // Unauthorized and log out
-      store.dispatch('notification/showNotification', {
-        type: 'error',
-        message: err.response.data.message
-          ? err.response.data.message
-          : 'Unauthorized',
-      })
-      store.dispatch('auth/logout', true)
+      // Sin sesion: volver al login con aviso, sin mensajes sueltos en ingles.
+      store.dispatch('auth/sessionEnded', 'sesion')
+    } else if (err.response.status === 403 && err.config.url !== '/api/v1/auth/check') {
+      // Un 403 puede ser falta de permiso o una sesion que ya no existe: se pregunta.
+      window.axios.get('/api/v1/auth/check').then(() => {
+        store.dispatch('notification/showNotification', {
+          type: 'error',
+          message: (err.response.data && err.response.data.message) || 'No tenés permiso para esta operación.',
+        })
+      }).catch(() => store.dispatch('auth/sessionEnded', 'sesion'))
     } else if (err.response.data.errors) {
       // Show a notification per error
       const errors = JSON.parse(JSON.stringify(err.response.data.errors))
@@ -154,7 +167,7 @@ global.axios.interceptors.response.use(undefined, function (err) {
         type: 'error',
         message: err.response.data.message
           ? err.response.data.message
-          : err.response.data || 'Unknown error occurred',
+          : err.response.data || 'Ocurrió un error inesperado.',
       })
     }
   }

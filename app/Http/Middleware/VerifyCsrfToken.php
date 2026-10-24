@@ -16,9 +16,14 @@ class VerifyCsrfToken extends Middleware
     /**
      * The URIs that should be excluded from CSRF verification.
      *
+     * `login` estaba exceptuada. Se saco: la landing publica ahora expone el
+     * formulario de ingreso a cualquiera que entre al sitio, asi que la ruta
+     * necesita la proteccion como cualquier otra. El SPA ya manda el token
+     * XSRF, porque `$addHttpCookie` esta en true.
+     *
      * @var array
      */
     protected $except = [
-        'login',
+        //
     ];
 }

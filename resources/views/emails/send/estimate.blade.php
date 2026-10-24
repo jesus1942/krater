@@ -18,7 +18,7 @@
         @component('mail::subcopy')
             {!! $data['body'] !!}
             @if(!$data['attach']['data'])
-                @component('mail::button', ['url' => url('/customer/estimates/pdf/'.$data['estimate']['unique_hash'])])
+                @component('mail::button', ['url' => URL::temporarySignedRoute('documents.customer.estimate', now()->addDays(7), ['estimate' => $data['estimate']['unique_hash']])])
                     View Estimate
                 @endcomponent
             @endif
@@ -28,8 +28,7 @@
     {{-- Footer --}}
     @slot('footer')
         @component('mail::footer')
-            Powered by <a class="footer-link" href="https://craterapp.com">Crater</a>
+            Impulsado por <a class="footer-link" href="{{ config('app.url') }}">Escuela Nueva Austral</a>
         @endcomponent
     @endslot
 @endcomponent
-

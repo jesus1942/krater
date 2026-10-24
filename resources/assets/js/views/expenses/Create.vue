@@ -1,6 +1,7 @@
 <template>
   <base-page class="relative">
     <form action="" @submit.prevent="sendData">
+      <school-level-field v-model="formData.school_level_id" :editing="isEdit" @input="onRecordLevelChange" />
       <!-- Page Header -->
       <sw-page-header :title="pageTitle" class="mb-5">
         <sw-breadcrumb slot="breadcrumbs">
@@ -234,6 +235,7 @@
 </template>
 
 <script>
+import recordLevel from '../../mixins/recordLevel'
 import moment from 'moment'
 import { mapActions, mapGetters } from 'vuex'
 const { required, minValue, maxLength } = require('vuelidate/lib/validators')
@@ -247,7 +249,7 @@ export default {
     ShoppingCartIcon,
     DownloadIcon,
   },
-  mixins: [CustomFieldsMixin],
+  mixins: [CustomFieldsMixin, recordLevel],
 
   props: {
     addname: {
@@ -259,11 +261,13 @@ export default {
   data() {
     return {
       formData: {
+        school_level_id: window.Ls.get('selectedSchoolLevel') || null,
         expense_category_id: null,
         expense_date: new Date(),
         amount: 100,
         notes: '',
         user_id: null,
+        receiptUrl: null,
       },
 
       money: {
@@ -340,7 +344,7 @@ export default {
 
     getReceiptUrl() {
       if (this.isEdit) {
-        return `/expenses/${this.$route.params.id}/receipt`
+        return this.formData.receiptUrl
       }
     },
 
@@ -502,6 +506,7 @@ export default {
     },
 
     async sendData() {
+      if (!this.requireRecordLevel(this.formData)) return false
       let validate = await this.touchCustomField()
       this.$v.category.$touch()
       this.$v.formData.$touch()
@@ -514,6 +519,7 @@ export default {
       if (this.fileObject) {
         data.append('attachment_receipt', this.fileObject)
       }
+      if (this.formData.school_level_id !== null) data.append('school_level_id', this.formData.school_level_id)
       data.append('expense_category_id', this.formData.expense_category_id)
       data.append(
         'expense_date',

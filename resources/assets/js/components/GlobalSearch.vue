@@ -52,7 +52,7 @@
           <router-link
             v-for="d in getUserList"
             :key="d.id"
-            :to="`/admin/users/${d.id}/edit`"
+            :to="`/admin/staff`"
           >
             <sw-dropdown-item>
               <span

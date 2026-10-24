@@ -33,7 +33,11 @@ class RelationNotExist implements Rule
     {
         $relation = $this->relation;
 
-        if ($this->class::find($value)->$relation()->exists()) {
+        $model = $this->class::find($value);
+
+        // Fuera del alcance del usuario (otra empresa o nivel) no se valida aca:
+        // el controlador lo rechaza con 403.
+        if ($model && $model->$relation()->exists()) {
             return false;
         }
 

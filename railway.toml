@@ -1,0 +1,9 @@
+[build]
+builder = "dockerfile"
+
+[deploy]
+preDeployCommand = "sh pre-deploy.sh"
+healthcheckPath = "/ping"
+healthcheckTimeout = 60
+restartPolicyType = "on_failure"
+restartPolicyMaxRetries = 3

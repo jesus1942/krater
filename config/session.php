@@ -18,7 +18,9 @@ return [
     |
     */
 
-    'driver' => env('SESSION_DRIVER', 'file'),
+    // database por defecto: las sesiones viven en MySQL y sobreviven a un deploy
+    // (el disco del contenedor se pierde en cada uno).
+    'driver' => env('SESSION_DRIVER', 'database'),
 
     /*
     |--------------------------------------------------------------------------

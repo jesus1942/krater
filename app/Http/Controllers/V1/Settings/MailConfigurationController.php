@@ -6,7 +6,7 @@ use Crater\Http\Controllers\Controller;
 use Crater\Http\Requests\MailEnvironmentRequest;
 use Crater\Mail\TestMail;
 use Crater\Models\Setting;
-use Crater\Space\EnvironmentManager;
+use Crater\Services\Mail\MailSettings;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Mail;
@@ -14,55 +14,24 @@ use Mail;
 class MailConfigurationController extends Controller
 {
     /**
-     * @var EnvironmentManager
+     * Fila C: la configuracion se guarda en la base con los secretos cifrados
+     * (MailSettings). Ya no se escribe el .env del contenedor, que se perdia en
+     * cada deploy.
      */
-    protected $environmentManager;
-
-    /**
-     * @param EnvironmentManager $environmentManager
-     */
-    public function __construct(EnvironmentManager $environmentManager)
+    public function saveMailEnvironment(MailEnvironmentRequest $request, MailSettings $mail)
     {
-        $this->environmentManager = $environmentManager;
-    }
-
-    /**
-     *
-     * @param MailEnvironmentRequest $request
-     * @return JsonResponse
-     */
-    public function saveMailEnvironment(MailEnvironmentRequest $request)
-    {
-        $setting = Setting::getSetting('profile_complete');
-        $results = $this->environmentManager->saveMailVariables($request);
-
-        if ($setting !== 'COMPLETED') {
+        $mail->save($request->user(), $request->all());
+        if (Setting::getSetting('profile_complete') !== 'COMPLETED') {
             Setting::setSetting('profile_complete', 4);
         }
 
-        return response()->json($results);
+        return response()->json(['success' => 'mail_variables_save_successfully']);
     }
 
-    public function getMailEnvironment()
+    /** Configuracion vigente con los secretos enmascarados; nunca en claro. */
+    public function getMailEnvironment(MailSettings $mail)
     {
-        $MailData = [
-            'mail_driver' => config('mail.driver'),
-            'mail_host' => config('mail.host'),
-            'mail_port' => config('mail.port'),
-            'mail_username' => config('mail.username'),
-            'mail_password' => config('mail.password'),
-            'mail_encryption' => config('mail.encryption'),
-            'from_name' => config('mail.from.name'),
-            'from_mail' => config('mail.from.address'),
-            'mail_mailgun_endpoint' => config('services.mailgun.endpoint'),
-            'mail_mailgun_domain' => config('services.mailgun.domain'),
-            'mail_mailgun_secret' => config('services.mailgun.secret'),
-            'mail_ses_key' => config('services.ses.key'),
-            'mail_ses_secret' => config('services.ses.secret'),
-        ];
-
-
-        return response()->json($MailData);
+        return response()->json($mail->masked());
     }
 
     /**

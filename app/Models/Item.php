@@ -2,14 +2,20 @@
 
 namespace Crater\Models;
 
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Carbon\Carbon;
+use Crater\Traits\BelongsToSchoolLevel;
+use Crater\Traits\Auditable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Auth;
 
 class Item extends Model
 {
+    use Auditable;
     use HasFactory;
+    use BelongsToSchoolLevel;
+    use SoftDeletes;
 
     protected $guarded = ['id'];
 

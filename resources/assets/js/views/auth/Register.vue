@@ -14,7 +14,7 @@
         id="password"
         type="password"
         class="form-control form-control-danger"
-        placeholder="Enter Password"
+        :placeholder="$t('login.enter_password')"
         name="password"
       />
     </div>
@@ -22,7 +22,7 @@
       <input
         type="password"
         class="form-control form-control-danger"
-        placeholder="Retype Password"
+        :placeholder="$t('login.retype_password')"
         name="password_confirmation"
       />
     </div>
@@ -46,7 +46,7 @@ export default {
       this.$validator.validateAll().then((result) => {
         if (result) {
           // eslint-disable-next-line
-          alert('Form Submitted!')
+          alert('Formulario enviado.')
         }
       })
     },

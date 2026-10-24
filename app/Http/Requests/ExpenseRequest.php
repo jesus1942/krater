@@ -11,10 +11,7 @@ class ExpenseRequest extends FormRequest
      *
      * @return bool
      */
-    public function authorize()
-    {
-        return true;
-    }
+    use \Crater\Http\Requests\Concerns\ValidatesFinanceTenant;
 
     /**
      * Get the validation rules that apply to the request.
@@ -23,7 +20,7 @@ class ExpenseRequest extends FormRequest
      */
     public function rules()
     {
-        return [
+        return array_merge($this->schoolLevelRules(), [
             'expense_date' => [
                 'required',
             ],
@@ -39,6 +36,6 @@ class ExpenseRequest extends FormRequest
             'notes' => [
                 'nullable',
             ],
-        ];
+        ]);
     }
 }

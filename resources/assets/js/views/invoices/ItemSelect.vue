@@ -18,7 +18,7 @@
       v-else
       ref="baseSelect"
       v-model="itemSelect"
-      :options="items"
+      :options="levelItems"
       :loading="loading"
       :show-labels="false"
       :preserve-search="true"
@@ -70,6 +70,7 @@ import { mapActions, mapGetters } from 'vuex'
 import { XCircleIcon, ShoppingCartIcon } from '@vue-hero-icons/solid'
 
 export default {
+  inject: { recordSchoolLevel: { default: () => () => window.Ls.get('selectedSchoolLevel') || null } },
   components: {
     XCircleIcon,
     ShoppingCartIcon,
@@ -105,6 +106,7 @@ export default {
     }
   },
   computed: {
+    levelItems() { return this.items.filter(item => String(item.school_level_id || '') === String(this.recordSchoolLevel() || '')) },
     ...mapGetters('item', ['items']),
   },
   watch: {
@@ -152,7 +154,7 @@ export default {
       this.openModal({
         title: this.$t('items.add_item'),
         componentName: 'ItemModal',
-        data: { taxPerItem: this.taxPerItem, taxes: this.taxes },
+        data: { taxPerItem: this.taxPerItem, taxes: this.taxes, school_level_id: this.recordSchoolLevel() },
       })
     },
 

@@ -291,7 +291,7 @@ export default {
       return this.$t('general.descending')
     },
     shareableLink() {
-      return `/invoices/pdf/${this.invoice.unique_hash}`
+      return this.invoice.invoicePdfUrl
     },
     getCurrentInvoiceId() {
       if (this.invoice && this.invoice.id) {
@@ -443,7 +443,7 @@ export default {
       })
     },
     copyPdfUrl() {
-      let pdfUrl = `${window.location.origin}/invoices/pdf/${this.invoice.unique_hash}`
+      let pdfUrl = this.invoice.invoicePdfUrl
 
       let response = this.$utils.copyTextToClipboard(pdfUrl)
       this.showNotification({

@@ -1,465 +1,177 @@
 <template>
-  <base-page class="customer-create">
-    <sw-page-header :title="$t('customers.title')">
+  <base-page>
+    <sw-page-header title="Familias y responsables">
       <sw-breadcrumb slot="breadcrumbs">
-        <sw-breadcrumb-item :title="$t('general.home')" to="dashboard" />
-        <sw-breadcrumb-item
-          :title="$tc('customers.customer', 2)"
-          to="#"
-          active
-        />
+        <sw-breadcrumb-item title="Inicio" to="/admin/dashboard" />
+        <sw-breadcrumb-item title="Familias y responsables" to="#" active />
       </sw-breadcrumb>
-
       <template slot="actions">
-        <sw-button
-          v-show="totalCustomers"
-          size="lg"
-          variant="primary-outline"
-          @click="toggleFilter"
-        >
-          {{ $t('general.filter') }}
-          <component :is="filterIcon" class="h-4 ml-1 -mr-1 font-bold" />
-        </sw-button>
-
-        <sw-button
-          tag-name="router-link"
-          to="customers/create"
-          size="lg"
-          variant="primary"
-          class="ml-4"
-        >
-          <plus-sm-icon class="h-6 mr-1 -ml-2 font-bold" />
-          {{ $t('customers.new_customer') }}
+        <sw-button size="lg" variant="primary" @click="openCreate">
+          <plus-sm-icon class="h-6 mr-1 -ml-2" /> Nuevo responsable
         </sw-button>
       </template>
     </sw-page-header>
 
-    <slide-y-up-transition>
-      <sw-filter-wrapper v-show="showFilters">
-        <sw-input-group
-          :label="$t('customers.display_name')"
-          class="flex-1 mt-2"
-        >
-          <sw-input
-            v-model="filters.display_name"
-            type="text"
-            name="name"
-            class="mt-2"
-            autocomplete="off"
-          />
-        </sw-input-group>
-
-        <sw-input-group
-          :label="$t('customers.contact_name')"
-          class="flex-1 mt-2 ml-0 lg:ml-6"
-        >
-          <sw-input
-            v-model="filters.contact_name"
-            type="text"
-            name="address_name"
-            class="mt-2"
-            autocomplete="off"
-          />
-        </sw-input-group>
-
-        <sw-input-group
-          :label="$t('customers.phone')"
-          class="flex-1 mt-2 ml-0 lg:ml-6"
-        >
-          <sw-input
-            v-model="filters.phone"
-            type="text"
-            name="phone"
-            class="mt-2"
-            autocomplete="off"
-          />
-        </sw-input-group>
-
-        <label
-          class="absolute text-sm leading-snug text-black cursor-pointer"
-          style="top: 10px; right: 15px"
-          @click="clearFilter"
-          >{{ $t('general.clear_all') }}</label
-        >
-      </sw-filter-wrapper>
-    </slide-y-up-transition>
-
-    <sw-empty-table-placeholder
-      v-show="showEmptyScreen"
-      :title="$t('customers.no_customers')"
-      :description="$t('customers.list_of_customers')"
-    >
-      <astronaut-icon class="mt-5 mb-4" />
-
-      <sw-button
-        slot="actions"
-        tag-name="router-link"
-        to="/admin/customers/create"
-        size="lg"
-        variant="primary-outline"
-      >
-        {{ $t('customers.add_new_customer') }}
-      </sw-button>
-    </sw-empty-table-placeholder>
-
-    <div v-show="!showEmptyScreen" class="relative table-container">
-      <div
-        class="relative flex items-center justify-between h-10 mt-5 border-b-2 border-gray-200 border-solid"
-      >
-        <p class="text-sm">
-          {{ $t('general.showing') }}: <b>{{ customers.length }}</b>
-          {{ $t('general.of') }} <b>{{ totalCustomers }}</b>
-        </p>
-
-        <sw-transition type="fade">
-          <sw-dropdown v-if="selectedCustomers.length">
-            <span
-              slot="activator"
-              class="flex block text-sm font-medium cursor-pointer select-none text-primary-400"
-            >
-              {{ $t('general.actions') }}
-              <chevron-down-icon class="h-5" />
-            </span>
-
-            <sw-dropdown-item @click="removeMultipleCustomers">
-              <trash-icon class="h-5 mr-3 text-gray-600" />
-              {{ $t('general.delete') }}
-            </sw-dropdown-item>
-          </sw-dropdown>
-        </sw-transition>
+    <div class="p-4 mb-5 bg-white rounded shadow">
+      <div class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+        <div>
+          <div class="text-2xl font-semibold text-primary-500">{{ members.length }}</div>
+          <div class="text-sm text-gray-500">Familiares y responsables registrados</div>
+        </div>
+        <sw-input v-model="search" class="w-full md:w-80" placeholder="Buscar por nombre, DNI, correo o teléfono" @input="debouncedFetch" />
       </div>
+    </div>
 
-      <div class="absolute z-10 items-center pl-4 mt-2 select-none md:mt-12">
-        <sw-checkbox
-          v-model="selectAllFieldStatus"
-          variant="primary"
-          size="sm"
-          class="hidden md:inline"
-          @change="selectAllCustomers"
-        />
+    <div v-if="loading" class="p-8 text-center text-gray-500">Cargando familias y responsables…</div>
 
-        <sw-checkbox
-          v-model="selectAllFieldStatus"
-          :label="$t('general.select_all')"
-          variant="primary"
-          size="sm"
-          class="md:hidden"
-          @change="selectAllCustomers"
-        />
-      </div>
+    <div v-else-if="!members.length" class="p-10 text-center bg-white rounded shadow">
+      <h3 class="mb-2 text-lg font-semibold">Aún no hay familias ni responsables</h3>
+      <p class="mb-5 text-gray-500">Los responsables cargados desde el legajo de un alumno aparecerán automáticamente acá.</p>
+      <sw-button variant="primary-outline" @click="openCreate">Agregar familia o responsable</sw-button>
+    </div>
 
-      <sw-table-component
-        ref="table"
-        :show-filter="false"
-        :data="fetchData"
-        table-class="table"
-      >
-        <sw-table-column
-          :sortable="false"
-          :filterable="false"
-          cell-class="no-click"
-        >
-          <div slot-scope="row" class="relative block">
-            <sw-checkbox
-              :id="row.id"
-              v-model="selectField"
-              :value="row.id"
-              variant="primary"
-              size="sm"
-            />
+    <div v-else class="grid gap-4 lg:grid-cols-2">
+      <article v-for="member in members" :key="member.id" class="p-5 bg-white rounded shadow">
+        <div class="flex items-start justify-between gap-3">
+          <div>
+            <h3 class="text-lg font-semibold text-gray-900">{{ member.name }}</h3>
+            <p class="text-sm text-gray-500">DNI {{ member.dni || 'sin registrar' }}</p>
           </div>
-        </sw-table-column>
+          <button class="text-sm font-medium text-primary-500" @click="openEdit(member)">Editar</button>
+        </div>
 
-        <sw-table-column
-          :sortable="true"
-          :filterable="true"
-          :label="$t('customers.display_name')"
-          show="name"
-        >
-          <template slot-scope="row">
-            <span>{{ $t('customers.display_name') }}</span>
-            <router-link
-              :to="{ path: `customers/${row.id}/view` }"
-              class="font-medium text-primary-500"
-            >
-              {{ row.name }}
-            </router-link>
-          </template>
-        </sw-table-column>
+        <div class="grid gap-3 mt-4 text-sm sm:grid-cols-2">
+          <div><span class="block text-gray-400">Correo</span>{{ member.email || 'Sin registrar' }}</div>
+          <div><span class="block text-gray-400">Teléfono</span>{{ member.phone || 'Sin registrar' }}</div>
+        </div>
 
-        <sw-table-column
-          :sortable="true"
-          :label="$t('customers.contact_name')"
-          show="contact_name"
-        >
-          <template slot-scope="row">
-            <span>{{ $t('customers.contact_name') }}</span>
-            <span>
-              {{
-                row.contact_name
-                  ? row.contact_name
-                  : $t('customers.no_contact_name')
-              }}
-            </span>
-          </template>
-        </sw-table-column>
+        <div class="pt-4 mt-4 border-t border-gray-100">
+          <span class="block mb-2 text-sm text-gray-400">Alumnos vinculados</span>
+          <div v-if="member.students && member.students.length" class="space-y-2">
+            <div v-for="student in member.students" :key="student.id" class="p-3 text-sm bg-gray-50 rounded">
+              <div class="font-medium text-gray-800">{{ student.first_name }} {{ student.last_name }}</div>
+              <div class="text-gray-500">{{ placementLabel(student) }}</div>
+              <div class="flex flex-wrap gap-2 mt-2">
+                <span v-if="student.pivot && student.pivot.relationship" class="px-2 py-1 text-xs bg-white border rounded">{{ student.pivot.relationship }}</span>
+                <span v-if="student.pivot && student.pivot.is_responsible" class="px-2 py-1 text-xs bg-blue-50 text-blue-700 rounded">Responsable</span>
+                <span v-if="student.pivot && student.pivot.is_financial_responsible" class="px-2 py-1 text-xs bg-green-50 text-green-700 rounded">Responsable financiero</span>
+                <span v-if="student.pivot && student.pivot.is_primary_contact" class="px-2 py-1 text-xs bg-yellow-50 text-yellow-700 rounded">Contacto principal</span>
+              </div>
+            </div>
+          </div>
+          <p v-else class="text-sm text-gray-500">Sin alumnos vinculados todavía.</p>
+        </div>
+      </article>
+    </div>
 
-        <sw-table-column
-          :sortable="true"
-          :label="$t('customers.phone')"
-          show="phone"
-        >
-          <template slot-scope="row">
-            <span>{{ $t('customers.phone') }}</span>
-            <span>
-              {{ row.phone ? row.phone : $t('customers.no_contact') }}
-            </span>
-          </template>
-        </sw-table-column>
+    <div v-if="showForm" class="fixed inset-0 z-50 flex items-start justify-center p-4 overflow-y-auto bg-black bg-opacity-50">
+      <form class="w-full max-w-2xl p-6 my-8 bg-white rounded shadow-xl" @submit.prevent="save">
+        <div class="flex items-center justify-between mb-5">
+          <h2 class="text-xl font-semibold">{{ form.id ? 'Editar familiar o responsable' : 'Nuevo familiar o responsable' }}</h2>
+          <button type="button" class="text-2xl text-gray-400" @click="closeForm">×</button>
+        </div>
 
-        <sw-table-column
-          :sortable="true"
-          :label="$t('customers.amount_due')"
-          show="due_amount"
-        >
-          <template slot-scope="row">
-            <span> {{ $t('customers.amount_due') }} </span>
-            <div v-html="$utils.formatMoney(row.due_amount, row.currency)" />
-          </template>
-        </sw-table-column>
+        <div class="grid gap-4 md:grid-cols-2">
+          <label class="text-sm md:col-span-2">Nombre y apellido *<sw-input v-model="form.name" class="mt-1" required /></label>
+          <label class="text-sm">DNI<sw-input v-model="form.dni" class="mt-1" /></label>
+          <label class="text-sm">Teléfono<sw-input v-model="form.phone" class="mt-1" /></label>
+          <label class="text-sm md:col-span-2">Correo<sw-input v-model="form.email" type="email" class="mt-1" /></label>
+          <label class="text-sm md:col-span-2">Observaciones<textarea v-model="form.notes" rows="3" class="w-full px-3 py-2 mt-1 border border-gray-300 rounded"></textarea></label>
+        </div>
 
-        <sw-table-column
-          :sortable="true"
-          :label="$t('customers.added_on')"
-          sort-as="created_at"
-          show="formattedCreatedAt"
-        />
+        <p class="mt-4 text-sm text-gray-500">Los vínculos, parentescos y responsabilidades sobre cada alumno se administran desde el legajo del alumno para preservar el historial.</p>
+        <p v-if="error" class="mt-4 text-sm text-red-600">{{ error }}</p>
 
-        <sw-table-column
-          :sortable="false"
-          :filterable="false"
-          cell-class="action-dropdown"
-        >
-          <template slot-scope="row">
-            <span> {{ $t('customers.action') }} </span>
-
-            <sw-dropdown>
-              <dot-icon slot="activator" />
-
-              <sw-dropdown-item
-                :to="`customers/${row.id}/edit`"
-                tag-name="router-link"
-              >
-                <pencil-icon class="h-5 mr-3 text-gray-600" />
-                {{ $t('general.edit') }}
-              </sw-dropdown-item>
-
-              <sw-dropdown-item
-                :to="`customers/${row.id}/view`"
-                tag-name="router-link"
-              >
-                <eye-icon class="h-5 mr-3 text-gray-600" />
-                {{ $t('general.view') }}
-              </sw-dropdown-item>
-
-              <sw-dropdown-item @click="removeCustomer(row.id)">
-                <trash-icon class="h-5 mr-3 text-gray-600" />
-                {{ $t('general.delete') }}
-              </sw-dropdown-item>
-            </sw-dropdown>
-          </template>
-        </sw-table-column>
-      </sw-table-component>
+        <div class="flex justify-end gap-3 mt-6">
+          <sw-button type="button" variant="primary-outline" @click="closeForm">Cancelar</sw-button>
+          <sw-button :loading="saving" :disabled="saving" variant="primary">Guardar</sw-button>
+        </div>
+      </form>
     </div>
   </base-page>
 </template>
+
 <script>
-import { mapActions, mapGetters } from 'vuex'
 import { PlusSmIcon } from '@vue-hero-icons/solid'
-import {
-  FilterIcon,
-  XIcon,
-  ChevronDownIcon,
-  TrashIcon,
-  PencilIcon,
-  EyeIcon,
-} from '@vue-hero-icons/solid'
-import AstronautIcon from '../../components/icon/AstronautIcon'
+
+const emptyForm = () => ({ id: null, name: '', dni: '', email: '', phone: '', notes: '' })
 
 export default {
-  components: {
-    AstronautIcon,
-    ChevronDownIcon,
-    PlusSmIcon,
-    FilterIcon,
-    XIcon,
-    TrashIcon,
-    PencilIcon,
-    EyeIcon,
-  },
+  components: { PlusSmIcon },
   data() {
     return {
-      showFilters: false,
-      isRequestOngoing: true,
-      filters: {
-        display_name: '',
-        contact_name: '',
-        phone: '',
-      },
+      members: [],
+      search: '',
+      loading: false,
+      saving: false,
+      showForm: false,
+      error: '',
+      form: emptyForm(),
+      timer: null,
     }
   },
-  computed: {
-    showEmptyScreen() {
-      return !this.totalCustomers && !this.isRequestOngoing
-    },
-    filterIcon() {
-      return this.showFilters ? 'x-icon' : 'filter-icon'
-    },
-    ...mapGetters('customer', [
-      'customers',
-      'selectedCustomers',
-      'totalCustomers',
-      'selectAllField',
-    ]),
-    selectField: {
-      get: function () {
-        return this.selectedCustomers
-      },
-      set: function (val) {
-        this.selectCustomer(val)
-      },
-    },
-    selectAllFieldStatus: {
-      get: function () {
-        return this.selectAllField
-      },
-      set: function (val) {
-        this.setSelectAllState(val)
-      },
-    },
-  },
-  watch: {
-    filters: {
-      handler: 'setFilters',
-      deep: true,
-    },
-  },
-  destroyed() {
-    if (this.selectAllField) {
-      this.selectAllCustomers()
-    }
+  created() {
+    this.fetchMembers()
   },
   methods: {
-    ...mapActions('customer', [
-      'fetchCustomers',
-      'selectAllCustomers',
-      'selectCustomer',
-      'deleteCustomer',
-      'deleteMultipleCustomers',
-      'setSelectAllState',
-    ]),
-    ...mapActions('notification', ['showNotification']),
-    refreshTable() {
-      this.$refs.table.refresh()
-    },
-    async fetchData({ page, filter, sort }) {
-      let data = {
-        display_name: this.filters.display_name,
-        contact_name: this.filters.contact_name,
-        phone: this.filters.phone,
-        orderByField: sort.fieldName || 'created_at',
-        orderBy: sort.order || 'desc',
-        page,
-      }
-
-      this.isRequestOngoing = true
-      let response = await this.fetchCustomers(data)
-      this.isRequestOngoing = false
-
-      return {
-        data: response.data.customers.data,
-        pagination: {
-          totalPages: response.data.customers.last_page,
-          currentPage: page,
-        },
+    async fetchMembers() {
+      this.loading = true
+      try {
+        const response = await window.axios.get('/api/v1/family-members', { params: { search: this.search } })
+        this.members = response.data.data || []
+      } finally {
+        this.loading = false
       }
     },
-    setFilters() {
-      this.refreshTable()
+    debouncedFetch() {
+      clearTimeout(this.timer)
+      this.timer = setTimeout(this.fetchMembers, 300)
     },
-    clearFilter() {
-      this.filters = {
-        display_name: '',
-        contact_name: '',
-        phone: '',
+    openCreate() {
+      this.form = emptyForm()
+      this.error = ''
+      this.showForm = true
+    },
+    openEdit(member) {
+      this.form = {
+        id: member.id,
+        name: member.name || '',
+        dni: member.dni || '',
+        email: member.email || '',
+        phone: member.phone || '',
+        notes: member.notes || '',
       }
+      this.error = ''
+      this.showForm = true
     },
-    toggleFilter() {
-      if (this.showFilters) {
-        this.clearFilter()
-      }
-
-      this.showFilters = !this.showFilters
+    closeForm() {
+      this.showForm = false
     },
-
-    async removeCustomer(id) {
-      this.$swal({
-        title: this.$t('general.are_you_sure'),
-        text: this.$tc('customers.confirm_delete'),
-        icon: 'error',
-        iconHtml: `<svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6 text-red-600"fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                    </svg>`,
-        showCancelButton: true,
-        showConfirmButton: true,
-      }).then(async (result) => {
-        if (result.value) {
-          let res = await this.deleteCustomer({ ids: [id] })
-
-          if (res.data.success) {
-            this.showNotification({
-              type: 'success',
-              message: this.$tc('customers.deleted_message', 1),
-            })
-            this.$refs.table.refresh()
-            return true
-          }
-          this.showNotification({
-            type: 'error',
-            message: this.$tc(res.data.message),
-          })
-          return true
+    async save() {
+      this.saving = true
+      this.error = ''
+      try {
+        if (this.form.id) {
+          await window.axios.put(`/api/v1/family-members/${this.form.id}`, this.form)
+        } else {
+          await window.axios.post('/api/v1/family-members', this.form)
         }
-      })
-    },
-
-    async removeMultipleCustomers() {
-      this.$swal({
-        title: this.$t('general.are_you_sure'),
-        text: this.$tc('customers.confirm_delete', 2),
-        icon: 'error',
-        iconHtml: `<svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6 text-red-600"fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                    </svg>`,
-        showCancelButton: true,
-        showConfirmButton: true,
-      }).then(async (result) => {
-        if (result.value) {
-          let request = await this.deleteMultipleCustomers()
-          if (request.data.success) {
-            this.showNotification({
-              type: 'success',
-              message: this.$tc('customers.deleted_message', 2),
-            })
-            this.refreshTable()
-          } else if (request.data.error) {
-            this.showNotification({
-              type: 'error',
-              message: request.data.message,
-            })
-          }
+        this.closeForm()
+        await this.fetchMembers()
+      } catch (error) {
+        const response = error.response && error.response.data
+        if (response && response.errors) {
+          const first = Object.values(response.errors)[0]
+          this.error = Array.isArray(first) ? first[0] : first
+        } else {
+          this.error = (response && response.message) || 'No se pudo guardar el familiar.'
         }
-      })
+      } finally {
+        this.saving = false
+      }
+    },
+    placementLabel(student) {
+      return [student.level, student.grade, student.division].filter(Boolean).join(' · ') || 'Sin ubicación académica'
     },
   },
 }

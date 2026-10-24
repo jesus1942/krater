@@ -10,6 +10,8 @@
     "reports": "Reports",
     "settings": "Settings",
     "logout": "Logout",
+    "students": "Students",
+    "my_profile": "My profile",
     "users": "Users"
   },
   "general": {
@@ -516,7 +518,9 @@
     "enter_email": "Enter email",
     "enter_password": "Enter Password",
     "retype_password": "Retype Password",
-    "login_placeholder": "mail@example.com"
+    "login_placeholder": "mail@example.com",
+    "login_successfully": "Logged in successfully.",
+    "reset_mail_sent": "Mail sent successfully!"
   },
   "users": {
     "title": "Users",
@@ -608,6 +612,9 @@
   "settings": {
     "menu_title": {
       "account_settings": "Account Settings",
+      "school_levels": "School levels",
+      "enrollments": "Enrollments",
+      "academic_years": "Academic years",
       "company_information": "Company Information",
       "customization": "Customization",
       "preferences": "Preferences",
@@ -619,7 +626,8 @@
       "file_disk": "File Disk",
       "custom_fields": "Custom Fields",
       "payment_modes": "Payment Modes",
-      "notes": "Notes"
+      "notes": "Notes",
+      "audit_logs": "Audit log"
     },
     "title": "Settings",
     "setting": "Settings | Settings",
@@ -1119,7 +1127,7 @@
     }
   },
   "layout_login": {
-    "copyright_crater": "Copyright @ Crater - 2020",
+    "copyright_crater": "ENA srl - Escuela Nueva Austral",
     "super_simple_invoicing": "Super Simple Invoicing",
     "for_freelancer": "for Freelancers &",
     "small_businesses": "Small Businesses ",

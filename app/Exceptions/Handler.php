@@ -3,10 +3,24 @@
 namespace Crater\Exceptions;
 
 use Illuminate\Foundation\Exceptions\Handler as ExceptionHandler;
+use Illuminate\Validation\ValidationException;
 use Throwable;
 
 class Handler extends ExceptionHandler
 {
+    /** Laravel 8 trae un resumen literal ingles, aunque las reglas usen locale es. */
+    protected function invalidJson($request, ValidationException $exception)
+    {
+        $response = parent::invalidJson($request, $exception);
+        $data = $response->getData(true);
+        if ($data['message'] === 'The given data was invalid.') {
+            $data['message'] = __('validation.invalid');
+            $response->setData($data);
+        }
+
+        return $response;
+    }
+
     /**
      * A list of the exception types that are not reported.
      *
@@ -48,6 +62,12 @@ class Handler extends ExceptionHandler
      */
     public function render($request, Throwable $exception)
     {
+        if ($request->is('reports/*') && ! $request->expectsJson()
+            && $exception instanceof \Symfony\Component\HttpKernel\Exception\HttpExceptionInterface
+            && in_array($exception->getStatusCode(), [403, 422])) {
+            return response()->view('errors.report', ['message' => $exception->getMessage()
+                ?: 'No se pudo abrir el informe. Revisá el nivel y tus permisos.'], $exception->getStatusCode());
+        }
         return parent::render($request, $exception);
     }
 }

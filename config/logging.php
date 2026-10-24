@@ -1,6 +1,5 @@
 <?php
 
-use Monolog\Handler\StreamHandler;
 use Monolog\Handler\SyslogUdpHandler;
 
 return [
@@ -62,11 +61,9 @@ return [
             ],
         ],
         'stderr' => [
-            'driver' => 'monolog',
-            'handler' => StreamHandler::class,
-            'with' => [
-                'stream' => 'php://stderr',
-            ],
+            'driver' => 'custom',
+            'via' => \Crater\Logging\SplitStreamLogger::class,
+            'level' => env('LOG_LEVEL', 'debug'),
         ],
         'syslog' => [
             'driver' => 'syslog',

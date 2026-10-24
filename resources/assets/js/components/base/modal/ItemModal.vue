@@ -1,6 +1,7 @@
 <template>
   <div class="item-modal">
     <form action="" @submit.prevent="submitItemData">
+      <school-level-field v-model="formData.school_level_id" :editing="isEdit" />
       <div class="px-8 py-8 sm:p-6">
         <sw-input-group
           :label="$t('items.name')"
@@ -105,6 +106,7 @@
 </template>
 
 <script>
+import recordLevel from '../../../mixins/recordLevel'
 import { mapActions, mapGetters } from 'vuex'
 import { ShoppingCartIcon } from '@vue-hero-icons/solid'
 
@@ -117,6 +119,7 @@ const {
 } = require('vuelidate/lib/validators')
 
 export default {
+  mixins: [recordLevel],
   components: {
     ShoppingCartIcon,
   },
@@ -127,6 +130,7 @@ export default {
       tempData: null,
       taxes: [],
       formData: {
+        school_level_id: window.Ls.get('selectedSchoolLevel') || null,
         name: null,
         price: null,
         description: null,
@@ -231,6 +235,7 @@ export default {
   },
 
   created() {
+    this.formData.school_level_id = (this.modalData || {}).school_level_id || window.Ls.get('selectedSchoolLevel') || null
     if (this.modalDataID) {
       this.isEdit = true
       this.fetchEditData()
@@ -255,6 +260,7 @@ export default {
 
     resetFormData() {
       this.formData = {
+        school_level_id: (this.modalData || {}).school_level_id || window.Ls.get('selectedSchoolLevel') || null,
         name: null,
         price: null,
         description: null,
@@ -272,10 +278,12 @@ export default {
         this.formData.description = this.tempData.description
         this.formData.unit = this.tempData.unit
         this.formData.id = this.tempData.id
+        this.formData.school_level_id = this.tempData.school_level_id
       }
     },
 
     async submitItemData() {
+      if (!this.requireRecordLevel(this.formData)) return false
       this.$v.formData.$touch()
 
       if (this.$v.$invalid) {

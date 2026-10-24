@@ -28,6 +28,17 @@ import CustomerIndex from './views/customers/Index.vue'
 import CustomerCreate from './views/customers/Create.vue'
 import CustomerView from './views/customers/View.vue'
 
+// Students
+import StudentIndex from './views/students/Index.vue'
+
+// Personal
+import StaffIndex from './views/staff/Index.vue'
+import SiteSetting from './views/settings/SiteSetting.vue'
+import TakeAttendance from './views/attendance/TakeAttendance.vue'
+import StaffAttendance from './views/attendance/StaffAttendance.vue'
+import AttendancePanel from './views/attendance/AttendancePanel.vue'
+import PayrollIndex from './views/staff/Payroll.vue'
+
 // Items
 import ItemsIndex from './views/items/Index.vue'
 import ItemCreate from './views/items/Create.vue'
@@ -52,8 +63,6 @@ import ExpensesIndex from './views/expenses/Index'
 import ExpenseCreate from './views/expenses/Create.vue'
 
 //User
-import UserIndex from './views/users/Index.vue'
-import UserCreate from './views/users/Create.vue'
 
 // Report
 import SalesReports from './views/reports/SalesReports'
@@ -65,6 +74,16 @@ import ReportLayout from './views/reports/layout/Index.vue'
 // Settings
 import SettingsLayout from './views/settings/SettingsIndex.vue'
 import CompanyInfo from './views/settings/CompanyInfoSetting.vue'
+import SchoolLevelsSetting from './views/settings/SchoolLevelsSetting.vue'
+
+// Academico
+import AcademicYearsIndex from './views/academic/AcademicYearsIndex.vue'
+import AcademicStructureIndex from './views/academic/AcademicStructureIndex.vue'
+import EnrollmentsIndex from './views/academic/EnrollmentsIndex.vue'
+import AuditLogsIndex from './views/academic/AuditLogsIndex.vue'
+import DataReconciliation from './views/settings/DataReconciliation.vue'
+import TrashSetting from './views/settings/TrashSetting.vue'
+import CourseSectionsSetting from './views/settings/CourseSectionsSetting.vue'
 import Customization from './views/settings/CustomizationSetting.vue'
 import Notifications from './views/settings/NotificationsSetting.vue'
 import Preferences from './views/settings/PreferencesSetting.vue'
@@ -73,7 +92,6 @@ import TaxTypes from './views/settings/TaxTypesSetting.vue'
 import NotesSetting from './views/settings/NotesSetting.vue'
 import ExpenseCategory from './views/settings/ExpenseCategorySetting.vue'
 import MailConfig from './views/settings/MailConfigSetting.vue'
-import UpdateApp from './views/settings/UpdateAppSetting.vue'
 import Backup from './views/settings/BackupSetting.vue'
 import FileDisk from './views/settings/FileDiskSetting.vue'
 import CustomFieldsIndex from './views/settings/CustomFieldsSetting.vue'
@@ -180,6 +198,32 @@ const routes = [
         component: CustomerView,
       },
 
+      // Students
+      {
+        path: 'students',
+        name: 'students.index',
+        component: StudentIndex,
+      },
+
+      // Asistencia
+      { path: 'attendance', name: 'attendance.take', component: TakeAttendance },
+      { path: 'attendance/staff', name: 'attendance.staff', component: StaffAttendance },
+      { path: 'attendance/panel', name: 'attendance.panel', component: AttendancePanel },
+
+      // Personal
+      {
+        path: 'staff',
+        name: 'staff.index',
+        component: StaffIndex,
+      },
+
+      // Liquidaciones y pagos de RRHH
+      {
+        path: 'payroll',
+        name: 'payroll.index',
+        component: PayrollIndex,
+      },
+
       // Items
       {
         path: 'items',
@@ -283,21 +327,9 @@ const routes = [
         component: ExpenseCreate,
       },
 
-      // User
-      {
-        path: 'users',
-        component: UserIndex,
-      },
-      {
-        path: 'users/create',
-        name: 'users.create',
-        component: UserCreate,
-      },
-      {
-        path: 'users/:id/edit',
-        name: 'users.edit',
-        component: UserCreate,
-      },
+      // Fila E1: usuarios y accesos viven en la ficha de Personal.
+      { path: 'users', redirect: '/admin/staff' },
+      { path: 'users/*', redirect: '/admin/staff' },
 
       // Reports
       {
@@ -332,6 +364,54 @@ const routes = [
             path: 'company-info',
             name: 'company.info',
             component: CompanyInfo,
+          },
+          {
+            path: 'school-levels',
+            name: 'school.levels',
+            component: SchoolLevelsSetting,
+          },
+          {
+            // Los ciclos lectivos viven bajo configuracion mientras no exista
+            // el modulo academico completo: es donde la escuela va a buscarlos
+            // ahora, junto a los niveles institucionales.
+            path: 'academic-years',
+            name: 'academic.years',
+            component: AcademicYearsIndex,
+          },
+          {
+            path: 'academic-structure',
+            name: 'academic.structure',
+            component: AcademicStructureIndex,
+          },
+          {
+            path: 'enrollments',
+            name: 'academic.enrollments',
+            component: EnrollmentsIndex,
+          },
+          {
+            path: 'public-site',
+            name: 'settings.public.site',
+            component: SiteSetting,
+          },
+          {
+            path: 'audit-logs',
+            name: 'system.audit.logs',
+            component: AuditLogsIndex,
+          },
+          {
+            path: 'data-reconciliation',
+            name: 'system.data.reconciliation',
+            component: DataReconciliation,
+          },
+          {
+            path: 'trash',
+            name: 'system.trash',
+            component: TrashSetting,
+          },
+          {
+            path: 'course-sections',
+            name: 'academic.course.sections',
+            component: CourseSectionsSetting,
           },
           {
             path: 'customization',
@@ -383,11 +463,6 @@ const routes = [
             path: 'notifications',
             name: 'notifications',
             component: Notifications,
-          },
-          {
-            path: 'update-app',
-            name: 'updateapp',
-            component: UpdateApp,
           },
           {
             path: 'backup',

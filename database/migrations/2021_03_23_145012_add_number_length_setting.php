@@ -1,5 +1,8 @@
 <?php
 
+// Fila 5: sin scopes globales, porque deleted_at todavia no existe en este
+// punto de una instalacion nueva. En bases existentes esta migracion ya corrio.
+
 use Crater\Models\CompanySetting;
 use Crater\Models\User;
 use Illuminate\Database\Migrations\Migration;
@@ -13,7 +16,7 @@ class AddNumberLengthSetting extends Migration
      */
     public function up()
     {
-        $user = User::where('role', 'super admin')->first();
+        $user = User::withoutGlobalScopes()->where('role', 'super admin')->first();
 
         if ($user) {
             $invoice_number_length = CompanySetting::getSetting('invoice_number_length', $user->company_id);

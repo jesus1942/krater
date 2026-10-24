@@ -2,12 +2,15 @@
 
 namespace Crater\Models;
 
+use Illuminate\Database\Eloquent\SoftDeletes;
+use Crater\Traits\Auditable;
 use Barryvdh\DomPDF\Facade as PDF;
 use Carbon\Carbon;
 use Crater\Jobs\GeneratePaymentPdfJob;
 use Crater\Mail\SendPaymentMail;
 use Crater\Traits\GeneratesPdfTrait;
 use Crater\Traits\HasCustomFieldsTrait;
+use Crater\Traits\BelongsToSchoolLevel;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Auth;
@@ -17,10 +20,13 @@ use Vinkla\Hashids\Facades\Hashids;
 
 class Payment extends Model implements HasMedia
 {
+    use Auditable;
     use HasFactory;
     use InteractsWithMedia;
     use GeneratesPdfTrait;
     use HasCustomFieldsTrait;
+    use BelongsToSchoolLevel;
+    use SoftDeletes;
 
     public const PAYMENT_MODE_CHECK = 'CHECK';
     public const PAYMENT_MODE_OTHER = 'OTHER';
@@ -41,11 +47,13 @@ class Payment extends Model implements HasMedia
     protected static function booted()
     {
         static::created(function ($payment) {
-            GeneratePaymentPdfJob::dispatch($payment);
+            // createPayment guarda el hash después del insert. Con cola síncrona,
+            // el PDF necesita esperar ese save para poder generar su URL firmada.
+            if ($payment->unique_hash) GeneratePaymentPdfJob::dispatch($payment);
         });
 
         static::updated(function ($payment) {
-            GeneratePaymentPdfJob::dispatch($payment, true);
+            if ($payment->unique_hash) GeneratePaymentPdfJob::dispatch($payment, true);
         });
     }
 
@@ -79,7 +87,7 @@ class Payment extends Model implements HasMedia
 
     public function getPaymentPdfUrlAttribute()
     {
-        return url('/payments/pdf/'.$this->unique_hash);
+        return \Illuminate\Support\Facades\URL::temporarySignedRoute('documents.payment', now()->addDay(), ['payment' => $this->unique_hash]);
     }
 
     public function getPaymentNumAttribute()
@@ -107,6 +115,16 @@ class Payment extends Model implements HasMedia
     public function user()
     {
         return $this->belongsTo(User::class, 'user_id');
+    }
+
+    public function student()
+    {
+        return $this->belongsTo(Student::class);
+    }
+
+    public function familyMember()
+    {
+        return $this->belongsTo(FamilyMember::class);
     }
 
     public function creator()
@@ -227,30 +245,6 @@ class Payment extends Model implements HasMedia
         return $payment;
     }
 
-    public static function deletePayments($ids)
-    {
-        foreach ($ids as $id) {
-            $payment = Payment::find($id);
-
-            if ($payment->invoice_id != null) {
-                $invoice = Invoice::find($payment->invoice_id);
-                $invoice->due_amount = ((int)$invoice->due_amount + (int)$payment->amount);
-
-                if ($invoice->due_amount == $invoice->total) {
-                    $invoice->paid_status = Invoice::STATUS_UNPAID;
-                } else {
-                    $invoice->paid_status = Invoice::STATUS_PARTIALLY_PAID;
-                }
-
-                $invoice->status = $invoice->getPreviousStatus();
-                $invoice->save();
-            }
-
-            $payment->delete();
-        }
-
-        return true;
-    }
 
     private function strposX($haystack, $needle, $number)
     {
@@ -270,7 +264,10 @@ class Payment extends Model implements HasMedia
     public static function getNextPaymentNumber($value)
     {
         // Get the last created order
-        $payment = Payment::where('payment_number', 'LIKE', $value.'-%')
+        $payment = Payment::acrossLevels()
+            ->withTrashed() // un numero dado de baja nunca se reutiliza
+            ->where('payments.company_id', request()->header('company'))
+            ->where('payment_number', 'LIKE', $value.'-%')
             ->orderBy('payment_number', 'desc')
             ->first();
 
@@ -451,7 +448,7 @@ class Payment extends Model implements HasMedia
             '{PAYMENT_MODE}' => $this->paymentMethod ? $this->paymentMethod->name : null,
             '{PAYMENT_NUMBER}' => $this->payment_number,
             '{PAYMENT_AMOUNT}' => $this->reference_number,
-            '{PAYMENT_LINK}' => $this->paymentPdfUrl,
+            '{PAYMENT_LINK}' => \Illuminate\Support\Facades\URL::temporarySignedRoute('documents.payment', now()->addDays(7), ['payment' => $this->unique_hash]),
         ];
     }
 }

@@ -63,8 +63,9 @@ class MailEnvironmentRequest extends FormRequest
                         'required',
                         'string',
                     ],
+                    // Fila C: vacio o enmascarado conserva el secreto guardado.
                     'mail_mailgun_secret' => [
-                        'required',
+                        'nullable',
                         'string',
                     ],
                     'mail_mailgun_endpoint' => [
@@ -96,12 +97,14 @@ class MailEnvironmentRequest extends FormRequest
                     'mail_port' => [
                         'required',
                     ],
+                    // Fila C: vacio o enmascarado conserva el secreto guardado.
                     'mail_ses_key' => [
-                        'required',
+                        'nullable',
                         'string',
                     ],
+                    // Fila C: vacio o enmascarado conserva el secreto guardado.
                     'mail_ses_secret' => [
-                        'required',
+                        'nullable',
                         'string',
                     ],
                     'mail_encryption' => [

@@ -14,7 +14,24 @@ class CustomerRequest extends FormRequest
      */
     public function authorize()
     {
-        return true;
+        $customer = $this->route('customer');
+
+        if (! $customer) {
+            return true;
+        }
+        if (! app(\Crater\Services\Access\TenantUsers::class)->canViewCustomer($customer)) {
+            return false;
+        }
+        // Una persona puede ser familiar y tener un rol de personal. El camino
+        // de clientes no puede usarse para tomar esa cuenta por email/password.
+        $access = app(\Crater\Services\Access\AccessManager::class);
+        $changesLogin = $this->filled('password')
+            || ($this->has('email') && $this->input('email') !== $customer->email)
+            || ($this->has('enable_portal') && (bool) $this->input('enable_portal') !== (bool) $customer->enable_portal);
+
+        return ! ($changesLogin && $access->hasActiveRole($customer))
+            || ($access->allows($this->user(), \Crater\Enums\Permission::USER_MANAGE, \Crater\Support\TenantContext::schoolLevelId())
+                && $access->canManageUser($this->user(), $customer));
     }
 
     /**

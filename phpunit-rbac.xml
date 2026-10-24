@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<phpunit bootstrap="tests/bootstrap-isolation.php" colors="true">
+  <testsuites><testsuite name="RBAC R1 R2">
+    <file>tests/Isolation/DeployOperationsTest.php</file>
+    <file>tests/Isolation/WholeInstitutionTest.php</file>
+    <file>tests/Isolation/RoleAssignmentsTest.php</file>
+    <file>tests/Isolation/DelegatedStudentRegistrationTest.php</file>
+    <file>tests/Isolation/RouteAuthorizationMatrixTest.php</file>
+    <file>tests/Isolation/PrepareStagingTest.php</file>
+    <file>tests/Isolation/FreshInstallationCatalogTest.php</file>
+    <file>tests/Isolation/PlatformCleanupTest.php</file>
+    <file>tests/Isolation/SoftDeletionTest.php</file>
+    <file>tests/Isolation/StaffOnboardingTest.php</file>
+    <file>tests/Isolation/SchoolDashboardTest.php</file>
+    <file>tests/Isolation/AttendanceTest.php</file>
+    <file>tests/Isolation/PublicHostsTest.php</file>
+    <file>tests/Isolation/SiteSettingsTest.php</file>
+    <file>tests/Isolation/SessionResilienceTest.php</file>
+    <file>tests/Isolation/EnrollmentHistoryTest.php</file>
+    <file>tests/Isolation/MailSettingsTest.php</file>
+  </testsuite></testsuites>
+  <php>
+    <server name="APP_ENV" value="testing"/>
+    <server name="BCRYPT_ROUNDS" value="4"/>
+    <server name="CACHE_DRIVER" value="array"/>
+    <server name="DB_CONNECTION" value="sqlite"/>
+    <server name="DB_DATABASE" value=":memory:"/>
+    <server name="QUEUE_CONNECTION" value="sync"/>
+    <server name="SESSION_DRIVER" value="array"/>
+    <server name="APP_URL" value="http://crater.test"/>
+  </php>
+</phpunit>

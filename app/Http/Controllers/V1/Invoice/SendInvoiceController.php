@@ -8,6 +8,11 @@ use Crater\Models\Invoice;
 
 class SendInvoiceController extends Controller
 {
+    public function __construct()
+    {
+        $this->middleware('tenant');
+    }
+
     /**
      * Mail a specific invoice to the corresponding customer's email address.
      *

@@ -1,0 +1,2459 @@
+{
+  "code_sha": "152a40f0661634165a7084032467022fad80130f",
+  "verified_at_utc": "2026-10-03T01:48:22.592Z",
+  "local": {
+    "phpunit": {
+      "tests": 70,
+      "assertions": 578,
+      "passed": true
+    },
+    "payment_pdf_hash_regression": {
+      "failed_before_fix": true,
+      "passed_after_fix": true
+    },
+    "ui": {
+      "institution_selector_forms_and_report_filters": true,
+      "role_walkthroughs": 9,
+      "passed": true,
+      "runtime": "Vue 2 / JSDOM; no revisión visual manual autenticada"
+    },
+    "frontend": {
+      "gzip_verified": true,
+      "js_sha256": "932622567035b01b2967cc61c98aa0adbf58c430b8ef099f7702e9ab72f749df"
+    }
+  },
+  "staging": {
+    "deployment_id": "013cfefa-06be-417c-9126-c1e388feb74c",
+    "status": "SUCCESS",
+    "branch": "claude/web-app-migration-laf9yy",
+    "runtime": "Railway PHP 8.2 / MySQL krater_staging; API y sesión web autenticadas por HTTP loopback en predeploy",
+    "authenticated_http": {
+      "passed": true,
+      "count": 280,
+      "levels": 3,
+      "preserved_levels": true,
+      "required_creation_level": true,
+      "real_report_pdfs": true,
+      "checks": [
+        {
+          "method": "GET",
+          "path": "/api/v1/bootstrap",
+          "level": null,
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/me",
+          "level": null,
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/school-levels",
+          "level": null,
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/dashboard",
+          "level": null,
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/customers",
+          "level": null,
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/items",
+          "level": null,
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/units",
+          "level": null,
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/invoices",
+          "level": null,
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/invoices/templates",
+          "level": null,
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/estimates",
+          "level": null,
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/estimates/templates",
+          "level": null,
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/payments",
+          "level": null,
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/payment-methods",
+          "level": null,
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/expenses",
+          "level": null,
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/categories",
+          "level": null,
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/students",
+          "level": null,
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/academic-years",
+          "level": null,
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/grade-levels",
+          "level": null,
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/divisions",
+          "level": null,
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/subjects",
+          "level": null,
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/study-plans",
+          "level": null,
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/school-billing/options",
+          "level": null,
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/users",
+          "level": null,
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/roles",
+          "level": null,
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/company/settings?settings%5B0%5D=currency",
+          "level": null,
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/backups",
+          "level": null,
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/students/placement-options?school_level_id=1",
+          "level": null,
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/enrollments?division_id=4",
+          "level": null,
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/students/placement-options?school_level_id=2",
+          "level": null,
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/enrollments?division_id=5",
+          "level": null,
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/students/placement-options?school_level_id=3",
+          "level": null,
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/enrollments?division_id=6",
+          "level": null,
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/bootstrap",
+          "level": 1,
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/me",
+          "level": 1,
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/school-levels",
+          "level": 1,
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/dashboard",
+          "level": 1,
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/customers",
+          "level": 1,
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/items",
+          "level": 1,
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/units",
+          "level": 1,
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/invoices",
+          "level": 1,
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/invoices/templates",
+          "level": 1,
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/estimates",
+          "level": 1,
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/estimates/templates",
+          "level": 1,
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/payments",
+          "level": 1,
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/payment-methods",
+          "level": 1,
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/expenses",
+          "level": 1,
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/categories",
+          "level": 1,
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/students",
+          "level": 1,
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/academic-years",
+          "level": 1,
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/grade-levels",
+          "level": 1,
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/divisions",
+          "level": 1,
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/subjects",
+          "level": 1,
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/study-plans",
+          "level": 1,
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/school-billing/options",
+          "level": 1,
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/users",
+          "level": 1,
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/roles",
+          "level": 1,
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/company/settings?settings%5B0%5D=currency",
+          "level": 1,
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/backups",
+          "level": 1,
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/students/placement-options?school_level_id=1",
+          "level": 1,
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/enrollments?division_id=4",
+          "level": 1,
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/bootstrap",
+          "level": 2,
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/me",
+          "level": 2,
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/school-levels",
+          "level": 2,
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/dashboard",
+          "level": 2,
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/customers",
+          "level": 2,
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/items",
+          "level": 2,
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/units",
+          "level": 2,
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/invoices",
+          "level": 2,
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/invoices/templates",
+          "level": 2,
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/estimates",
+          "level": 2,
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/estimates/templates",
+          "level": 2,
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/payments",
+          "level": 2,
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/payment-methods",
+          "level": 2,
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/expenses",
+          "level": 2,
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/categories",
+          "level": 2,
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/students",
+          "level": 2,
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/academic-years",
+          "level": 2,
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/grade-levels",
+          "level": 2,
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/divisions",
+          "level": 2,
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/subjects",
+          "level": 2,
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/study-plans",
+          "level": 2,
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/school-billing/options",
+          "level": 2,
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/users",
+          "level": 2,
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/roles",
+          "level": 2,
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/company/settings?settings%5B0%5D=currency",
+          "level": 2,
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/backups",
+          "level": 2,
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/students/placement-options?school_level_id=2",
+          "level": 2,
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/enrollments?division_id=5",
+          "level": 2,
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/bootstrap",
+          "level": 3,
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/me",
+          "level": 3,
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/school-levels",
+          "level": 3,
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/dashboard",
+          "level": 3,
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/customers",
+          "level": 3,
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/items",
+          "level": 3,
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/units",
+          "level": 3,
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/invoices",
+          "level": 3,
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/invoices/templates",
+          "level": 3,
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/estimates",
+          "level": 3,
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/estimates/templates",
+          "level": 3,
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/payments",
+          "level": 3,
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/payment-methods",
+          "level": 3,
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/expenses",
+          "level": 3,
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/categories",
+          "level": 3,
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/students",
+          "level": 3,
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/academic-years",
+          "level": 3,
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/grade-levels",
+          "level": 3,
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/divisions",
+          "level": 3,
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/subjects",
+          "level": 3,
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/study-plans",
+          "level": 3,
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/school-billing/options",
+          "level": 3,
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/users",
+          "level": 3,
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/roles",
+          "level": 3,
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/company/settings?settings%5B0%5D=currency",
+          "level": 3,
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/backups",
+          "level": 3,
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/students/placement-options?school_level_id=3",
+          "level": 3,
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/enrollments?division_id=6",
+          "level": 3,
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "method": "POST",
+          "path": "/api/v1/items",
+          "level": null,
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "method": "POST",
+          "path": "/api/v1/invoices",
+          "level": null,
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "method": "POST",
+          "path": "/api/v1/estimates",
+          "level": null,
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "method": "POST",
+          "path": "/api/v1/payments",
+          "level": null,
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "method": "POST",
+          "path": "/api/v1/expenses",
+          "level": null,
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "method": "POST",
+          "path": "/api/v1/students",
+          "level": null,
+          "expected": 201,
+          "actual": 201
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/items/2",
+          "level": null,
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "method": "PUT",
+          "path": "/api/v1/items/2",
+          "level": null,
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/items/2",
+          "level": 1,
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "method": "PUT",
+          "path": "/api/v1/items/2",
+          "level": 1,
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "method": "PUT",
+          "path": "/api/v1/items/2",
+          "level": null,
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "method": "POST",
+          "path": "/api/v1/items",
+          "level": null,
+          "expected": 422,
+          "actual": 422
+        },
+        {
+          "method": "PUT",
+          "path": "/api/v1/items/2",
+          "level": null,
+          "expected": 403,
+          "actual": 403
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/invoices/6",
+          "level": null,
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "method": "PUT",
+          "path": "/api/v1/invoices/6",
+          "level": null,
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/invoices/6",
+          "level": 1,
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "method": "PUT",
+          "path": "/api/v1/invoices/6",
+          "level": 1,
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "method": "PUT",
+          "path": "/api/v1/invoices/6",
+          "level": null,
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "method": "POST",
+          "path": "/api/v1/invoices",
+          "level": null,
+          "expected": 422,
+          "actual": 422
+        },
+        {
+          "method": "PUT",
+          "path": "/api/v1/invoices/6",
+          "level": null,
+          "expected": 403,
+          "actual": 403
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/estimates/2",
+          "level": null,
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "method": "PUT",
+          "path": "/api/v1/estimates/2",
+          "level": null,
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/estimates/2",
+          "level": 1,
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "method": "PUT",
+          "path": "/api/v1/estimates/2",
+          "level": 1,
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "method": "PUT",
+          "path": "/api/v1/estimates/2",
+          "level": null,
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "method": "POST",
+          "path": "/api/v1/estimates",
+          "level": null,
+          "expected": 422,
+          "actual": 422
+        },
+        {
+          "method": "PUT",
+          "path": "/api/v1/estimates/2",
+          "level": null,
+          "expected": 403,
+          "actual": 403
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/payments/2",
+          "level": null,
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "method": "PUT",
+          "path": "/api/v1/payments/2",
+          "level": null,
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/payments/2",
+          "level": 1,
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "method": "PUT",
+          "path": "/api/v1/payments/2",
+          "level": 1,
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "method": "PUT",
+          "path": "/api/v1/payments/2",
+          "level": null,
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "method": "POST",
+          "path": "/api/v1/payments",
+          "level": null,
+          "expected": 422,
+          "actual": 422
+        },
+        {
+          "method": "PUT",
+          "path": "/api/v1/payments/2",
+          "level": null,
+          "expected": 403,
+          "actual": 403
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/expenses/1",
+          "level": null,
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "method": "PUT",
+          "path": "/api/v1/expenses/1",
+          "level": null,
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/expenses/1",
+          "level": 1,
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "method": "PUT",
+          "path": "/api/v1/expenses/1",
+          "level": 1,
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "method": "PUT",
+          "path": "/api/v1/expenses/1",
+          "level": null,
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "method": "POST",
+          "path": "/api/v1/expenses",
+          "level": null,
+          "expected": 422,
+          "actual": 422
+        },
+        {
+          "method": "PUT",
+          "path": "/api/v1/expenses/1",
+          "level": null,
+          "expected": 403,
+          "actual": 403
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/students/22",
+          "level": null,
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "method": "PUT",
+          "path": "/api/v1/students/22",
+          "level": null,
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/students/22",
+          "level": 1,
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "method": "PUT",
+          "path": "/api/v1/students/22",
+          "level": 1,
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "method": "PUT",
+          "path": "/api/v1/students/22",
+          "level": null,
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "method": "POST",
+          "path": "/api/v1/students",
+          "level": null,
+          "expected": 422,
+          "actual": 422
+        },
+        {
+          "method": "PUT",
+          "path": "/api/v1/students/22",
+          "level": null,
+          "expected": 422,
+          "actual": 422
+        },
+        {
+          "method": "POST",
+          "path": "/api/v1/items",
+          "level": null,
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "method": "POST",
+          "path": "/api/v1/invoices",
+          "level": null,
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "method": "POST",
+          "path": "/api/v1/estimates",
+          "level": null,
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "method": "POST",
+          "path": "/api/v1/payments",
+          "level": null,
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "method": "POST",
+          "path": "/api/v1/expenses",
+          "level": null,
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "method": "POST",
+          "path": "/api/v1/students",
+          "level": null,
+          "expected": 201,
+          "actual": 201
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/items/3",
+          "level": null,
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "method": "PUT",
+          "path": "/api/v1/items/3",
+          "level": null,
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/items/3",
+          "level": 2,
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "method": "PUT",
+          "path": "/api/v1/items/3",
+          "level": 2,
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "method": "PUT",
+          "path": "/api/v1/items/3",
+          "level": null,
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "method": "POST",
+          "path": "/api/v1/items",
+          "level": null,
+          "expected": 422,
+          "actual": 422
+        },
+        {
+          "method": "PUT",
+          "path": "/api/v1/items/3",
+          "level": null,
+          "expected": 403,
+          "actual": 403
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/invoices/7",
+          "level": null,
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "method": "PUT",
+          "path": "/api/v1/invoices/7",
+          "level": null,
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/invoices/7",
+          "level": 2,
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "method": "PUT",
+          "path": "/api/v1/invoices/7",
+          "level": 2,
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "method": "PUT",
+          "path": "/api/v1/invoices/7",
+          "level": null,
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "method": "POST",
+          "path": "/api/v1/invoices",
+          "level": null,
+          "expected": 422,
+          "actual": 422
+        },
+        {
+          "method": "PUT",
+          "path": "/api/v1/invoices/7",
+          "level": null,
+          "expected": 403,
+          "actual": 403
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/estimates/3",
+          "level": null,
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "method": "PUT",
+          "path": "/api/v1/estimates/3",
+          "level": null,
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/estimates/3",
+          "level": 2,
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "method": "PUT",
+          "path": "/api/v1/estimates/3",
+          "level": 2,
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "method": "PUT",
+          "path": "/api/v1/estimates/3",
+          "level": null,
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "method": "POST",
+          "path": "/api/v1/estimates",
+          "level": null,
+          "expected": 422,
+          "actual": 422
+        },
+        {
+          "method": "PUT",
+          "path": "/api/v1/estimates/3",
+          "level": null,
+          "expected": 403,
+          "actual": 403
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/payments/3",
+          "level": null,
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "method": "PUT",
+          "path": "/api/v1/payments/3",
+          "level": null,
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/payments/3",
+          "level": 2,
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "method": "PUT",
+          "path": "/api/v1/payments/3",
+          "level": 2,
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "method": "PUT",
+          "path": "/api/v1/payments/3",
+          "level": null,
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "method": "POST",
+          "path": "/api/v1/payments",
+          "level": null,
+          "expected": 422,
+          "actual": 422
+        },
+        {
+          "method": "PUT",
+          "path": "/api/v1/payments/3",
+          "level": null,
+          "expected": 403,
+          "actual": 403
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/expenses/2",
+          "level": null,
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "method": "PUT",
+          "path": "/api/v1/expenses/2",
+          "level": null,
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/expenses/2",
+          "level": 2,
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "method": "PUT",
+          "path": "/api/v1/expenses/2",
+          "level": 2,
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "method": "PUT",
+          "path": "/api/v1/expenses/2",
+          "level": null,
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "method": "POST",
+          "path": "/api/v1/expenses",
+          "level": null,
+          "expected": 422,
+          "actual": 422
+        },
+        {
+          "method": "PUT",
+          "path": "/api/v1/expenses/2",
+          "level": null,
+          "expected": 403,
+          "actual": 403
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/students/23",
+          "level": null,
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "method": "PUT",
+          "path": "/api/v1/students/23",
+          "level": null,
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/students/23",
+          "level": 2,
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "method": "PUT",
+          "path": "/api/v1/students/23",
+          "level": 2,
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "method": "PUT",
+          "path": "/api/v1/students/23",
+          "level": null,
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "method": "POST",
+          "path": "/api/v1/students",
+          "level": null,
+          "expected": 422,
+          "actual": 422
+        },
+        {
+          "method": "PUT",
+          "path": "/api/v1/students/23",
+          "level": null,
+          "expected": 422,
+          "actual": 422
+        },
+        {
+          "method": "POST",
+          "path": "/api/v1/items",
+          "level": null,
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "method": "POST",
+          "path": "/api/v1/invoices",
+          "level": null,
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "method": "POST",
+          "path": "/api/v1/estimates",
+          "level": null,
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "method": "POST",
+          "path": "/api/v1/payments",
+          "level": null,
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "method": "POST",
+          "path": "/api/v1/expenses",
+          "level": null,
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "method": "POST",
+          "path": "/api/v1/students",
+          "level": null,
+          "expected": 201,
+          "actual": 201
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/items/4",
+          "level": null,
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "method": "PUT",
+          "path": "/api/v1/items/4",
+          "level": null,
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/items/4",
+          "level": 3,
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "method": "PUT",
+          "path": "/api/v1/items/4",
+          "level": 3,
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "method": "PUT",
+          "path": "/api/v1/items/4",
+          "level": null,
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "method": "POST",
+          "path": "/api/v1/items",
+          "level": null,
+          "expected": 422,
+          "actual": 422
+        },
+        {
+          "method": "PUT",
+          "path": "/api/v1/items/4",
+          "level": null,
+          "expected": 403,
+          "actual": 403
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/invoices/8",
+          "level": null,
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "method": "PUT",
+          "path": "/api/v1/invoices/8",
+          "level": null,
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/invoices/8",
+          "level": 3,
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "method": "PUT",
+          "path": "/api/v1/invoices/8",
+          "level": 3,
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "method": "PUT",
+          "path": "/api/v1/invoices/8",
+          "level": null,
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "method": "POST",
+          "path": "/api/v1/invoices",
+          "level": null,
+          "expected": 422,
+          "actual": 422
+        },
+        {
+          "method": "PUT",
+          "path": "/api/v1/invoices/8",
+          "level": null,
+          "expected": 403,
+          "actual": 403
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/estimates/4",
+          "level": null,
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "method": "PUT",
+          "path": "/api/v1/estimates/4",
+          "level": null,
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/estimates/4",
+          "level": 3,
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "method": "PUT",
+          "path": "/api/v1/estimates/4",
+          "level": 3,
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "method": "PUT",
+          "path": "/api/v1/estimates/4",
+          "level": null,
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "method": "POST",
+          "path": "/api/v1/estimates",
+          "level": null,
+          "expected": 422,
+          "actual": 422
+        },
+        {
+          "method": "PUT",
+          "path": "/api/v1/estimates/4",
+          "level": null,
+          "expected": 403,
+          "actual": 403
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/payments/4",
+          "level": null,
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "method": "PUT",
+          "path": "/api/v1/payments/4",
+          "level": null,
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/payments/4",
+          "level": 3,
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "method": "PUT",
+          "path": "/api/v1/payments/4",
+          "level": 3,
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "method": "PUT",
+          "path": "/api/v1/payments/4",
+          "level": null,
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "method": "POST",
+          "path": "/api/v1/payments",
+          "level": null,
+          "expected": 422,
+          "actual": 422
+        },
+        {
+          "method": "PUT",
+          "path": "/api/v1/payments/4",
+          "level": null,
+          "expected": 403,
+          "actual": 403
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/expenses/3",
+          "level": null,
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "method": "PUT",
+          "path": "/api/v1/expenses/3",
+          "level": null,
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/expenses/3",
+          "level": 3,
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "method": "PUT",
+          "path": "/api/v1/expenses/3",
+          "level": 3,
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "method": "PUT",
+          "path": "/api/v1/expenses/3",
+          "level": null,
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "method": "POST",
+          "path": "/api/v1/expenses",
+          "level": null,
+          "expected": 422,
+          "actual": 422
+        },
+        {
+          "method": "PUT",
+          "path": "/api/v1/expenses/3",
+          "level": null,
+          "expected": 403,
+          "actual": 403
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/students/24",
+          "level": null,
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "method": "PUT",
+          "path": "/api/v1/students/24",
+          "level": null,
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/students/24",
+          "level": 3,
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "method": "PUT",
+          "path": "/api/v1/students/24",
+          "level": 3,
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "method": "PUT",
+          "path": "/api/v1/students/24",
+          "level": null,
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "method": "POST",
+          "path": "/api/v1/students",
+          "level": null,
+          "expected": 422,
+          "actual": 422
+        },
+        {
+          "method": "PUT",
+          "path": "/api/v1/students/24",
+          "level": null,
+          "expected": 422,
+          "actual": 422
+        },
+        {
+          "method": "GET",
+          "path": "/reports/sales/customers/suiteena-staging-fixture?from_date=2026-01-01&to_date=2026-12-31&school_level_id=",
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "method": "GET",
+          "path": "/reports/sales/customers/suiteena-staging-fixture?from_date=2026-01-01&to_date=2026-12-31&school_level_id=1",
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "method": "GET",
+          "path": "/reports/sales/customers/suiteena-staging-fixture?from_date=2026-01-01&to_date=2026-12-31&school_level_id=2",
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "method": "GET",
+          "path": "/reports/sales/customers/suiteena-staging-fixture?from_date=2026-01-01&to_date=2026-12-31&school_level_id=3",
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "method": "GET",
+          "path": "/reports/sales/items/suiteena-staging-fixture?from_date=2026-01-01&to_date=2026-12-31&school_level_id=",
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "method": "GET",
+          "path": "/reports/sales/items/suiteena-staging-fixture?from_date=2026-01-01&to_date=2026-12-31&school_level_id=1",
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "method": "GET",
+          "path": "/reports/sales/items/suiteena-staging-fixture?from_date=2026-01-01&to_date=2026-12-31&school_level_id=2",
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "method": "GET",
+          "path": "/reports/sales/items/suiteena-staging-fixture?from_date=2026-01-01&to_date=2026-12-31&school_level_id=3",
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "method": "GET",
+          "path": "/reports/expenses/suiteena-staging-fixture?from_date=2026-01-01&to_date=2026-12-31&school_level_id=",
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "method": "GET",
+          "path": "/reports/expenses/suiteena-staging-fixture?from_date=2026-01-01&to_date=2026-12-31&school_level_id=1",
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "method": "GET",
+          "path": "/reports/expenses/suiteena-staging-fixture?from_date=2026-01-01&to_date=2026-12-31&school_level_id=2",
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "method": "GET",
+          "path": "/reports/expenses/suiteena-staging-fixture?from_date=2026-01-01&to_date=2026-12-31&school_level_id=3",
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "method": "GET",
+          "path": "/reports/tax-summary/suiteena-staging-fixture?from_date=2026-01-01&to_date=2026-12-31&school_level_id=",
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "method": "GET",
+          "path": "/reports/tax-summary/suiteena-staging-fixture?from_date=2026-01-01&to_date=2026-12-31&school_level_id=1",
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "method": "GET",
+          "path": "/reports/tax-summary/suiteena-staging-fixture?from_date=2026-01-01&to_date=2026-12-31&school_level_id=2",
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "method": "GET",
+          "path": "/reports/tax-summary/suiteena-staging-fixture?from_date=2026-01-01&to_date=2026-12-31&school_level_id=3",
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "method": "GET",
+          "path": "/reports/profit-loss/suiteena-staging-fixture?from_date=2026-01-01&to_date=2026-12-31&school_level_id=",
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "method": "GET",
+          "path": "/reports/profit-loss/suiteena-staging-fixture?from_date=2026-01-01&to_date=2026-12-31&school_level_id=1",
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "method": "GET",
+          "path": "/reports/profit-loss/suiteena-staging-fixture?from_date=2026-01-01&to_date=2026-12-31&school_level_id=2",
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "method": "GET",
+          "path": "/reports/profit-loss/suiteena-staging-fixture?from_date=2026-01-01&to_date=2026-12-31&school_level_id=3",
+          "expected": 200,
+          "actual": 200
+        }
+      ]
+    },
+    "role_regression": {
+      "passed": true,
+      "locale": "es",
+      "fallback_locale": "es",
+      "account_without_language": true,
+      "empty_language": true,
+      "validation_in_spanish": true,
+      "checks": [
+        {
+          "method": "POST",
+          "path": "/api/v1/auth/login",
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "method": "POST",
+          "path": "/api/v1/auth/login",
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "method": "POST",
+          "path": "/api/v1/auth/login",
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "method": "POST",
+          "path": "/api/v1/auth/login",
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "method": "POST",
+          "path": "/api/v1/auth/login",
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/bootstrap",
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/me/settings?settings%5B0%5D=language",
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/bootstrap",
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/me/settings?settings%5B0%5D=language",
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "method": "POST",
+          "path": "/api/v1/auth/login",
+          "expected": 422,
+          "actual": 422
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/bootstrap",
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/me",
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/me/settings?settings%5B0%5D=language",
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/languages",
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/school-levels",
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/students",
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/academic-years",
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/grade-levels",
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/subjects",
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/study-plans",
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/divisions",
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/enrollments?division_id=1",
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/dashboard",
+          "expected": 403,
+          "actual": 403
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/search",
+          "expected": 403,
+          "actual": 403
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/students/placement-options",
+          "expected": 403,
+          "actual": 403
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/users",
+          "expected": 403,
+          "actual": 403
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/backups",
+          "expected": 403,
+          "actual": 403
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/bootstrap",
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/me",
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/me/settings?settings%5B0%5D=language",
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/languages",
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/school-levels",
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/students",
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/academic-years",
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/grade-levels",
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/subjects",
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/study-plans",
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/divisions",
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/enrollments?division_id=1",
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/dashboard",
+          "expected": 403,
+          "actual": 403
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/search",
+          "expected": 403,
+          "actual": 403
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/students/placement-options",
+          "expected": 403,
+          "actual": 403
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/users",
+          "expected": 403,
+          "actual": 403
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/backups",
+          "expected": 403,
+          "actual": 403
+        },
+        {
+          "method": "POST",
+          "path": "/api/v1/users/10/role-assignments",
+          "expected": 403,
+          "actual": 403
+        },
+        {
+          "method": "POST",
+          "path": "/api/v1/users/10/role-assignments",
+          "expected": 201,
+          "actual": 201
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/bootstrap",
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/me",
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/me/settings?settings%5B0%5D=language",
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/languages",
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/school-levels",
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/students",
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/academic-years",
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/grade-levels",
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/subjects",
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/study-plans",
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/divisions",
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/enrollments?division_id=1",
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/students/placement-options",
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "method": "POST",
+          "path": "/api/v1/students",
+          "expected": 201,
+          "actual": 201
+        },
+        {
+          "method": "PUT",
+          "path": "/api/v1/students/21",
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "method": "POST",
+          "path": "/api/v1/students",
+          "expected": 403,
+          "actual": 403
+        },
+        {
+          "method": "DELETE",
+          "path": "/api/v1/students/21",
+          "expected": 403,
+          "actual": 403
+        },
+        {
+          "method": "PUT",
+          "path": "/api/v1/students/21/relocate",
+          "expected": 403,
+          "actual": 403
+        },
+        {
+          "method": "PUT",
+          "path": "/api/v1/students/21",
+          "expected": 403,
+          "actual": 403
+        },
+        {
+          "method": "GET",
+          "path": "/api/v1/students",
+          "expected": 403,
+          "actual": 403
+        },
+        {
+          "method": "POST",
+          "path": "/api/v1/role-assignments/28/revoke",
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "method": "POST",
+          "path": "/api/v1/students",
+          "expected": 403,
+          "actual": 403
+        }
+      ]
+    },
+    "public_smoke": {
+      "base": "https://krater-staging-staging.up.railway.app",
+      "passed": true,
+      "checks": [
+        {
+          "path": "/ping",
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "path": "/login",
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "path": "/api/v1/bootstrap",
+          "expected": 401,
+          "actual": 401
+        },
+        {
+          "path": "/api/v1/students",
+          "expected": 401,
+          "actual": 401
+        },
+        {
+          "path": "/api/v1/students/placement-options",
+          "expected": 401,
+          "actual": 401
+        }
+      ],
+      "assets": [
+        {
+          "path": "/assets/js/app.js?id=35bce386f9c99d89800c",
+          "status": 200,
+          "sha256": "932622567035b01b2967cc61c98aa0adbf58c430b8ef099f7702e9ab72f749df",
+          "matches_build": true
+        },
+        {
+          "path": "/assets/css/crater.css?id=0b090d6c6a3202e87168",
+          "status": 200,
+          "sha256": "7775f28aa35cc236d39cea0874a17f772aeb7a5c85fb4023d9cefed05adba255",
+          "matches_build": true
+        }
+      ]
+    },
+    "predeploy": {
+      "migration": "Nothing to migrate",
+      "permissions": 76,
+      "roles": 14,
+      "repaired_fictional_payment_hashes": 1,
+      "only_staging": true
+    }
+  },
+  "production": {
+    "code_sha": "1289f3cf0335d90df120d0a1b36bb72c735e3497",
+    "deployment_id": "fd03f25b-e03c-447e-b51d-d66841389054",
+    "status": "SUCCESS",
+    "unchanged": true,
+    "promoted": false
+  },
+  "row_6_started": false
+}

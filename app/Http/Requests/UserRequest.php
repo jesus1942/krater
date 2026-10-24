@@ -14,7 +14,14 @@ class UserRequest extends FormRequest
      */
     public function authorize()
     {
-        return true;
+        $target = $this->route('user');
+        if (! $target) {
+            $target = new \Crater\Models\User(['company_id' => \Crater\Support\TenantContext::companyId(), 'role' => 'staff']);
+        } elseif (! app(\Crater\Services\Access\TenantUsers::class)->canViewStaff($this->user(), $target)) {
+            return false;
+        }
+
+        return app(\Crater\Services\Access\AccessManager::class)->canManageUser($this->user(), $target);
     }
 
     /**
@@ -42,11 +49,11 @@ class UserRequest extends FormRequest
             ],
         ];
 
-        if ($this->getMethod() == 'PUT') {
+        if ($this->isMethod('PUT') || $this->isMethod('PATCH')) {
             $rules['email'] = [
                 'required',
                 'email',
-                Rule::unique('users')->ignore($this->user),
+                Rule::unique('users')->ignore($this->route('user')->id),
             ];
             $rules['password'] = [
                 'nullable',

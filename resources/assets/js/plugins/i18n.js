@@ -20,8 +20,9 @@ import vi from './vi.json'
 Vue.use(VueI18n)
 
 const i18n = new VueI18n({
-  locale: 'en',
-  fallbackLocale: 'en',
+  // Tambien antes del login y del bootstrap, SuiteEna arranca en español.
+  locale: 'es',
+  fallbackLocale: 'es',
   messages: {
     en,
     fr,

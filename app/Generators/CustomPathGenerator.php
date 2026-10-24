@@ -42,6 +42,11 @@ class CustomPathGenerator implements PathGenerator
             $folderName = $media->getKey();
         }
 
-        return $folderName;
+        // Un comprobante privado tiene su propio directorio. Dos empresas
+        // pueden usar el mismo numero: nunca compartir ni sobrescribir su PDF.
+        // Conservar el camino legacy para leer las copias ya guardadas.
+        return $media->disk === 'finance_private'
+            ? $folderName.'/'.$media->getKey()
+            : $folderName;
     }
 }

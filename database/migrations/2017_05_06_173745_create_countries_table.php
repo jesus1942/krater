@@ -20,6 +20,10 @@ class CreateCountriesTable extends Migration
             $table->string('name');
             $table->integer('phonecode');
         });
+
+        // Cargar despues de crear la tabla, no desde la migracion de 2014.
+        // Este seeder se ejecuta sobre una tabla recien creada y vacia.
+        (new \Database\Seeders\CountriesTableSeeder())->run();
     }
 
     /**

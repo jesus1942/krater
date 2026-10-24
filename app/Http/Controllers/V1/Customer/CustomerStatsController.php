@@ -13,6 +13,11 @@ use Illuminate\Http\Request;
 
 class CustomerStatsController extends Controller
 {
+    public function __construct()
+    {
+        $this->middleware('tenant');
+    }
+
     /**
      * Handle the incoming request.
      *
@@ -21,6 +26,7 @@ class CustomerStatsController extends Controller
      */
     public function __invoke(Request $request, User $customer)
     {
+        abort_unless(app(\Crater\Services\Access\TenantUsers::class)->canViewCustomer($customer), 403);
         $i = 0;
         $months = [];
         $invoiceTotals = [];

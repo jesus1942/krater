@@ -13,10 +13,7 @@ class PaymentRequest extends FormRequest
      *
      * @return bool
      */
-    public function authorize()
-    {
-        return true;
-    }
+    use \Crater\Http\Requests\Concerns\ValidatesFinanceTenant;
 
     /**
      * Get the validation rules that apply to the request.
@@ -29,9 +26,9 @@ class PaymentRequest extends FormRequest
             'payment_date' => [
                 'required',
             ],
-            'user_id' => [
-                'required',
-            ],
+            'user_id' => ['nullable', 'integer'],
+            'student_id' => ['nullable', 'integer'],
+            'family_member_id' => ['nullable', 'integer'],
             'amount' => [
                 'required',
             ],
@@ -57,6 +54,6 @@ class PaymentRequest extends FormRequest
             ];
         }
 
-        return $rules;
+        return array_merge($rules, $this->schoolLevelRules());
     }
 }

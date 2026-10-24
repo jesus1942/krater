@@ -24,6 +24,7 @@
       <div class="col-span-12 md:col-span-6">
         <form action="" @submit.prevent="submitItem">
           <sw-card>
+            <school-level-field v-model="formData.school_level_id" :editing="isEdit" @input="onRecordLevelChange" />
             <sw-input-group
               :label="$t('items.name')"
               :error="nameError"
@@ -132,6 +133,7 @@
 </template>
 
 <script>
+import recordLevel from '../../mixins/recordLevel'
 import { mapActions, mapGetters } from 'vuex'
 import { ShoppingCartIcon } from '@vue-hero-icons/solid'
 import TheSiteHeaderVue from '../layouts/partials/TheSiteHeader.vue'
@@ -144,6 +146,7 @@ const {
 } = require('vuelidate/lib/validators')
 
 export default {
+  mixins: [recordLevel],
   components: {
     ShoppingCartIcon,
   },
@@ -157,6 +160,7 @@ export default {
       taxPerItem: '',
 
       formData: {
+        school_level_id: window.Ls.get('selectedSchoolLevel') || null,
         name: '',
         description: '',
         price: '',
@@ -352,6 +356,7 @@ export default {
     },
 
     async submitItem() {
+      if (!this.requireRecordLevel(this.formData)) return false
       this.$v.formData.$touch()
 
       if (this.$v.$invalid) {

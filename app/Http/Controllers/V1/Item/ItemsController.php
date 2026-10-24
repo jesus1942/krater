@@ -2,6 +2,7 @@
 
 namespace Crater\Http\Controllers\V1\Item;
 
+use Crater\Services\Data\TrashBin;
 use Crater\Http\Controllers\Controller;
 use Crater\Http\Requests;
 use Crater\Http\Requests\DeleteItemsRequest;
@@ -11,6 +12,15 @@ use Illuminate\Http\Request;
 
 class ItemsController extends Controller
 {
+    public function __construct()
+    {
+        // El módulo económico heredado vive dentro del grupo `admin`, que no
+        // fija TenantContext. Sin este middleware, Item::BelongsToSchoolLevel
+        // no sabe qué nivel está activo y los conceptos se filtran solo por
+        // empresa, apareciendo en Primaria, Secundaria y Terciario a la vez.
+        $this->middleware('tenant');
+    }
+
     /**
      * Retrieve a list of existing Items.
      *
@@ -97,7 +107,7 @@ class ItemsController extends Controller
      */
     public function delete(DeleteItemsRequest $request)
     {
-        Item::destroy($request->ids);
+        app(TrashBin::class)->delete('items', (array) $request->ids);
 
         return response()->json([
             'success' => true,

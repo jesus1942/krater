@@ -21,6 +21,7 @@ class RedirectIfUnauthorized
             return $next($request);
         }
 
-        return redirect('/login');
+        // Habia una cookie de sesion pero la sesion ya no existe: avisar en el login.
+        return redirect($request->hasCookie(config('session.cookie')) ? '/login?aviso=sesion' : '/login');
     }
 }

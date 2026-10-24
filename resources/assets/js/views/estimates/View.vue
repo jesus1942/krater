@@ -277,7 +277,7 @@ export default {
       return this.$t('general.descending')
     },
     shareableLink() {
-      return `/estimates/pdf/${this.estimate.unique_hash}`
+      return this.estimate.estimatePdfUrl
     },
     getCurrentEstimateId() {
       if (this.estimate && this.estimate.id) {
@@ -341,7 +341,7 @@ export default {
       }
     },
     copyPdfUrl() {
-      let pdfUrl = `${window.location.origin}/estimates/pdf/${this.estimate.unique_hash}`
+      let pdfUrl = this.estimate.estimatePdfUrl
 
       let response = this.$utils.copyTextToClipboard(pdfUrl)
       this.showNotification({
@@ -439,7 +439,7 @@ export default {
       })
     },
     copyPdfUrl() {
-      let pdfUrl = `${window.location.origin}/estimates/pdf/${this.estimate.unique_hash}`
+      let pdfUrl = this.estimate.estimatePdfUrl
 
       let response = this.$utils.copyTextToClipboard(pdfUrl)
       this.showNotification({

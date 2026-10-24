@@ -16,6 +16,23 @@ class FileDisk extends Model
         'id',
     ];
 
+    /**
+     * Las credenciales nunca se serializan.
+     *
+     * `DiskController::index()` devuelve los modelos completos paginados, asi
+     * que sin esto las claves de S3, DigitalOcean Spaces y Dropbox salian por
+     * la API.
+     *
+     * Esto tapa la salida, no el problema de fondo: en la base siguen estando
+     * en texto plano, porque el mutator de abajo hace `json_encode` y no
+     * `encrypt`. La solucion definitiva es migrarlas a `secure_settings` — ver
+     * docs/05-configuracion-y-secretos.md. Hasta entonces, cualquiera con
+     * acceso de lectura a la base las ve.
+     */
+    protected $hidden = [
+        'credentials',
+    ];
+
     public function setCredentialsAttribute($value)
     {
         $this->attributes['credentials'] = json_encode($value);
